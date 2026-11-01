@@ -1,0 +1,12 @@
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><meta name=robots content=noindex><link rel=stylesheet href=css/style.css></head>
+<body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
+<script type=module>
+import {sb,boot,esc,qs,$} from './js/app.js';
+await boot();const id=qs('id')||'';
+const {data:p}=await sb.from('cr_products').select('id,name,affiliate_url,merchants:cr_merchants(name)').eq('id',id).eq('status','active').maybeSingle();
+if(!p||!/^https?:\/\//i.test(p.affiliate_url)){$('#m').innerHTML='<p>Produto indisponível.</p><a class=btn href=index.html>Início</a>';throw 0}
+const store=p.merchants?.name||'loja parceira';
+$('#m').innerHTML=`<div class=box style="max-width:560px;margin:30px auto;text-align:center"><h1>Você está saindo da Compras Rápidas.</h1><p>Este produto será aberto na loja parceira. O pagamento, a entrega e as condições de compra são administrados pela própria loja.</p>
+<p><b>${esc(p.name)}</b><br>Loja de destino: <b>${esc(store)}</b></p><button id=go class="btn big">Continuar para a loja parceira</button><p><a class="btn alt big" href="produto.html?id=${p.id}">Voltar ao produto</a></p></div>`;
+$('#go').onclick=async()=>{try{await Promise.race([sb.from('cr_click_events').insert({product_id:p.id}),new Promise(r=>setTimeout(r,800))])}catch(e){}location.href=p.affiliate_url};
+</script></body></html>
