@@ -1,11 +1,28 @@
-<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><link rel=stylesheet href=css/style.css></head>
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><link rel=stylesheet href=css/style.css>
+<style>
+.car{position:relative;margin:14px 0;border-radius:14px;overflow:hidden}
+.trk{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;scroll-behavior:smooth}.trk::-webkit-scrollbar{display:none}
+.sl{flex:0 0 100%;scroll-snap-align:start;position:relative;min-height:240px;display:flex;align-items:center;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2)) center/cover no-repeat}
+@media(min-width:800px){.sl{min-height:340px}}
+.sl::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#000b,#0006 50%,#0002)}.sl.nt::before{display:none}
+.sl>div{position:relative;padding:28px 24px 40px;max-width:620px}
+.sl h1,.sl h2{margin:0 0 8px;font-size:clamp(1.5rem,5vw,2.6rem);line-height:1.15;text-shadow:0 2px 8px #0009}.sl p{margin:0 0 16px;text-shadow:0 1px 6px #0009}
+.hb{display:inline-block;background:var(--btn);color:#fff;font-weight:700;padding:12px 26px;border-radius:999px;border:2px solid #fff;box-shadow:0 4px 14px #0006}.hb:hover{filter:brightness(1.1)}
+.nv{position:absolute;top:50%;transform:translateY(-50%);background:#0007;color:#fff;border:0;width:40px;height:40px;border-radius:50%;font-size:1.6rem;cursor:pointer}#pv{left:8px}#nx{right:8px}
+@media(max-width:600px){.nv{display:none}}
+.dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:8px}.dots button{width:10px;height:10px;border-radius:50%;border:0;background:#fff8;padding:0;cursor:pointer}.dots button.on{background:#fff}
+</style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
-import {sb,boot,list,card,esc,safeUrl} from './js/app.js';
+import {sb,boot,list,card,esc} from './js/app.js';
 const S=await boot();
-const [{data:bn},{data:sec}]=await Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(1),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
-const b=bn?.[0]||{title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'};
-let h=`<section class=hero ${b.image_url?`style="background-image:linear-gradient(#0b2a5b99,#0b2a5b99),url('${esc(b.image_url)}')"`:''}><h1>${esc(b.title)}</h1><p>${esc(b.subtitle)}</p>${b.button_text?`<a class="btn" style="background:#fff;color:var(--c1)" href="${esc(/^(https?:\/\/|[\w.\/?=&%-]+$)/i.test(b.button_url||'')?b.button_url:'#')}">${esc(b.button_text)}</a>`:''}</section>`;
+const [{data:bn},{data:sec}]=await Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
+const bs=bn?.length?bn:[{title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'}];
+const cssUrl=u=>encodeURI(u).replace(/[()']/g,c=>'%'+c.charCodeAt(0).toString(16));
+const link=u=>/^(https?:\/\/|[\w.\/?=&%-]+$)/i.test(u||'')?u:'#';
+const slide=(b,i)=>{const T=i?'h2':'h1',txt=b.title||b.subtitle||b.button_text;
+ return `<div class="sl${txt?'':' nt'}"${b.image_url?` style="background-image:url('${esc(cssUrl(b.image_url))}')"`:''}>${txt?`<div>${b.title?`<${T}>${esc(b.title)}</${T}>`:''}${b.subtitle?`<p>${esc(b.subtitle)}</p>`:''}${b.button_text?`<a class=hb href="${esc(link(b.button_url))}">${esc(b.button_text)} →</a>`:''}</div>`:''}</div>`};
+let h=`<div class=car><div class=trk id=trk>${bs.map(slide).join('')}</div>${bs.length>1?`<button class=nv id=pv aria-label=Anterior>‹</button><button class=nv id=nx aria-label=Próximo>›</button><div class=dots id=dots>${bs.map((_,i)=>`<button aria-label="Banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
 const seen=new Set();
 for(const x of sec||[]){
  if(x.key==='categorias'){const {data}=await sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
@@ -15,4 +32,12 @@ for(const x of sec||[]){
  if(data.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=${x.key==='novidades'?'busca':x.key}">Ver todos</a></div><div class=grid>${data.map(card).join('')}</div>`}
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';
 document.getElementById('m').innerHTML=h;
+if(bs.length>1){const trk=document.getElementById('trk'),dots=[...document.querySelectorAll('#dots button')];let i=0,t;
+ const go=n=>{i=(n+bs.length)%bs.length;trk.scrollTo({left:i*trk.clientWidth,behavior:'smooth'})};
+ const mark=()=>{i=Math.round(trk.scrollLeft/trk.clientWidth);dots.forEach((d,k)=>d.classList.toggle('on',k===i))};
+ const st=()=>clearInterval(t),rs=()=>{st();if(!matchMedia('(prefers-reduced-motion:reduce)').matches)t=setInterval(()=>go(i+1),5000)};
+ trk.addEventListener('scroll',mark,{passive:true});
+ document.getElementById('pv').onclick=()=>{go(i-1);rs()};document.getElementById('nx').onclick=()=>{go(i+1);rs()};dots.forEach((d,k)=>d.onclick=()=>{go(k);rs()});
+ ['mouseenter','touchstart','focusin'].forEach(e=>trk.addEventListener(e,st,{passive:true}));['mouseleave','touchend','focusout'].forEach(e=>trk.addEventListener(e,rs,{passive:true}));
+ mark();rs()}
 </script></body></html>
