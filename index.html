@@ -6,10 +6,12 @@ const S=await boot();
 const [{data:bn},{data:sec}]=await Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(1),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const b=bn?.[0]||{title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'};
 let h=`<section class=hero ${b.image_url?`style="background-image:linear-gradient(#0b2a5b99,#0b2a5b99),url('${esc(b.image_url)}')"`:''}><h1>${esc(b.title)}</h1><p>${esc(b.subtitle)}</p>${b.button_text?`<a class="btn" style="background:#fff;color:var(--c1)" href="${esc(/^(https?:\/\/|[\w.\/?=&%-]+$)/i.test(b.button_url||'')?b.button_url:'#')}">${esc(b.button_text)}</a>`:''}</section>`;
+const seen=new Set();
 for(const x of sec||[]){
  if(x.key==='categorias'){const {data}=await sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
   if(data?.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=categorias">Ver todas</a></div><div class=cats>${data.map(c=>`<a class=cat href="lista.html?tipo=categoria&slug=${esc(c.slug)}">${c.image_url?`<img loading=lazy src="${esc(c.image_url)}" alt="">`:`<i>${esc(c.name[0])}</i>`}${esc(c.name)}</a>`).join('')}</div>`;continue}
- const {data}=await list({offer:x.key==='ofertas',featured:x.key==='destaques',per:x.qty||8});
+ const q=x.qty||8;const {data:all}=await list({offer:x.key==='ofertas',featured:x.key==='destaques',per:q+seen.size});
+ const data=all.filter(p=>!seen.has(p.id)).slice(0,q);data.forEach(p=>seen.add(p.id));
  if(data.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=${x.key==='novidades'?'busca':x.key}">Ver todos</a></div><div class=grid>${data.map(card).join('')}</div>`}
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';
 document.getElementById('m').innerHTML=h;
