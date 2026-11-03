@@ -8,5 +8,5 @@ if(!p||!/^https?:\/\//i.test(p.affiliate_url)){$('#m').innerHTML='<p>Produto ind
 const store=p.merchants?.name||'loja parceira';
 $('#m').innerHTML=`<div class=box style="max-width:560px;margin:30px auto;text-align:center"><h1>Você está saindo da Compras Rápidas.</h1><p>Este produto será aberto na loja parceira. O pagamento, a entrega e as condições de compra são administrados pela própria loja.</p>
 <p><b>${esc(p.name)}</b><br>Loja de destino: <b>${esc(store)}</b></p><button id=go class="btn big">Continuar para a loja parceira</button><p><a class="btn alt big" href="produto.html?id=${p.id}">Voltar ao produto</a></p></div>`;
-$('#go').onclick=async()=>{try{await Promise.race([sb.from('cr_click_events').insert({product_id:p.id}),new Promise(r=>setTimeout(r,800))])}catch(e){}location.href=p.affiliate_url};
+$('#go').onclick=async()=>{try{await Promise.race([sb.from('cr_click_events').insert({product_id:p.id}),new Promise(r=>setTimeout(r,800))])}catch(e){}try{top.location.href=p.affiliate_url}catch(e){location.href=p.affiliate_url}};
 </script></body></html>
