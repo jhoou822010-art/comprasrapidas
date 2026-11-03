@@ -1,4 +1,4 @@
-<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content=noindex><title>Painel | Compras Rápidas</title><link rel=stylesheet href=../css/style.css>
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content=noindex><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content=Painel><title>Painel | Compras Rápidas</title><link rel=stylesheet href=../css/style.css>
 <style>.ad{display:flex;flex-wrap:wrap;gap:6px;background:var(--c1);padding:8px}.ad button{background:#ffffff22;color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}.ad button.on{background:var(--c2)}
 label{display:block;margin:8px 0;font-size:.9rem}input,select,textarea{width:100%;padding:10px;border:1px solid #cdd8e8;border-radius:8px;font:inherit;background:#fff}input[type=checkbox]{width:auto}textarea{min-height:90px}
 .row{display:grid;gap:0 12px}@media(min-width:700px){.row{grid-template-columns:1fr 1fr}}.thumb{width:70px;height:70px;object-fit:cover;border-radius:8px}.ims{display:flex;flex-wrap:wrap;gap:8px}.ims div{text-align:center}.ims button{padding:4px 7px}
@@ -9,7 +9,7 @@ table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;bord
 import {sb,$,esc,money,CONFIGURED} from '../js/app.js';
 const A=$('#app');const W=window;
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,6);
-const num=v=>v===''||v==null?null:Number(String(v).replace(',','.'));
+const num=v=>{if(v===''||v==null)return null;let s=String(v).replace(/[^\d.,]/g,'');if(!s)return NaN;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)};
 const run=async f=>{try{return await f()}catch(e){if(e)alert('Erro: '+(e.message||e));console.error(e)}};
 async function up(file){const vid=file.type.startsWith('video/');
  if(!file.type.startsWith('image/')&&!vid)throw new Error('Envie apenas imagem ou vídeo (mp4/webm).');
@@ -22,7 +22,7 @@ async function init(){if(!CONFIGURED){A.innerHTML='<div class=box><h2>Não confi
  const {data}=await sb.from('cr_admins').select('user_id').eq('user_id',session.user.id);
  if(!data?.length){const {data:ok}=await sb.rpc('cr_claim_admin');if(ok)return init()}
  if(!data?.length){A.innerHTML='<div class=box><h2>Sem permissão</h2><p>Este usuário não está na lista de administradores (veja o Guia, passo do administrador).</p>'+out()+'</div>';return}
- const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Aparência:look,Estatísticas:stats,Importar:imp};
+ const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Aparência:look,Estatísticas:stats,Importar:imp,Backup:backup};
  A.innerHTML=`<div class=ad>${Object.keys(T).map(k=>`<button data-t="${k}">${k}</button>`).join('')}<button onclick="lo()">Sair</button></div><div id=main></div>`;
  A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{A.querySelectorAll('.ad button').forEach(x=>x.classList.remove('on'));b.classList.add('on');run(()=>T[b.dataset.t]($('#main')))});
  A.querySelector('[data-t]').click()}
@@ -34,7 +34,7 @@ const cnt=(t,f)=>{let q=sb.from(t).select('*',{count:'exact',head:true});return(
 async function dash(el){const now=new Date().toISOString();
  const [a,b,c,d,e,f,g,ck]=await Promise.all([cnt('cr_products'),cnt('cr_products',q=>q.eq('status','active')),cnt('cr_products',q=>q.eq('status','archived')),cnt('cr_categories'),cnt('cr_products',q=>q.eq('featured',true).eq('status','active')),cnt('cr_products',q=>q.eq('offer',true).eq('status','active')),cnt('cr_click_events'),clicks(30)]);
  const top={};ck.forEach(x=>{const n=x.products?.name||'(removido)';top[n]=(top[n]||0)+1});
- el.innerHTML=`<h2>Painel</h2><div class=kpi>${[['Produtos',a],['Ativos',b],['Arquivados',c],['Categorias',d],['Em destaque',e],['Em oferta',f],['Cliques (total)',g]].map(([k,v])=>`<div><b>${v}</b>${k}</div>`).join('')}</div>
+ el.innerHTML=await bkNote()+`<h2>Painel</h2><div class=kpi>${[['Produtos',a],['Ativos',b],['Arquivados',c],['Categorias',d],['Em destaque',e],['Em oferta',f],['Cliques (total)',g]].map(([k,v])=>`<div><b>${v}</b>${k}</div>`).join('')}</div>
  <div class=box><h3>Mais acessados (30 dias)</h3>${Object.entries(top).sort((x,y)=>y[1]-x[1]).slice(0,5).map(([n,v])=>`<p>${esc(n)} — <b>${v}</b></p>`).join('')||'<p>Sem cliques ainda.</p>'}<p class=note>Cliques não representam vendas. Confira vendas e comissões nos painéis oficiais dos programas de afiliados.</p></div>`}
 // ---------- Produtos
 async function prods(el,term='',st=''){
@@ -73,7 +73,7 @@ async function pform(el,id){
  $('#sv').onclick=()=>run(async()=>{
   const name=$('#n').value.trim(),url=$('#u').value.trim(),mn=$('#m').value.trim(),pr=num($('#pr').value),po=num($('#po').value);
   if(!name||!$('#c').value||!mn)throw new Error('Preencha nome, categoria e loja.');if(!/^https?:\/\//i.test(url))throw new Error('O link de afiliado deve começar com https://');
-  if(pr!=null&&isNaN(pr)||po!=null&&isNaN(po))throw new Error('Preço inválido.');if(po!=null&&pr!=null&&po<=pr&&!confirm('Preço anterior não é maior que o atual; o desconto não será exibido. Continuar?'))return;
+  if(pr!=null&&isNaN(pr)||po!=null&&isNaN(po))throw new Error('Preço atual ou anterior inválido. Use só números, por exemplo 23,49.');if(po!=null&&pr!=null&&po<=pr&&!confirm('Preço anterior não é maior que o atual; o desconto não será exibido. Continuar?'))return;
   $('#sv').disabled=true;$('#sv').textContent='Salvando…';
   let {data:m}=await sb.from('cr_merchants').select('id').ilike('name',mn).maybeSingle();if(!m){const r=await sb.from('cr_merchants').insert({name:mn}).select('id').single();if(r.error)throw r.error;m=r.data}
   const row={name,description:$('#d').value,price:pr,old_price:po,category_id:$('#c').value,merchant_id:m.id,affiliate_url:url,featured:$('#f').checked,offer:$('#o').checked,
@@ -121,5 +121,54 @@ async function imp(el){el.innerHTML=`<h2>Importar produtos (CSV)</h2><div class=
     const {data:p,error}=await sb.from('cr_products').insert({name:o.nome,slug:slug(o.nome),description:o.descricao,price:num(o.preco),old_price:num(o.preco_anterior),category_id:C[o.categoria],merchant_id:M[o.loja],affiliate_url:o.link,featured:sim(o.destaque),offer:sim(o.oferta)}).select('id').single();
     if(error)continue;n++;if(/^https?:\/\//i.test(o.imagem_url))await sb.from('cr_product_images').insert({product_id:p.id,url:o.imagem_url,sort:0,is_cover:true})}
    alert(n+' produto(s) importado(s).');imp(el)})}}
+// ---------- Lembrete de backup
+async function bkNote(inb){const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();const d=data?.data?.last_backup||null;
+ const days=d?Math.floor((Date.now()-new Date(d))/864e5):null,old=days==null||days>=7;
+ return `<div class=box style="border-left:6px solid ${old?'#e5384f':'#1e9e5a'}"><b>Backup:</b> ${d?(days<1?'feito hoje':'último há '+days+' dia(s), em '+new Date(d).toLocaleDateString('pt-BR')):'nenhum backup feito ainda'}${old?'. <b>Recomendado fazer agora.</b>':'.'} ${inb?'':'<button class="btn sm" onclick="goBk()">Ir para Backup</button>'}</div>`}
+W.goBk=()=>document.querySelector('[data-t=Backup]').click();
+// ---------- Backup e restauração
+const TB=['cr_merchants','cr_categories','cr_products','cr_product_images','cr_product_videos','cr_banners','cr_site_settings','cr_homepage_sections','cr_click_events'];
+const PK={cr_site_settings:'id',cr_homepage_sections:'key'};
+async function allRows(t){let o=[],f=0;for(;;){const {data,error}=await sb.from(t).select('*').order(PK[t]||'id').range(f,f+999);if(error)throw error;o.push(...data);if(data.length<1000)break;f+=1000}return o}
+const dl=(n,s,ty)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:ty}));a.download=n;document.body.appendChild(a);a.click();a.remove()};
+const stamp=()=>new Date().toISOString().slice(0,10);
+const BK='/storage/v1/object/public/compras-rapidas/',FX={cr_categories:['image_url'],cr_banners:['image_url'],cr_product_images:['url'],cr_product_videos:['url']};
+function backup(el){el.innerHTML=`<div id=bn></div><h2>Backup e restauração</h2>
+<div class=box><h3>Fazer backup</h3><p>Baixa um arquivo com produtos, categorias, lojas, banners, aparência e seções da página inicial. Guarde em mais de um lugar (computador e nuvem) e mantenha privado: ele contém seus links de afiliado.</p>
+<label><input type=checkbox id=bc checked> Incluir histórico de cliques</label>
+<button class=btn id=bk>Baixar backup completo (.json)</button> <button class="btn alt" id=bv>Baixar produtos em planilha (.csv)</button><p class=note id=bs></p>
+<p class=note>As fotos e vídeos enviados ficam no armazenamento do Supabase: o backup guarda os endereços e, ao restaurar, pode copiá-los para o novo banco. A planilha CSV leva só os dados principais (nome, preço, link, 1ª foto) e pode ser reimportada na aba Importar.</p></div>
+<div class=box><h3>Restaurar backup</h3><p class=note>Use em um banco onde o <b>setup.sql</b> já foi executado. Registros com o mesmo código são substituídos; nada é apagado. Contas de administrador não fazem parte do backup: no banco novo, o primeiro login em /admin/ vira administrador.</p>
+<input type=file id=rf accept=".json,application/json"><label><input type=checkbox id=rm checked> Copiar as fotos e vídeos para este banco (recomendado ao mudar de projeto)</label>
+<p style="margin:10px 0 0"><b>O que restaurar:</b></p>
+<label><input type=checkbox class=rg data-g=products checked> Produtos (com categorias, lojas, fotos e vídeos)</label>
+<label><input type=checkbox class=rg data-g=banners checked> Banners</label>
+<label><input type=checkbox class=rg data-g=look checked> Aparência e página inicial</label>
+<label><input type=checkbox class=rg data-g=clicks> Histórico de cliques</label>
+<button class=btn id=rb>Restaurar</button><p class=note id=rl></p></div>`;
+ bkNote(1).then(h=>{$('#bn').innerHTML=h}).catch(()=>{});
+ $('#bk').onclick=()=>run(async()=>{$('#bs').textContent='Gerando…';const tb={};for(const t of TB){if(t==='cr_click_events'&&!$('#bc').checked)continue;tb[t]=await allRows(t)}
+  dl(`backup-compras-rapidas-${stamp()}.json`,JSON.stringify({app:'compras-rapidas',version:1,date:new Date().toISOString(),tables:tb}),'application/json');
+  const {data:cur}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();await sb.from('cr_site_settings').upsert({id:1,data:{...(cur?.data||{}),last_backup:new Date().toISOString()}});$('#bn').innerHTML=await bkNote(1);
+  $('#bs').textContent='Backup baixado: '+Object.entries(tb).map(([k,v])=>k.slice(3)+' '+v.length).join(' · ')});
+ $('#bv').onclick=()=>run(async()=>{const [P,C,M,I]=await Promise.all(['cr_products','cr_categories','cr_merchants','cr_product_images'].map(allRows));
+  const cn=Object.fromEntries(C.map(c=>[c.id,c.name])),mn=Object.fromEntries(M.map(m=>[m.id,m.name])),im={};I.sort((a,b)=>a.sort-b.sort).forEach(i=>{if(!im[i.product_id])im[i.product_id]=i.url});
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',pr=v=>v==null?'':String(v).replace('.',',');
+  const L=[['nome','descricao','preco','preco_anterior','categoria','loja','link','destaque','oferta','imagem_url'].join(';')].concat(P.map(p=>[p.name,p.description,pr(p.price),pr(p.old_price),cn[p.category_id],mn[p.merchant_id],p.affiliate_url,p.featured?'sim':'nao',p.offer?'sim':'nao',im[p.id]].map(q).join(';')));
+  dl(`produtos-compras-rapidas-${stamp()}.csv`,'\ufeff'+L.join('\r\n'),'text/csv')});
+ $('#rb').onclick=()=>run(async()=>{const f=$('#rf').files[0];if(!f)throw new Error('Escolha o arquivo de backup (.json).');let b;try{b=JSON.parse(await f.text())}catch(e){throw new Error('Arquivo inválido.')}
+  if(b.app!=='compras-rapidas'||!b.tables)throw new Error('Este arquivo não é um backup da Compras Rápidas.');
+  const G={products:['cr_merchants','cr_categories','cr_products','cr_product_images','cr_product_videos'],banners:['cr_banners'],look:['cr_site_settings','cr_homepage_sections'],clicks:['cr_click_events']},sel=new Set();document.querySelectorAll('.rg:checked').forEach(c=>G[c.dataset.g].forEach(x=>sel.add(x)));if(!sel.size)throw new Error('Marque o que deseja restaurar.');
+  if(!confirm('Restaurar este backup? Registros com o mesmo código serão substituídos e nada será apagado.'))return;
+  const log=m=>{$('#rl').innerHTML+=m+'<br>'},mg=$('#rm').checked,pre=sb.storage.from('compras-rapidas').getPublicUrl('x').data.publicUrl.slice(0,-1),cache={};let fail=0,copied=0;$('#rl').innerHTML='';
+  const mig=async u=>{if(!mg||!u||typeof u!=='string'||!u.includes(BK)||u.startsWith(pre))return u;if(cache[u])return cache[u];
+   try{const r=await fetch(u);if(!r.ok)throw 0;const bl=await r.blob(),rel=u.split(BK)[1].split('?')[0];const {error}=await sb.storage.from('compras-rapidas').upload(decodeURIComponent(rel),bl,{upsert:true,contentType:bl.type});if(error)throw error;copied++;return cache[u]=pre+rel}catch(e){fail++;return u}};
+  const fix=async(t,r)=>{for(const k of FX[t]||[])r[k]=await mig(r[k]);if(t==='cr_site_settings'&&r.data)for(const k of ['logo','favicon'])if(r.data[k])r.data[k]=await mig(r.data[k])};
+  for(const t of TB){let rows=sel.has(t)?(b.tables[t]||[]):[];if(!rows.length)continue;log('Restaurando '+t.slice(3)+' ('+rows.length+')…');
+   if(t==='cr_click_events')rows=rows.map(({id,...r})=>r);
+   for(let i=0;i<rows.length;i+=200){const ch=rows.slice(i,i+200);for(const r of ch)await fix(t,r);
+    const {error}=t==='cr_click_events'?await sb.from(t).insert(ch):await sb.from(t).upsert(ch,{onConflict:PK[t]||'id'});if(error)throw new Error(t.slice(3)+': '+error.message)}}
+  log('<b>Concluído.</b>'+(mg?' Arquivos copiados: '+copied+(fail?' · não foi possível copiar: '+fail+' (continuam apontando para o endereço antigo)':''):''))})}
+
 init();
 </script></body></html>
