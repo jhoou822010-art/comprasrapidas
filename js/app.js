@@ -40,6 +40,7 @@ export async function list({offer,featured,q,cat,page=1,per=12}={}){
  if(q){q=q.replace(/[,()%*]/g,' ').trim();r=r.or(`name.ilike.%${q}%,description.ilike.%${q}%`)}
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
+export async function byIds(ids){if(!ids?.length)return [];const {data}=await sb.from('cr_products').select(SEL).eq('status','active').in('id',ids);const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
 export function card(p){const o=isOffer(p);
  return `<a class=card href="produto.html?id=${p.id}"><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy src="${esc(cover(p))}" alt="${esc(p.name)}"></div>
  <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b>${money(p.price)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}

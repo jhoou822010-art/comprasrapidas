@@ -11,10 +11,13 @@
 .nv{position:absolute;top:50%;transform:translateY(-50%);background:#0007;color:#fff;border:0;width:40px;height:40px;border-radius:50%;font-size:1.6rem;cursor:pointer}#pv{left:8px}#nx{right:8px}
 @media(max-width:600px){.nv{display:none}}
 .dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:8px}.dots button{width:10px;height:10px;border-radius:50%;border:0;background:#fff8;padding:0;cursor:pointer}.dots button.on{background:#fff}
+.pcw{position:relative}.pc{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:4px 2px 8px}.pc::-webkit-scrollbar{display:none}
+.pc .card{flex:0 0 calc(50% - 5px);scroll-snap-align:start}@media(min-width:640px){.pc .card{flex-basis:calc(33.333% - 7px)}}@media(min-width:1000px){.pc .card{flex-basis:calc(25% - 8px)}}
+#ppv{left:4px}#pnx{right:4px}
 </style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
-import {sb,boot,list,card,esc} from './js/app.js';
+import {sb,boot,list,card,esc,byIds} from './js/app.js';
 const S=await boot();
 const [{data:bn},{data:sec}]=await Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const bs=bn?.length?bn:[{title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'}];
@@ -23,7 +26,9 @@ const link=u=>/^(https?:\/\/|[\w.\/?=&%-]+$)/i.test(u||'')?u:'#';
 const slide=(b,i)=>{const T=i?'h2':'h1',txt=b.title||b.subtitle||b.button_text;
  return `<div class="sl${txt?'':' nt'}"${b.image_url?` style="background-image:url('${esc(cssUrl(b.image_url))}')"`:''}>${txt?`<div>${b.title?`<${T}>${esc(b.title)}</${T}>`:''}${b.subtitle?`<p>${esc(b.subtitle)}</p>`:''}${b.button_text?`<a class=hb href="${esc(link(b.button_url))}">${esc(b.button_text)} →</a>`:''}</div>`:''}</div>`};
 let h=`<div class=car><div class=trk id=trk>${bs.map(slide).join('')}</div>${bs.length>1?`<button class=nv id=pv aria-label=Anterior>‹</button><button class=nv id=nx aria-label=Próximo>›</button><div class=dots id=dots>${bs.map((_,i)=>`<button aria-label="Banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
-const seen=new Set();
+const seen=new Set();const cids=Array.isArray(S.carousel_ids)?S.carousel_ids:[];
+if(S.carousel_on!==false&&cids.length){const cp=await byIds(cids);if(cp.length){cp.forEach(p=>seen.add(p.id));
+ h+=`<div class=sh><h2>${esc(S.carousel_title||'Em destaque na vitrine')}</h2></div><div class=pcw><div class=pc id=pc>${cp.map(card).join('')}</div>${cp.length>2?'<button class=nv id=ppv aria-label=Anterior>‹</button><button class=nv id=pnx aria-label=Próximo>›</button>':''}</div>`}}
 for(const x of sec||[]){
  if(x.key==='categorias'){const {data}=await sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
   if(data?.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=categorias">Ver todas</a></div><div class=cats>${data.map(c=>`<a class=cat href="lista.html?tipo=categoria&slug=${esc(c.slug)}">${c.image_url?`<img loading=lazy src="${esc(c.image_url)}" alt="">`:`<i>${esc(c.name[0])}</i>`}${esc(c.name)}</a>`).join('')}</div>`;continue}
@@ -32,6 +37,11 @@ for(const x of sec||[]){
  if(data.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=${x.key==='novidades'?'busca':x.key}">Ver todos</a></div><div class=grid>${data.map(card).join('')}</div>`}
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';
 document.getElementById('m').innerHTML=h;
+{const pc=document.getElementById('pc');if(pc){const step=()=>{const c=pc.querySelector('.card');return c?c.getBoundingClientRect().width+10:300};
+ const nxt=()=>{if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
+ const a=document.getElementById('ppv'),b=document.getElementById('pnx');if(a){a.onclick=()=>pc.scrollBy({left:-step(),behavior:'smooth'});b.onclick=nxt}
+ let t;const st=()=>clearInterval(t),rs=()=>{st();if(pc.children.length>2&&!matchMedia('(prefers-reduced-motion:reduce)').matches)t=setInterval(nxt,4000)};
+ ['mouseenter','touchstart','focusin'].forEach(e=>pc.addEventListener(e,st,{passive:true}));['mouseleave','touchend','focusout'].forEach(e=>pc.addEventListener(e,rs,{passive:true}));rs()}}
 if(bs.length>1){const trk=document.getElementById('trk'),dots=[...document.querySelectorAll('#dots button')];let i=0,t;
  const go=n=>{i=(n+bs.length)%bs.length;trk.scrollTo({left:i*trk.clientWidth,behavior:'smooth'})};
  const mark=()=>{i=Math.round(trk.scrollLeft/trk.clientWidth);dots.forEach((d,k)=>d.classList.toggle('on',k===i))};
