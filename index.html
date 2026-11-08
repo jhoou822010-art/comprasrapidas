@@ -1,4 +1,4 @@
-<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><link rel=stylesheet href=css/style.css>
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><link rel=stylesheet href=css/style.css><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content="Compras Rápidas">
 <style>
 .car{position:relative;margin:14px 0;border-radius:14px;overflow:hidden}
 .trk{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;scroll-behavior:smooth}.trk::-webkit-scrollbar{display:none}
@@ -17,7 +17,7 @@
 </style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
-import {sb,boot,list,card,esc,byIds} from './js/app.js';
+import {sb,boot,list,card,esc,byIds,decorHero} from './js/app.js';
 const S=await boot();
 const [{data:bn},{data:sec}]=await Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const bs=bn?.length?bn:[{title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'}];
@@ -36,7 +36,7 @@ for(const x of sec||[]){
  const data=all.filter(p=>!seen.has(p.id)).slice(0,q);data.forEach(p=>seen.add(p.id));
  if(data.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=${x.key==='novidades'?'busca':x.key}">Ver todos</a></div><div class=grid>${data.map(card).join('')}</div>`}
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';
-document.getElementById('m').innerHTML=h;
+document.getElementById('m').innerHTML=h;decorHero();
 {const pc=document.getElementById('pc');if(pc){const step=()=>{const c=pc.querySelector('.card');return c?c.getBoundingClientRect().width+10:300};
  const nxt=()=>{if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
  const a=document.getElementById('ppv'),b=document.getElementById('pnx');if(a){a.onclick=()=>pc.scrollBy({left:-step(),behavior:'smooth'});b.onclick=nxt}
