@@ -18,21 +18,27 @@
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
 import {sb,boot,list,card,esc,byIds,decorHero} from './js/app.js';
+const pre=Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const S=await boot();
-const [{data:bn},{data:sec}]=await Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
+const [{data:bn},{data:sec}]=await pre;
 const bs=bn?.length?bn:[{title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'}];
 const cssUrl=u=>encodeURI(u).replace(/[()']/g,c=>'%'+c.charCodeAt(0).toString(16));
 const link=u=>/^(https?:\/\/|[\w.\/?=&%-]+$)/i.test(u||'')?u:'#';
 const slide=(b,i)=>{const T=i?'h2':'h1',txt=b.title||b.subtitle||b.button_text;
  return `<div class="sl${txt?'':' nt'}"${b.image_url?` style="background-image:url('${esc(cssUrl(b.image_url))}')"`:''}>${txt?`<div>${b.title?`<${T}>${esc(b.title)}</${T}>`:''}${b.subtitle?`<p>${esc(b.subtitle)}</p>`:''}${b.button_text?`<a class=hb href="${esc(link(b.button_url))}">${esc(b.button_text)} →</a>`:''}</div>`:''}</div>`};
 let h=`<div class=car><div class=trk id=trk>${bs.map(slide).join('')}</div>${bs.length>1?`<button class=nv id=pv aria-label=Anterior>‹</button><button class=nv id=nx aria-label=Próximo>›</button><div class=dots id=dots>${bs.map((_,i)=>`<button aria-label="Banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
-const seen=new Set();const cids=Array.isArray(S.carousel_ids)?S.carousel_ids:[];
-if(S.carousel_on!==false&&cids.length){const cp=await byIds(cids);if(cp.length){cp.forEach(p=>seen.add(p.id));
- h+=`<div class=sh><h2>${esc(S.carousel_title||'Em destaque na vitrine')}</h2></div><div class=pcw><div class=pc id=pc>${cp.map(card).join('')}</div>${cp.length>2?'<button class=nv id=ppv aria-label=Anterior>‹</button><button class=nv id=pnx aria-label=Próximo>›</button>':''}</div>`}}
-for(const x of sec||[]){
- if(x.key==='categorias'){const {data}=await sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
+const seen=new Set();const cids=Array.isArray(S.carousel_ids)?S.carousel_ids:[];const useCar=S.carousel_on!==false&&cids.length;
+// busca o carrossel e todas as seções ao mesmo tempo (antes era uma depois da outra)
+let extra=useCar?cids.length:0;
+const jobs=(sec||[]).map(x=>{if(x.key==='categorias')return sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
+ const q=x.qty||8,per=q+extra;extra+=q;return list({offer:x.key==='ofertas',featured:x.key==='destaques',per})});
+const [cp,...res]=await Promise.all([useCar?byIds(cids):[],...jobs]);
+if(cp.length){cp.forEach(p=>seen.add(p.id));
+ h+=`<div class=sh><h2>${esc(S.carousel_title||'Em destaque na vitrine')}</h2></div><div class=pcw><div class=pc id=pc>${cp.map(card).join('')}</div>${cp.length>2?'<button class=nv id=ppv aria-label=Anterior>‹</button><button class=nv id=pnx aria-label=Próximo>›</button>':''}</div>`}
+for(const [n,x] of (sec||[]).entries()){
+ if(x.key==='categorias'){const {data}=res[n];
   if(data?.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=categorias">Ver todas</a></div><div class=cats>${data.map(c=>`<a class=cat href="lista.html?tipo=categoria&slug=${esc(c.slug)}">${c.image_url?`<img loading=lazy src="${esc(c.image_url)}" alt="">`:`<i>${esc(c.name[0])}</i>`}${esc(c.name)}</a>`).join('')}</div>`;continue}
- const q=x.qty||8;const {data:all}=await list({offer:x.key==='ofertas',featured:x.key==='destaques',per:q+seen.size});
+ const q=x.qty||8;const all=res[n].data;
  const data=all.filter(p=>!seen.has(p.id)).slice(0,q);data.forEach(p=>seen.add(p.id));
  if(data.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=${x.key==='novidades'?'busca':x.key}">Ver todos</a></div><div class=grid>${data.map(card).join('')}</div>`}
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';

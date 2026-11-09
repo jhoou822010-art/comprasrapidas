@@ -2,8 +2,8 @@
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
 import {sb,boot,list,card,esc,money,qs,isOffer,showOld,$,safeUrl} from './js/app.js';
-const S=await boot();const m=$('#m');
-const {data:p}=await sb.from('cr_products').select('*,merchants:cr_merchants(name),categories:cr_categories(name),product_images:cr_product_images(url,sort),product_videos:cr_product_videos(url,sort)').eq('id',qs('id')||'').eq('status','active').maybeSingle();
+const pq=Promise.resolve(sb.from('cr_products').select('*,merchants:cr_merchants(name),categories:cr_categories(name),product_images:cr_product_images(url,sort),product_videos:cr_product_videos(url,sort)').eq('id',qs('id')||'').eq('status','active').maybeSingle());
+const S=await boot();const m=$('#m');const {data:p}=await pq;
 if(!p){m.innerHTML='<p>Produto não encontrado.</p><a class=btn href=index.html>Voltar ao início</a>';throw 0}
 document.title=p.name+' | '+S.name;
 const imgs=[...p.product_images].sort((a,b)=>a.sort-b.sort).map(i=>i.url);
