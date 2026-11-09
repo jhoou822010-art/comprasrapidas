@@ -45,17 +45,22 @@ async function dash(el){const now=new Date().toISOString();
  el.innerHTML=await bkNote()+`<h2>Painel</h2><div class=kpi>${[['Produtos',a],['Ativos',b],['Arquivados',c],['Categorias',d],['Em destaque',e],['Em oferta',f],['Cliques (total)',g]].map(([k,v])=>`<div><b>${v}</b>${k}</div>`).join('')}</div>
  <div class=box><h3>Mais acessados (30 dias)</h3>${Object.entries(top).sort((x,y)=>y[1]-x[1]).slice(0,5).map(([n,v])=>`<p>${esc(n)} — <b>${v}</b></p>`).join('')||'<p>Sem cliques ainda.</p>'}<p class=note>Cliques não representam vendas. Confira vendas e comissões nos painéis oficiais dos programas de afiliados.</p></div>`}
 // ---------- Produtos
+// produtos no banner do topo ficam em cr_site_settings.data.banner_ids
+const BMAX=10;
+const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle()).data?.data||{};
+async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_ids||[]).filter(i=>i!==pid);if(on)ids.push(pid);
+ const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:ids}});if(error)throw error}
 async function prods(el,term='',st=''){
  let q=sb.from('cr_products').select('id,name,price,status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)').order('created_at',{ascending:false}).limit(100);
- if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);const {data}=await q;
- el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn sm" id=pn>+ Novo produto</button></div>
- <div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${(data||[]).map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}<td>${money(p.price)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join('')}</table></div>`;
+ if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);const [{data},cfg]=await Promise.all([q,getSet()]);const BI=new Set(cfg.banner_ids||[]);
+ el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
+ <div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${(data||[]).map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${money(p.price)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join('')}</table></div>`;
  $('#ps').value=st;$('#pb').onclick=()=>prods(el,$('#pt').value,$('#ps').value);$('#pn').onclick=()=>run(()=>pform(el));
  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>run(()=>pform(el,b.dataset.e)));
  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>run(async()=>{await sb.from('cr_products').update({status:b.dataset.s==='archived'?'active':'archived'}).eq('id',b.dataset.a);prods(el,term,st)}));
  el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>run(async()=>{if(!confirm('Excluir este produto definitivamente?'))return;const {error}=await sb.from('cr_products').delete().eq('id',b.dataset.d);if(error)throw error;prods(el,term,st)}))}
 async function pform(el,id){
- const [{data:cs},{data:ms}]=await Promise.all([sb.from('cr_categories').select('id,name').order('sort'),sb.from('cr_merchants').select('name')]);
+ const [{data:cs},{data:ms},cfg]=await Promise.all([sb.from('cr_categories').select('id,name').order('sort'),sb.from('cr_merchants').select('name'),getSet()]);const bids=cfg.banner_ids||[],inB=!!id&&bids.includes(id);
  let p={status:'active'},imgs=[],vids=['','',''];
  if(id){({data:p}=await sb.from('cr_products').select('*,merchants:cr_merchants(name),product_images:cr_product_images(url,sort),product_videos:cr_product_videos(url,sort)').eq('id',id).single());
   imgs=[...p.product_images].sort((a,b)=>a.sort-b.sort).map(i=>({url:i.url}));[...p.product_videos].sort((a,b)=>a.sort-b.sort).forEach((v,i)=>vids[i]=v.url)}
@@ -65,7 +70,7 @@ async function pform(el,id){
  <label>Categoria*<select id=c><option value="">Escolha…</option>${(cs||[]).map(c=>`<option value=${c.id} ${c.id===p.category_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
  <label>Loja parceira*<input id=m list=ml value="${esc(p.merchants?.name||'')}" placeholder="Shopee, Mercado Livre…"><datalist id=ml>${(ms||[]).map(m=>`<option>${esc(m.name)}`).join('')}</datalist></label></div>
  <label>Link de afiliado* (https://…)<input id=u value="${esc(p.affiliate_url||'')}"></label>
- <div class=row><label><input type=checkbox id=f ${p.featured?'checked':''}> Produto em destaque</label><label><input type=checkbox id=o ${p.offer?'checked':''}> Produto em oferta</label>
+ <div class=row><label><input type=checkbox id=f ${p.featured?'checked':''}> Produto em destaque</label><label><input type=checkbox id=o ${p.offer?'checked':''}> Produto em oferta</label><label><input type=checkbox id=bnr ${inB?'checked':''}> 🖼️ Mostrar no banner do topo da página inicial</label><p class=note>Aparece como um slide do banner grande, com a foto, o nome, o preço e o botão “Ver produto”. Só aparece se o produto estiver ativo.</p>
  <label>Início da oferta<input type=datetime-local id=os value="${dt(p.offer_start)}"></label><label>Fim da oferta<input type=datetime-local id=oe value="${dt(p.offer_end)}"></label>
  <label>Status<select id=st><option value=active>Ativo</option><option value=inactive>Inativo</option><option value=archived>Arquivado</option></select></label></div></div>
  <div class=box><h3>Fotos (até 10) — a primeira é a capa</h3><div class=ims id=im></div><label>Adicionar fotos<input type=file id=fi accept="image/*" multiple></label></div>
@@ -82,6 +87,7 @@ async function pform(el,id){
   const name=$('#n').value.trim(),url=$('#u').value.trim(),mn=$('#m').value.trim(),pr=num($('#pr').value),po=num($('#po').value);
   if(!name||!$('#c').value||!mn)throw new Error('Preencha nome, categoria e loja.');if(!/^https?:\/\//i.test(url))throw new Error('O link de afiliado deve começar com https://');
   if(pr!=null&&isNaN(pr)||po!=null&&isNaN(po))throw new Error('Preço atual ou anterior inválido. Use só números, por exemplo 23,49.');if(po!=null&&pr!=null&&po<=pr&&!confirm('Preço anterior não é maior que o atual; o desconto não será exibido. Continuar?'))return;
+  const wantB=$('#bnr').checked;if(wantB&&!inB&&bids.length>=BMAX)throw new Error('O banner do topo já tem '+BMAX+' produtos. Desmarque algum antes (aba Banners).');
   $('#sv').disabled=true;$('#sv').textContent='Salvando…';
   let {data:m}=await sb.from('cr_merchants').select('id').ilike('name',mn).maybeSingle();if(!m){const r=await sb.from('cr_merchants').insert({name:mn}).select('id').single();if(r.error)throw r.error;m=r.data}
   const row={name,description:$('#d').value,price:pr,old_price:po,category_id:$('#c').value,merchant_id:m.id,affiliate_url:url,featured:$('#f').checked,offer:$('#o').checked,
@@ -91,7 +97,8 @@ async function pform(el,id){
   await sb.from('cr_product_images').delete().eq('product_id',pid);if(imgs.length)await sb.from('cr_product_images').insert(imgs.map((x,i)=>({product_id:pid,url:x.url,sort:i,is_cover:i===0})));
   const vs=[...el.querySelectorAll('[data-v]')].map(i=>i.value.trim()).filter(Boolean);if(vs.some(v=>!/^https?:\/\//i.test(v)))throw new Error('Link de vídeo inválido.');
   await sb.from('cr_product_videos').delete().eq('product_id',pid);if(vs.length)await sb.from('cr_product_videos').insert(vs.map((url,i)=>({product_id:pid,url,sort:i})));
-  alert('Produto salvo!');prods(el)})}
+  if(wantB!==inB)await setBanner(pid,wantB);
+  alert('Produto salvo!'+(wantB&&$('#st').value!=='active'?' Atenção: o produto não está ativo, então não aparece no banner.':''));prods(el)})}
 // ---------- Editor genérico (categorias, banners, seções)
 async function editor(el,table,fields,o={}){const pk=o.pk||'id';const {data:rows}=await sb.from(table).select('*').order(o.order||'sort');
  const fld=(k,l,t,v)=>t==='bool'?`<label><input type=checkbox data-k=${k} ${v?'checked':''}> ${l}</label>`:t==='img'?`<label>${l}<img class=thumb src="${esc(v||'')}" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'"><input type=file accept="image/*" data-f=${k}></label><input type=hidden data-k=${k} value="${esc(v||'')}">`:`<label>${l}<input data-k=${k} data-t=${t} ${t==='num'?'type=number':''} value="${esc(v??'')}"></label>`;
@@ -101,9 +108,17 @@ async function editor(el,table,fields,o={}){const pk=o.pk||'id';const {data:rows
  el.querySelectorAll('.box[data-id]').forEach(b=>{const id=b.dataset.id;
   b.querySelector('[data-save]').onclick=()=>run(async()=>{const row={};b.querySelectorAll('[data-k]').forEach(i=>{const k=i.dataset.k;row[k]=i.type==='checkbox'?i.checked:i.dataset.t==='num'||i.type==='number'?num(i.value)||0:(i.value||null)});
    if(o.req&&!row[o.req])throw new Error('Preencha o campo obrigatório.');let r;if(id)r=await sb.from(table).update(row).eq(pk,id);else{if(o.pre)o.pre(row);r=await sb.from(table).insert(row)}if(r.error)throw r.error;editor(el,table,fields,o)});
-  const d=b.querySelector('[data-del]');if(d)d.onclick=()=>run(async()=>{if(!id){return}if(!confirm('Excluir?'))return;const r=await sb.from(table).delete().eq(pk,id);if(r.error)throw new Error(r.error.code==='23503'?'Existem produtos nesta categoria. Mova ou remova-os antes.':r.error.message);editor(el,table,fields,o)})})}
+  const d=b.querySelector('[data-del]');if(d)d.onclick=()=>run(async()=>{if(!id){return}if(!confirm('Excluir?'))return;const r=await sb.from(table).delete().eq(pk,id);if(r.error)throw new Error(r.error.code==='23503'?'Existem produtos nesta categoria. Mova ou remova-os antes.':r.error.message);editor(el,table,fields,o)})});o.after?.()}
 const cats=el=>editor(el,'cr_categories',[['name','Nome','text'],['image_url','Imagem','img'],['sort','Ordem','num'],['active','Ativa','bool']],{req:'name',head:'<h2>Categorias</h2>',pre:r=>r.slug=slug(r.name)});
-const bans=el=>editor(el,'cr_banners',[['title','Título','text'],['subtitle','Subtítulo','text'],['image_url','Imagem','img'],['button_text','Texto do botão','text'],['button_url','Link do botão','text'],['sort','Ordem','num'],['active','Ativo','bool']],{head:'<h2>Banners</h2><p class=note>O banner ativo de menor ordem aparece na página inicial.</p>'});
+async function bans(el){const cfg=await getSet(),ids=cfg.banner_ids||[];let P={};
+ if(ids.length){const {data}=await sb.from('cr_products').select('id,name,price,status').in('id',ids);P=Object.fromEntries((data||[]).map(p=>[p.id,p]))}
+ const L=ids.filter(i=>P[i]);
+ const top=`<h2>Banners</h2><div class=box><h3>🖼️ Produtos no banner do topo</h3><p class=note>Para colocar um produto aqui, abra o cadastro dele (aba Produtos) e marque “Mostrar no banner do topo”. Eles aparecem depois dos banners comuns, nesta ordem.</p>${L.map((i,k)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #e3e9f2;padding:6px 0"><span>${esc(P[i].name)} <small class=note>${P[i].price!=null?money(P[i].price):''}${P[i].status!=='active'?' · não aparece (produto '+P[i].status+')':''}</small></span><span><button class="btn alt sm" data-bu="${k}">▲</button><button class="btn alt sm" data-bd="${k}">▼</button><button class="btn alt sm" data-bx="${k}">Tirar</button></span></div>`).join('')||'<p>Nenhum produto no banner.</p>'}</div><h3>Banners comuns</h3>`;
+ const wire=()=>el.querySelectorAll('[data-bu],[data-bd],[data-bx]').forEach(b=>b.onclick=()=>run(async()=>{const d=b.dataset,a=[...L];
+  if(d.bx!==undefined)a.splice(+d.bx,1);else{const k=+(d.bu??d.bd),j=d.bu!==undefined?k-1:k+1;if(j<0||j>=a.length)return;[a[k],a[j]]=[a[j],a[k]]}
+  const cur=await getSet();const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:a}});if(error)throw error;bans(el)}));
+ await bansEd(el,top,wire)}
+const bansEd=(el,top,wire)=>editor(el,'cr_banners',[['title','Título','text'],['subtitle','Subtítulo','text'],['image_url','Imagem','img'],['button_text','Texto do botão','text'],['button_url','Link do botão','text'],['sort','Ordem','num'],['active','Ativo','bool']],{after:wire,head:top+'<p class=note>Os banners ativos passam no topo da página inicial, do menor para o maior número de “Ordem”.</p>'});
 const home=el=>editor(el,'cr_homepage_sections',[['title','Título da seção','text'],['qty','Quantidade exibida','num'],['sort','Ordem','num'],['visible','Visível','bool']],{pk:'key',noNew:true,noDel:true,head:'<h2>Página inicial</h2><p class=note>Seções: ofertas, destaques, novidades e categorias. A oferta/destaque de cada produto é definida no cadastro do produto.</p>'});
 // ---------- Aparência / configurações
 async function look(el){const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).single();const s=data?.data||{};

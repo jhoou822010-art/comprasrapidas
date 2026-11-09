@@ -14,25 +14,35 @@
 .pcw{position:relative}.pc{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:4px 2px 8px}.pc::-webkit-scrollbar{display:none}
 .pc .card{flex:0 0 calc(50% - 5px);scroll-snap-align:start}@media(min-width:640px){.pc .card{flex-basis:calc(33.333% - 7px)}}@media(min-width:1000px){.pc .card{flex-basis:calc(25% - 8px)}}
 #ppv{left:4px}#pnx{right:4px}
+.sl.ps{justify-content:space-between;gap:12px}.sl.ps::before{background:linear-gradient(90deg,#0007,#0000 75%)}.sl.ps>div{flex:1 1 auto;min-width:0}
+.sl.ps h1,.sl.ps h2{font-size:clamp(1.15rem,4.5vw,2.3rem);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px #0008;padding:2px 0}
+.ppr{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}.ppr b{font-size:clamp(1.4rem,5vw,2.4rem);text-shadow:0 1px 4px #0008}.ppr s{opacity:.85}
+.ptag{display:inline-block;background:#e5384f;color:#fff;font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:8px}
+.pimg{position:relative;flex:0 0 auto;width:40%;max-width:300px;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:14px;margin:20px 56px 40px 0;box-shadow:0 6px 20px #0005}
+@media(max-width:600px){.sl.ps>div{padding:20px 0 40px 16px}.pimg{width:42%;margin:16px 12px 40px 0}}
 </style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
-import {sb,boot,list,card,esc,byIds,decorHero} from './js/app.js';
+import {sb,boot,list,card,esc,byIds,decorHero,cover,money,isOffer,showOld} from './js/app.js';
 const pre=Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const S=await boot();
 const [{data:bn},{data:sec}]=await pre;
-const bs=bn?.length?bn:[{title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'}];
 const cssUrl=u=>encodeURI(u).replace(/[()']/g,c=>'%'+c.charCodeAt(0).toString(16));
 const link=u=>/^(https?:\/\/|[\w.\/?=&%-]+$)/i.test(u||'')?u:'#';
 const slide=(b,i)=>{const T=i?'h2':'h1',txt=b.title||b.subtitle||b.button_text;
  return `<div class="sl${txt?'':' nt'}"${b.image_url?` style="background-image:url('${esc(cssUrl(b.image_url))}')"`:''}>${txt?`<div>${b.title?`<${T}>${esc(b.title)}</${T}>`:''}${b.subtitle?`<p>${esc(b.subtitle)}</p>`:''}${b.button_text?`<a class=hb href="${esc(link(b.button_url))}">${esc(b.button_text)} →</a>`:''}</div>`:''}</div>`};
-let h=`<div class=car><div class=trk id=trk>${bs.map(slide).join('')}</div>${bs.length>1?`<button class=nv id=pv aria-label=Anterior>‹</button><button class=nv id=nx aria-label=Próximo>›</button><div class=dots id=dots>${bs.map((_,i)=>`<button aria-label="Banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
-const seen=new Set();const cids=Array.isArray(S.carousel_ids)?S.carousel_ids:[];const useCar=S.carousel_on!==false&&cids.length;
+const bids=Array.isArray(S.banner_ids)?S.banner_ids:[];const seen=new Set();const cids=Array.isArray(S.carousel_ids)?S.carousel_ids:[];const useCar=S.carousel_on!==false&&cids.length;
 // busca o carrossel e todas as seções ao mesmo tempo (antes era uma depois da outra)
 let extra=useCar?cids.length:0;
 const jobs=(sec||[]).map(x=>{if(x.key==='categorias')return sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
  const q=x.qty||8,per=q+extra;extra+=q;return list({offer:x.key==='ofertas',featured:x.key==='destaques',per})});
-const [cp,...res]=await Promise.all([useCar?byIds(cids):[],...jobs]);
+const [bp,cp,...res]=await Promise.all([bids.length?byIds(bids):[],useCar?byIds(cids):[],...jobs]);
+// produto no banner do topo: foto, nome, preço e botão para a página do produto
+const pslide=(p,i)=>{const T=i?'h2':'h1';
+ return `<div class="sl ps"><div>${isOffer(p)?'<span class=ptag>Oferta</span>':''}<${T}>${esc(p.name)}</${T}><p class=ppr>${p.price!=null?`<b>${money(p.price)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</p><a class=hb href="produto.html?id=${esc(p.id)}">Ver produto →</a></div>${p.product_images?.length?`<img class=pimg src="${esc(cover(p))}" alt="${esc(p.name)}">`:''}</div>`};
+const bs=[...(bn||[]).map(b=>i=>slide(b,i)),...bp.map(p=>i=>pslide(p,i))];
+if(!bs.length)bs.push(i=>slide({title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'},i));
+let h=`<div class=car><div class=trk id=trk>${bs.map((f,i)=>f(i)).join('')}</div>${bs.length>1?`<button class=nv id=pv aria-label=Anterior>‹</button><button class=nv id=nx aria-label=Próximo>›</button><div class=dots id=dots>${bs.map((_,i)=>`<button aria-label="Banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
 if(cp.length){cp.forEach(p=>seen.add(p.id));
  h+=`<div class=sh><h2>${esc(S.carousel_title||'Em destaque na vitrine')}</h2></div><div class=pcw><div class=pc id=pc>${cp.map(card).join('')}</div>${cp.length>2?'<button class=nv id=ppv aria-label=Anterior>‹</button><button class=nv id=pnx aria-label=Próximo>›</button>':''}</div>`}
 for(const [n,x] of (sec||[]).entries()){
