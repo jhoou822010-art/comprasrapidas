@@ -100,6 +100,7 @@ export async function boot(){
  {const here=(location.pathname.split('/').pop()||'index.html')+location.search;document.querySelectorAll('header nav a').forEach(a=>{if(a.getAttribute('href')===here){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
+ if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e))}
  return S}
 const SEL='id,name,price,price_max,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
 export const isOffer=p=>p.offer&&(!p.offer_end||new Date(p.offer_end)>new Date())&&(!p.offer_start||new Date(p.offer_start)<=new Date());
@@ -154,3 +155,51 @@ export function contactCfg(s){const c=s?.contact;if(c&&Array.isArray(c.items))re
  if(s?.instagram)items.push({type:'instagram',label:'Instagram',value:s.instagram,on:true});if(s?.facebook)items.push({type:'facebook',label:'Facebook',value:s.facebook,on:true});
  return {title:'Fale com a gente',subtitle:s?.contact_text||'Estamos aqui para ajudar. Escolha o canal que preferir.',store_name:'',intro:'',about:s?.about||'',hours:'',logo:'',show_logo:true,cover:'',
   blocks:Object.keys(CBLOCKS).map(k=>({k,on:true})),items}}
+
+// ---- notificações push (receber ofertas no celular)
+export const SW_URL=new URL('../sw.js?u='+encodeURIComponent(U)+'&k='+encodeURIComponent(K),import.meta.url).href;
+export const pushOk=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+export const isIOS=()=>/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+export const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+let _reg=null;
+export function swReg(){if(!('serviceWorker' in navigator))return Promise.resolve(null);
+ return _reg||(_reg=navigator.serviceWorker.register(SW_URL,{scope:new URL('../',import.meta.url).pathname}).then(()=>navigator.serviceWorker.ready).catch(e=>{console.warn('SW',e);_reg=null;return null}))}
+// chave VAPID em base64url -> Uint8Array (formato exigido pelo pushManager.subscribe)
+export function b64uToBytes(s){s=String(s).trim();const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
+async function saveSub(sub){const j=sub.toJSON();const {error}=await sb.rpc('cr_push_subscribe',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_user_agent:navigator.userAgent.slice(0,300)});if(error)throw error;return sub}
+export async function currentSub(){if(!pushOk())return null;const r=await swReg();return r?r.pushManager.getSubscription():null}
+// só chame depois de um toque do visitante (o navegador exige)
+export async function pushSubscribe(){
+ if(!pushOk())throw new Error(isIOS()&&!isStandalone()?'No iPhone, adicione o site à Tela de Início e abra pelo ícone para ativar.':'Este navegador não aceita notificações.');
+ const perm=await Notification.requestPermission();
+ if(perm!=='granted')throw new Error(perm==='denied'?'As notificações estão bloqueadas. Libere nas configurações do navegador para este site.':'Permissão não concedida.');
+ const r=await swReg();if(!r)throw new Error('Não foi possível preparar as notificações neste aparelho.');
+ let sub=await r.pushManager.getSubscription();
+ if(!sub){let key=S.vapid_public_key;if(!key){const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();key=data?.data?.vapid_public_key}
+  if(!key)throw new Error('Notificações ainda não configuradas na loja.');
+  sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uToBytes(key)})}
+ return saveSub(sub)}
+export async function pushUnsubscribe(){const sub=await currentSub();if(!sub)return;await sb.rpc('cr_push_unsubscribe',{p_endpoint:sub.endpoint});await sub.unsubscribe()}
+function iosHelp(){const d=document.createElement('div');d.id='pnh';
+ d.innerHTML=`<div role=dialog aria-modal=true aria-labelledby=pnht><h3 id=pnht>📲 Ativar ofertas no iPhone</h3><p>No iPhone, as notificações só funcionam com o site instalado na Tela de Início:</p>
+ <ol><li>Toque em <b>Compartilhar</b> <span aria-hidden=true>⬆️</span> (na barra do Safari).</li><li>Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.</li><li>Abra o <b>Compras Rápidas</b> pelo novo ícone e toque de novo em <b>Receber ofertas no celular</b>.</li></ol>
+ <p class=note>Precisa do iOS 16.4 ou mais novo.</p><button class="btn big" type=button>Entendi</button></div>`;
+ d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d);d.querySelector('button').focus()}
+const PN_KEY='cr_push_dismiss';
+async function pushBar(){
+ const ios=isIOS(),inst=isStandalone();
+ if(!pushOk()&&!(ios&&!inst))return;          // navegador sem suporte: não mostra nada
+ if(pushOk()&&Notification.permission==='denied')return;
+ try{if(+localStorage.getItem(PN_KEY)>Date.now())return}catch(_){}
+ if(pushOk()){const sub=await currentSub().catch(()=>null);
+  if(sub){if(Notification.permission==='granted')saveSub(sub).catch(()=>{});return}} // já inscrito: esconde (e confirma no banco)
+ document.head.insertAdjacentHTML('beforeend',`<style>#pnb{background:#fff;border-bottom:1px solid #cdd8e8;color:#12213a}#pnb .w{display:flex;align-items:center;gap:10px;padding:8px 12px;flex-wrap:wrap}#pnb p{margin:0;flex:1 1 180px;font-size:.92rem}#pnb .btn{padding:8px 14px;font-weight:700;font-size:.92rem}#pnb .x{background:none;border:0;font-size:1.4rem;line-height:1;color:#556;cursor:pointer;min-width:44px;min-height:44px}
+#pnh{position:fixed;inset:0;background:#000a;z-index:60;display:grid;place-items:center;padding:16px}#pnh>div{background:#fff;border-radius:14px;padding:18px;max-width:420px;width:100%}#pnh h3{margin:0 0 8px;color:var(--c1)}#pnh ol{padding-left:20px}#pnh li{margin:6px 0}</style>`);
+ const bar=document.createElement('div');bar.id='pnb';
+ bar.innerHTML=`<div class=w><p>🔔 <b>Receba as melhores ofertas no celular.</b> Avisamos quando surgir novidade.</p><button class=btn type=button id=pnok>Receber ofertas no celular</button><button class=x type=button id=pnx aria-label="Agora não">×</button></div>`;
+ const h=$('#hdr');(h?h:document.body).insertAdjacentElement(h?'afterend':'afterbegin',bar);
+ $('#pnx').onclick=()=>{try{localStorage.setItem(PN_KEY,Date.now()+7*864e5)}catch(_){}bar.remove();fitFx()};
+ $('#pnok').onclick=async()=>{if(ios&&!inst)return iosHelp();const b=$('#pnok');b.disabled=true;b.textContent='Ativando…';
+  try{await pushSubscribe();bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
+  catch(e){b.disabled=false;b.textContent='Receber ofertas no celular';alert(e.message||e);if(Notification.permission==='denied'){bar.remove();fitFx()}}};
+ fitFx()}

@@ -3,10 +3,14 @@
 label{display:block;margin:8px 0;font-size:.9rem}input,select,textarea{width:100%;padding:10px;border:1px solid #cdd8e8;border-radius:8px;font:inherit;background:#fff}input[type=checkbox]{width:auto}textarea{min-height:90px}
 .row{display:grid;gap:0 12px}@media(min-width:700px){.row{grid-template-columns:1fr 1fr}}.thumb{width:70px;height:70px;object-fit:cover;border-radius:8px}.ims{display:flex;flex-wrap:wrap;gap:8px}.ims div{text-align:center}.ims button{padding:4px 7px}
 table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;border-bottom:1px solid #e3e9f2;text-align:left;font-size:.9rem}.tw{overflow-x:auto}.bar{background:var(--c2);height:12px;border-radius:6px}.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.kpi div{background:#fff;border-radius:12px;padding:12px}.kpi b{font-size:1.6rem;color:var(--c1);display:block}
-.sm{padding:6px 10px;min-height:0;font-size:.85rem;margin:2px}</style></head>
+.sm{padding:6px 10px;min-height:0;font-size:.85rem;margin:2px}
+.nfw{display:grid;gap:16px}@media(min-width:900px){.nfw{grid-template-columns:1fr 300px}}
+.phone{width:270px;margin:auto;background:#111;border-radius:36px;padding:12px;box-shadow:0 6px 20px #0004}.pscr{background:linear-gradient(160deg,#1e3a8a,#6b21a8 60%,#be185d);border-radius:26px;min-height:440px;padding:14px 10px}.ptime{color:#fff;text-align:center;font-size:2.6rem;font-weight:300;margin:14px 0 18px}
+.pn{background:#ffffffe6;border-radius:16px;padding:10px 12px;color:#111;font-size:.85rem}.pnh{display:flex;align-items:center;gap:6px;font-size:.72rem;color:#555;margin-bottom:4px}.pnh img{width:18px;height:18px;border-radius:4px}.pnh small{margin-left:auto}.pn b{display:block;word-break:break-word}.pn p{margin:2px 0 0;white-space:pre-line;word-break:break-word}.pn #pvi{width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:8px}
+</style></head>
 <body><div id=app class=w></div>
 <script type=module>
-import {sb,$,esc,money,priceTxt,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref} from '../js/app.js';
+import {sb,$,esc,money,priceTxt,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref,pushSubscribe,currentSub} from '../js/app.js';
 const A=$('#app');const W=window;
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,6);
 const num=v=>{if(v===''||v==null)return null;let s=String(v).replace(/[^\d.,]/g,'');if(!s)return NaN;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)};
@@ -30,7 +34,7 @@ async function init(){if(!CONFIGURED){A.innerHTML='<div class=box><h2>Não confi
  const {data}=await sb.from('cr_admins').select('user_id').eq('user_id',session.user.id);
  if(!data?.length){const {data:ok}=await sb.rpc('cr_claim_admin');if(ok)return init()}
  if(!data?.length){A.innerHTML='<div class=box><h2>Sem permissão</h2><p>Este usuário não está na lista de administradores (veja o Guia, passo do administrador).</p>'+out()+'</div>';return}
- const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Carrossel:carr,Temas:temas,Contato:contato,Aparência:look,Estatísticas:stats,Importar:imp,Backup:backup};
+ const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Carrossel:carr,Temas:temas,Contato:contato,Aparência:look,Estatísticas:stats,Notificações:notif,Importar:imp,Backup:backup};
  A.innerHTML=`<div class=ad>${Object.keys(T).map(k=>`<button data-t="${k}">${k}</button>`).join('')}<button onclick="lo()">Sair</button></div><div id=main></div>`;
  A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{A.querySelectorAll('.ad button').forEach(x=>x.classList.remove('on'));b.classList.add('on');run(()=>T[b.dataset.t]($('#main')))});
  A.querySelector('[data-t]').click()}
@@ -283,6 +287,75 @@ function backup(el){el.innerHTML=`<div id=bn></div><h2>Backup e restauração</h
    for(let i=0;i<rows.length;i+=200){const ch=rows.slice(i,i+200);for(const r of ch)await fix(t,r);
     const {error}=t==='cr_click_events'?await sb.from(t).insert(ch):await sb.from(t).upsert(ch,{onConflict:PK[t]||'id'});if(error)throw new Error(t.slice(3)+': '+error.message)}}
   log('<b>Concluído.</b>'+(mg?' Arquivos copiados: '+copied+(fail?' · não foi possível copiar: '+fail+' (continuam apontando para o endereço antigo)':''):''))})}
+
+// ---------- Notificações (push)
+const BR='America/Sao_Paulo',brDate=d=>d?new Date(d).toLocaleString('pt-BR',{timeZone:BR,day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+const brInput=(ms=Date.now())=>new Date(ms-3*36e5).toISOString().slice(0,16); // "agora" no horário de Brasília para o campo data/hora
+const brParse=v=>new Date(v+':00-03:00');
+const NST={draft:'📝 Rascunho',scheduled:'⏰ Agendada',sending:'📤 Enviando',sent:'✅ Enviada',failed:'⚠️ Falhou',cancelled:'🚫 Cancelada'};
+const NSRC={manual:'Manual',auto_new:'Auto · novo',auto_offer:'Auto · oferta',auto_ending:'Auto · acabando'};
+async function callPush(body){const {data,error}=await sb.functions.invoke('send-push',{body});
+ if(error){let m=error.message;try{const j=await error.context.json();if(j?.error)m=j.error}catch(_){}throw new Error(m)}return data}
+async function notif(el,editId=null){
+ const [{data:ns},{data:hist},nSubs,{data:pr}]=await Promise.all([sb.from('cr_notification_settings').select('*').eq('id',1).maybeSingle(),
+  sb.from('cr_notifications').select('*').order('created_at',{ascending:false}).limit(60),cnt('cr_push_subscriptions'),
+  sb.from('cr_products').select('id,name,slug,product_images:cr_product_images(url,sort,is_cover)').eq('status','active').order('name',{ascending:true}).limit(2000)]);
+ const N=ns||{},P=pr||[],H=hist||[],ed=editId?H.find(x=>x.id===editId):null;
+ const pimg=p=>[...(p.product_images||[])].sort((a,b)=>(b.is_cover-a.is_cover)||(a.sort-b.sort))[0]?.url||'';
+ const site=N.site_url||new URL('../',location.href).href;
+ const plink=p=>(N.product_url_template||'{site}?produto={slug}').replace('{site}',site).replace('{slug}',encodeURIComponent(p.slug)).replace('{id}',p.id);
+ const sent=H.filter(x=>x.status==='sent'),tot=sent.reduce((a,x)=>a+(x.clicks||0),0);
+ const hrs=v=>Array.from({length:24},(_,h)=>`<option value=${h} ${+v===h?'selected':''}>${String(h).padStart(2,'0')}h</option>`).join('');
+ el.innerHTML=`<h2>Notificações</h2><div class=kpi><div><b>${nSubs}</b>Inscritos</div><div><b>${sent.length}</b>Enviadas (últimas)</div><div><b>${tot}</b>Cliques</div><div><b>${H.filter(x=>x.status==='scheduled').length}</b>Agendadas</div></div>
+ <div class=box><h3>${ed?'Editar rascunho':'Nova notificação'}</h3><div class=nfw><div>
+  <label>Produto (opcional — preenche link e imagem)<input id=nfq placeholder="Filtrar produtos…"><select id=nfp><option value="">— Nenhum —</option>${P.map(p=>`<option value="${p.id}" ${ed?.product_id===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+  <label>Título <span class=note id=nftc></span><input id=nft maxlength=80 value="${esc(ed?.title||'')}" placeholder="Ex.: Oferta relâmpago! ⚡"></label>
+  <label>Mensagem <span class=note id=nfbc></span><textarea id=nfb maxlength=200 placeholder="Ex.: Fone Bluetooth por R$ 59,90. Corre que é por pouco tempo!">${esc(ed?.body||'')}</textarea></label>
+  <label>Imagem (opcional)<input id=nfi value="${esc(ed?.image_url||'')}" placeholder="https://… ou envie um arquivo abaixo"></label><input type=file accept="image/*" id=nff>
+  <label>Link ao tocar<input id=nfu value="${esc(ed?.url||'')}" placeholder="${esc(site)}"></label>
+  <div class=box style="background:var(--lt)"><button class="btn sm" id=nfnow>📤 Enviar agora</button> <button class="btn alt sm" id=nfdraft>💾 Salvar rascunho</button> <button class="btn alt sm" id=nftest>📱 Enviar teste para este aparelho</button>${ed?' <button class="btn alt sm" id=nfnew>✖ Cancelar edição</button>':''}
+   <div class=row style="align-items:end"><label>Agendar para (horário de Brasília)<input type=datetime-local id=nfd value="${brInput(Date.now()+36e5)}"></label><div><button class="btn sm" id=nfsch>⏰ Agendar</button></div></div><p class=note id=nfmsg></p></div>
+ </div><div><p class=note style="text-align:center;margin:0 0 6px">Pré-visualização</p><div class=phone><div class=pscr><div class=ptime id=nfclock></div><div class=pn><div class=pnh><img src="${esc(N.icon_url||'../icon-192.png')}" alt=""><span>Compras Rápidas</span><small>agora</small></div><b id=pvt></b><p id=pvb></p><img id=pvi alt=""></div></div></div></div></div></div>
+ <div class=box><h3>Envios automáticos</h3><p class=note>O sistema cria e envia sozinho as notificações abaixo, respeitando o limite diário e o horário de silêncio (envios manuais não têm limite).</p>
+  <label><input type=checkbox id=sa1 ${N.auto_new?'checked':''}> Avisar quando entrar um <b>produto novo</b></label>
+  <label><input type=checkbox id=sa2 ${N.auto_offer?'checked':''}> Avisar quando um produto entrar em <b>oferta</b></label>
+  <label><input type=checkbox id=sa3 ${N.auto_ending?'checked':''}> Avisar quando uma oferta estiver <b>acabando</b></label>
+  <div class=row><label>Avisar “acabando” quantas horas antes do fim<input type=number min=1 max=168 id=seh value="${N.ending_hours??24}"></label><label>Limite de envios automáticos por dia<input type=number min=0 max=50 id=sdl value="${N.daily_limit??2}"></label>
+  <label>Silêncio começa às<select id=sqs>${hrs(N.quiet_start??22)}</select></label><label>Silêncio termina às<select id=sqe>${hrs(N.quiet_end??8)}</select></label></div>
+  <button class="btn sm" id=ssv>Salvar configurações</button></div>
+ <h3>Histórico</h3><div class=tw><table><tr><th>Data<th>Título<th>Origem<th>Status<th>Enviados<th>Falhas<th>Cliques<th></tr>${H.map(x=>`<tr><td>${brDate(x.sent_at||x.scheduled_at||x.created_at)}<td>${esc(x.title)}<td>${NSRC[x.source]||esc(x.source)}<td${x.error?` title="${esc(x.error)}"`:''}>${NST[x.status]||esc(x.status)}${x.error?' <span class=note>ⓘ</span>':''}<td>${x.sent_count||0}<td>${x.failed_count||0}<td>${x.clicks||0}<td>${
+  x.status==='scheduled'?`<button class="btn alt sm" data-nc="${x.id}">Cancelar</button>`:x.status==='draft'?`<button class="btn alt sm" data-ne="${x.id}">Editar</button><button class="btn alt sm" data-nd="${x.id}">Excluir</button>`:x.status==='failed'?`<button class="btn alt sm" data-nr="${x.id}">Tentar de novo</button>`:''}</tr>`).join('')||'<tr><td colspan=8>Nenhuma notificação ainda.</td></tr>'}</table></div>
+ <p class=note>Datas no horário de Brasília. Passe o dedo/mouse em “Falhou” para ver o motivo.</p>`;
+ const t=$('#nft'),b=$('#nfb'),im=$('#nfi'),u=$('#nfu'),ps=$('#nfp'),msg=m=>$('#nfmsg').textContent=m;
+ const pv=()=>{$('#pvt').textContent=t.value||'Título da notificação';$('#pvb').textContent=b.value||'Sua mensagem aparece aqui.';const i=$('#pvi');i.style.display=im.value?'block':'none';if(im.value)i.src=im.value;
+  $('#nftc').textContent=t.value.length+'/80';$('#nfbc').textContent=b.value.length+'/200';$('#nfclock').textContent=new Date().toLocaleTimeString('pt-BR',{timeZone:BR,hour:'2-digit',minute:'2-digit'})};
+ [t,b,im].forEach(i=>i.oninput=pv);im.onchange=pv;pv();
+ $('#nfq').oninput=e=>{const q=e.target.value.toLowerCase();[...ps.options].forEach(o=>{if(o.value)o.hidden=!!q&&!o.text.toLowerCase().includes(q)})};
+ ps.onchange=()=>{const p=P.find(x=>x.id===ps.value);if(!p)return;u.value=plink(p);const i=pimg(p);if(i)im.value=i;if(!t.value)t.value=p.name.slice(0,80);pv()};
+ $('#nff').onchange=e=>run(async()=>{if(!e.target.files[0])return;msg('Enviando imagem…');im.value=await up(e.target.files[0]);msg('');pv()});
+ const row=extra=>{const ti=t.value.trim(),bo=b.value.trim();if(!ti)throw new Error('Escreva o título.');if(ti.length>80||bo.length>200)throw new Error('Título até 80 e mensagem até 200 caracteres.');
+  const im2=im.value.trim(),u2=u.value.trim();if(im2&&!/^https?:\/\//i.test(im2))throw new Error('A imagem deve ser um link começando com https://');if(u2&&!/^https?:\/\//i.test(u2))throw new Error('O link deve começar com https://');
+  return {title:ti,body:bo||null,image_url:im2||null,url:u2||site,product_id:ps.value||null,source:'manual',error:null,...extra}};
+ const save=async r=>{const q=ed?sb.from('cr_notifications').update(r).eq('id',ed.id):sb.from('cr_notifications').insert(r);const {data,error}=await q.select('id').single();if(error)throw error;return data.id};
+ const busy=async(btn,f)=>{const all=el.querySelectorAll('.box button');all.forEach(x=>x.disabled=true);try{await run(f)}finally{all.forEach(x=>x.disabled=false)}};
+ $('#nfnow').onclick=e=>busy(e.target,async()=>{const r=row({status:'scheduled',scheduled_at:new Date().toISOString()});if(!confirm(`Enviar agora para ${nSubs} inscrito(s)?`))return;
+  msg('Enviando…');const id=await save(r);const res=await callPush({notification_id:id}),x=res?.result||{};
+  alert(x.skipped?'O agendador já pegou esta notificação; ela está sendo enviada.':x.status==='sent'?`Enviada! ✅ Entregues: ${x.ok??0} · falhas: ${x.fail??0}`:'Não foi possível enviar: '+(x.error||x.lastError||'erro desconhecido'));notif(el)});
+ $('#nfsch').onclick=e=>busy(e.target,async()=>{const v=$('#nfd').value;if(!v)throw new Error('Escolha a data e a hora.');const d=brParse(v);if(isNaN(d))throw new Error('Data inválida.');
+  if(d<Date.now()-6e4)throw new Error('Escolha um horário no futuro.');await save(row({status:'scheduled',scheduled_at:d.toISOString()}));alert('Agendada para '+brDate(d)+' (Brasília).');notif(el)});
+ $('#nfdraft').onclick=e=>busy(e.target,async()=>{await save(row({status:'draft',scheduled_at:null}));alert('Rascunho salvo.');notif(el)});
+ $('#nftest').onclick=e=>busy(e.target,async()=>{let sub=await currentSub();
+  if(!sub){if(!confirm('Este aparelho ainda não recebe notificações. Ativar agora? (o navegador vai pedir permissão)'))return;sub=await pushSubscribe()}
+  msg('Enviando teste…');const r=await callPush({mode:'test',endpoint:sub.endpoint,title:t.value.trim()||undefined,body:b.value.trim()||undefined,image:im.value.trim()||undefined,url:u.value.trim()||undefined});
+  msg(r?.ok?'Teste enviado ✅ — deve chegar em alguns segundos.':'O teste falhou: '+(r?.lastError||'sem detalhes'))});
+ if(ed)$('#nfnew').onclick=()=>notif(el);
+ $('#ssv').onclick=e=>busy(e.target,async()=>{const n=(id,mi,ma)=>Math.min(ma,Math.max(mi,parseInt($(id).value,10)||0));
+  const {error}=await sb.from('cr_notification_settings').update({auto_new:$('#sa1').checked,auto_offer:$('#sa2').checked,auto_ending:$('#sa3').checked,ending_hours:n('#seh',1,168),daily_limit:n('#sdl',0,50),quiet_start:+$('#sqs').value,quiet_end:+$('#sqe').value,updated_at:new Date().toISOString()}).eq('id',1);
+  if(error)throw error;alert('Configurações salvas.')});
+ el.querySelectorAll('[data-nc]').forEach(x=>x.onclick=()=>run(async()=>{if(!confirm('Cancelar esta notificação agendada?'))return;const {error}=await sb.from('cr_notifications').update({status:'cancelled'}).eq('id',x.dataset.nc).eq('status','scheduled');if(error)throw error;notif(el)}));
+ el.querySelectorAll('[data-nd]').forEach(x=>x.onclick=()=>run(async()=>{if(!confirm('Excluir este rascunho?'))return;const {error}=await sb.from('cr_notifications').delete().eq('id',x.dataset.nd).eq('status','draft');if(error)throw error;notif(el)}));
+ el.querySelectorAll('[data-ne]').forEach(x=>x.onclick=()=>{notif(el,x.dataset.ne);scrollTo(0,0)});
+ el.querySelectorAll('[data-nr]').forEach(x=>x.onclick=()=>run(async()=>{if(!confirm('Tentar enviar de novo?'))return;const res=await callPush({notification_id:x.dataset.nr}),y=res?.result||{};alert(y.status==='sent'?`Enviada! ✅ Entregues: ${y.ok??0} · falhas: ${y.fail??0}`:'Falhou de novo: '+(y.error||y.lastError||y.skipped||''));notif(el)}))}
 
 init();
 </script></body></html>

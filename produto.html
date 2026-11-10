@@ -2,7 +2,7 @@
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
 import {sb,boot,list,card,esc,money,qs,isOffer,showOld,$,safeUrl,priceTxt,isRange} from './js/app.js';
-const pq=Promise.resolve(sb.from('cr_products').select('*,merchants:cr_merchants(name),categories:cr_categories(name),product_images:cr_product_images(url,sort),product_videos:cr_product_videos(url,sort)').eq('id',qs('id')||'').eq('status','active').maybeSingle());
+const pq=Promise.resolve(sb.from('cr_products').select('*,merchants:cr_merchants(name),categories:cr_categories(name),product_images:cr_product_images(url,sort),product_videos:cr_product_videos(url,sort)').eq(qs('id')?'id':'slug',qs('id')||qs('produto')||'').eq('status','active').maybeSingle());
 const S=await boot();const m=$('#m');const {data:p}=await pq;
 if(!p){m.innerHTML='<p>Produto não encontrado.</p><a class=btn href=index.html>Voltar ao início</a>';throw 0}
 document.title=p.name+' | '+S.name;
