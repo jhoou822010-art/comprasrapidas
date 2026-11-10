@@ -111,6 +111,8 @@ export const priceTxt=p=>p.price==null?'':money(p.price)+(isRange(p)?' – '+mon
 let NOMAX=false;const sel=()=>NOMAX?SEL.replace('price_max,',''):SEL,miss=e=>!!e&&/price_max/.test(e.message||'');
 export const showOld=p=>p.old_price>p.price&&(!p.offer||isOffer(p));
 export const cover=p=>[...(p.product_images||[])].sort((a,b)=>a.sort-b.sort)[0]?.url||PH;
+// miniatura (320px) para os cards: fotos da Shopee aceitam o sufixo _tn e ficam ~10x mais leves; as demais ficam como estão
+export const thumb=p=>{const u=cover(p);return /^https:\/\/cf\.shopee\.com\.br\/file\/[\w-]+(?<!_tn)$/.test(u)?u+'_tn':u};
 export async function list(o={}){let res=await list1(o);if(miss(res.error)){NOMAX=true;res=await list1(o)}return res}
 async function list1({offer,featured,q,cat,page=1,per=12}={}){
  let r=sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active');const now=new Date().toISOString();
@@ -121,7 +123,7 @@ async function list1({offer,featured,q,cat,page=1,per=12}={}){
  return {data:data||[],count:count||0,error}}
 export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
 export function card(p){const o=isOffer(p);
- return `<a class=card href="produto.html?id=${p.id}"><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async src="${esc(cover(p))}" alt="${esc(p.name)}">${cornerDeco()}</div>
+ return `<a class=card href="produto.html?id=${p.id}"><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async src="${esc(thumb(p))}" data-full="${esc(cover(p))}" onerror="this.onerror=null;this.src=this.dataset.full" alt="${esc(p.name)}">${cornerDeco()}</div>
  <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}
 
 // ---- página de contato: ícones, links e configuração (guardada em cr_site_settings.data.contact)
