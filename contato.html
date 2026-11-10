@@ -23,13 +23,13 @@ const img=u=>/^https?:\/\//i.test(u||'')?u:'';
 const items=(C.items||[]).filter(it=>it.on!==false&&(it.value||'').trim());
 const logo=C.show_logo===false?'':img(C.logo)||img(S.logo),cover=img(C.cover);
 const wa=items.find(it=>it.type==='whatsapp'&&cHref(it));
-const cardH=it=>{const t=CTYPES[it.type]||CTYPES.link,h=cHref(it),ext=/^https?:/i.test(h),lab=esc(it.label||t.n),val=esc(it.value);
+const cardH=it=>{const t=CTYPES[it.type]||CTYPES.site,h=cHref(it),ext=/^https?:/i.test(h),lab=esc(it.label||t.n),val=esc(it.value);
  const inner=`${cIcon(it)}<span><b>${lab}</b><small>${val}</small></span>`;
  return h?`<a class=ci href="${esc(h)}"${ext?' target=_blank rel=noopener':''}>${inner}<i aria-hidden=true>›</i></a>`:`<div class=ci>${inner}</div>`};
 const block=b=>{const title=esc(b.t||CBLOCKS[b.k]||'');
  if(b.k==='sobre')return C.about?.trim()?`<section class=cs><h2>${title}</h2><div class=ct>${esc(C.about)}</div></section>`:'';
  if(b.k==='horario')return C.hours?.trim()?`<section class=cs><h2>${title}</h2><div class=ct>${esc(C.hours)}</div></section>`:'';
- const L=items.filter(it=>(CTYPES[it.type]||CTYPES.link).g===b.k);return L.length?`<section class=cs><h2>${title}</h2><div class=cg>${L.map(cardH).join('')}</div></section>`:''};
+ const L=items.filter(it=>(CTYPES[it.type]||CTYPES.site).g===b.k);return L.length?`<section class=cs><h2>${title}</h2><div class=cg>${L.map(cardH).join('')}</div></section>`:''};
 const body=(C.blocks||[]).filter(b=>b.on!==false).map(block).join('');
 $('#m').innerHTML=`<div class="ch${cover?' img':''}"${cover?` style="background-image:url('${esc(cssUrl(cover))}')"`:''}>${logo?`<img class=lg src="${esc(logo)}" alt="">`:''}<div class=sn>${esc(C.store_name||S.name)}</div><h1>${esc(C.title||'Contato')}</h1>${C.subtitle?`<p>${esc(C.subtitle)}</p>`:''}${wa?`<a class=hb href="${esc(cHref(wa))}" target=_blank rel=noopener>${cIcon({type:'whatsapp',color:'transparent'},24)} Chamar no WhatsApp</a>`:''}</div>
 ${body||'<div class=ct>Em breve, nossos canais de atendimento estarão disponíveis aqui.</div>'}`;
