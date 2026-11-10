@@ -3,6 +3,7 @@
 label{display:block;margin:8px 0;font-size:.9rem}input,select,textarea{width:100%;padding:10px;border:1px solid #cdd8e8;border-radius:8px;font:inherit;background:#fff}input[type=checkbox]{width:auto}textarea{min-height:90px}
 .row{display:grid;gap:0 12px}@media(min-width:700px){.row{grid-template-columns:1fr 1fr}}.thumb{width:70px;height:70px;object-fit:cover;border-radius:8px}.ims{display:flex;flex-wrap:wrap;gap:8px}.ims div{text-align:center}.ims button{padding:4px 7px}
 table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;border-bottom:1px solid #e3e9f2;text-align:left;font-size:.9rem}.tw{overflow-x:auto}.bar{background:var(--c2);height:12px;border-radius:6px}.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.kpi div{background:#fff;border-radius:12px;padding:12px}.kpi b{font-size:1.6rem;color:var(--c1);display:block}
+.pgn{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:8px 0}.pgn span{font-size:.85rem;margin:0 6px}button:disabled{opacity:.45;cursor:default}
 .sm{padding:6px 10px;min-height:0;font-size:.85rem;margin:2px}
 .nfw{display:grid;gap:16px}@media(min-width:900px){.nfw{grid-template-columns:1fr 300px}}
 .phone{width:270px;margin:auto;background:#111;border-radius:36px;padding:12px;box-shadow:0 6px 20px #0004}.pscr{background:linear-gradient(160deg,#1e3a8a,#6b21a8 60%,#be185d);border-radius:26px;min-height:440px;padding:14px 10px}.ptime{color:#fff;text-align:center;font-size:2.6rem;font-weight:300;margin:14px 0 18px}
@@ -54,16 +55,28 @@ const BMAX=10;
 const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle()).data?.data||{};
 async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_ids||[]).filter(i=>i!==pid);if(on)ids.push(pid);
  const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:ids}});if(error)throw error}
-async function prods(el,term='',st=''){
- const mk=c=>{let q=sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`).order('name',{ascending:true}).limit(100);
- if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);return q};
- let [{data,error:qe},cfg]=await Promise.all([mk(1),getSet()]);if(qe&&/price_max/.test(qe.message||''))({data}=await mk(0));const BI=new Set(cfg.banner_ids||[]);
- el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
- <div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${(data||[]).map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join('')}</table></div>`;
- $('#ps').value=st;$('#pb').onclick=()=>prods(el,$('#pt').value,$('#ps').value);$('#pn').onclick=()=>run(()=>pform(el));
+let PF={};const PP=50;
+async function prods(el,f=PF){
+ f={term:'',st:'',cat:'',pg:0,...f};PF=f;const {term,st,cat}=f;
+ const mk=(c,pg)=>{let q=sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`,{count:'exact'}).order('name',{ascending:true}).order('id',{ascending:true}).range(pg*PP,pg*PP+PP-1);
+ if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);if(cat==='none')q=q.is('category_id',null);else if(cat)q=q.eq('category_id',cat);return q};
+ const [{data:cs},cfg]=await Promise.all([sb.from('cr_categories').select('id,name').order('name'),getSet()]);
+ const load=async pg=>{let r=await mk(1,pg);if(r.error&&/price_max/.test(r.error.message||''))r=await mk(0,pg);if(r.error)throw r.error;return r};
+ let r=f.pg?await load(f.pg).catch(()=>null):await load(0);if(!r){r=await load(0);f.pg=1e9}
+ let total=r.count||0,pages=Math.max(1,Math.ceil(total/PP));
+ if(f.pg>=pages){f.pg=pages-1;if(f.pg)r=await load(f.pg)}
+ const data=r.data||[],BI=new Set(cfg.banner_ids||[]),pg=f.pg,ini=total?pg*PP+1:0,fim=pg*PP+data.length;
+ const nav=`<div class=pgn><button class="btn alt sm" data-p=0 ${pg?'':'disabled'}>«</button><button class="btn alt sm" data-p=${pg-1} ${pg?'':'disabled'}>‹ Anterior</button><span>Página ${pg+1} de ${pages} · ${ini}–${fim} de ${total}</span><button class="btn alt sm" data-p=${pg+1} ${pg<pages-1?'':'disabled'}>Próxima ›</button><button class="btn alt sm" data-p=${pages-1} ${pg<pages-1?'':'disabled'}>»</button></div>`;
+ el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label><label>Categoria<select id=pc><option value="">Todas</option>${(cs||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value=none>Sem categoria</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn alt sm" id=px>Limpar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
+ ${nav}<div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${data.length?data.map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join(''):'<tr><td colspan=5>Nenhum produto encontrado.</tr>'}</table></div>${pages>1?nav:''}`;
+ $('#ps').value=st;$('#pc').value=cat;
+ const go=()=>run(()=>prods(el,{term:$('#pt').value.trim(),st:$('#ps').value,cat:$('#pc').value,pg:0}));
+ $('#pb').onclick=go;$('#pt').onkeydown=e=>{if(e.key==='Enter')go()};$('#ps').onchange=go;$('#pc').onchange=go;
+ $('#px').onclick=()=>run(()=>prods(el,{}));$('#pn').onclick=()=>run(()=>pform(el));
+ el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>run(async()=>{await prods(el,{...f,pg:+b.dataset.p});el.scrollIntoView?.({block:'start'})}));
  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>run(()=>pform(el,b.dataset.e)));
- el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>run(async()=>{await sb.from('cr_products').update({status:b.dataset.s==='archived'?'active':'archived'}).eq('id',b.dataset.a);prods(el,term,st)}));
- el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>run(async()=>{if(!confirm('Excluir este produto definitivamente?'))return;const {error}=await sb.from('cr_products').delete().eq('id',b.dataset.d);if(error)throw error;prods(el,term,st)}))}
+ el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>run(async()=>{await sb.from('cr_products').update({status:b.dataset.s==='archived'?'active':'archived'}).eq('id',b.dataset.a);await prods(el,f)}));
+ el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>run(async()=>{if(!confirm('Excluir este produto definitivamente?'))return;const {error}=await sb.from('cr_products').delete().eq('id',b.dataset.d);if(error)throw error;await prods(el,f)}))}
 async function pform(el,id){
  const [{data:cs},{data:ms},cfg]=await Promise.all([sb.from('cr_categories').select('id,name').order('sort'),sb.from('cr_merchants').select('name'),getSet()]);const bids=cfg.banner_ids||[],inB=!!id&&bids.includes(id);
  let p={status:'active'},imgs=[],vids=['','',''];
