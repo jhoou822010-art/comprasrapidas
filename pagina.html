@@ -2,6 +2,7 @@
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
 import {boot,esc,qs,DISCLAIMER,$} from './js/app.js';
+if(qs('p')==='contato'){location.replace('contato.html');throw 0}
 const S=await boot();const p=qs('p');
 const T={sobre:['Sobre a loja',S.about+'\n\n'+DISCLAIMER],privacidade:['Política de privacidade',S.privacy],contato:['Contato',[S.contact_text,S.email&&'E-mail: '+S.email,S.phone&&'Telefone/WhatsApp: '+S.phone].filter(Boolean).join('\n')]}[p]||['Página não encontrada',''];
 document.title=T[0];$('#m').innerHTML=`<div class=box style="white-space:pre-line"><h1>${esc(T[0])}</h1>${esc(T[1])}</div>`;

@@ -93,10 +93,11 @@ export async function boot(){
  if(S.favicon){let l=document.querySelector('link[rel=icon]')||document.head.appendChild(Object.assign(document.createElement('link'),{rel:'icon'}));l.href=S.favicon}
  $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>
  <form action=lista.html><input type=hidden name=tipo value=busca><input name=q placeholder="O que você está procurando?" aria-label="Pesquisar"><button aria-label="Buscar">🔍</button></form></div>
- <nav><a href=index.html>Início</a><a href="lista.html?tipo=categorias">Categorias</a><a href="lista.html?tipo=ofertas">Ofertas</a><a href="lista.html?tipo=destaques">Destaques</a></nav></div></header>${stripHtml()}`;
+ <nav><a href=index.html>Início</a><a href="lista.html?tipo=categorias">Categorias</a><a href="lista.html?tipo=ofertas">Ofertas</a><a href="lista.html?tipo=destaques">Destaques</a><a href=contato.html>Contato</a></nav></div></header>${stripHtml()}`;
  $('#ftr').innerHTML=`${AREA==='top'?'':stripHtml()}<footer><div class=w><p><b>${esc(S.name)}</b> — ${esc(S.slogan)}</p><p>${DISCLAIMER}</p><p>${S.footer_text?esc(S.footer_text)+'<br>':''}
- <a href="pagina.html?p=sobre">Sobre</a><a href="pagina.html?p=contato">Contato</a><a href="pagina.html?p=privacidade">Privacidade</a>${S.instagram?`<a href="${esc(safeUrl(S.instagram))}" rel=noopener>Instagram</a>`:''}${S.facebook?`<a href="${esc(safeUrl(S.facebook))}" rel=noopener>Facebook</a>`:''}</p></div></footer>
+ <a href="pagina.html?p=sobre">Sobre</a><a href=contato.html>Contato</a><a href="pagina.html?p=privacidade">Privacidade</a></p><p class=cpy>© ${new Date().getFullYear()} ${esc(S.name)}. Todos os direitos reservados.</p></div></footer>
  <div id=lb></div>`;
+ {const here=(location.pathname.split('/').pop()||'index.html')+location.search;document.querySelectorAll('header nav a').forEach(a=>{if(a.getAttribute('href')===here){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
  return S}
@@ -115,3 +116,44 @@ export async function byIds(ids){if(!ids?.length)return [];const {data}=await sb
 export function card(p){const o=isOffer(p);
  return `<a class=card href="produto.html?id=${p.id}"><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async src="${esc(cover(p))}" alt="${esc(p.name)}">${cornerDeco()}</div>
  <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b>${money(p.price)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}
+
+// ---- página de contato: ícones, links e configuração (guardada em cr_site_settings.data.contact)
+const _sk=(d,w=2)=>`<g fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</g>`;
+const _PH='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z';
+export const CTYPES={
+ whatsapp:{n:'WhatsApp',g:'at',c:'#25D366',ph:'(11) 91234-5678',s:_sk('<path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z"/>')+`<path fill="#fff" transform="translate(6.6 6.6) scale(.45)" d="${_PH}"/>`},
+ phone:{n:'Telefone',g:'at',c:'#1e6bff',ph:'(11) 3333-4444',s:`<path fill="#fff" d="${_PH}"/>`},
+ email:{n:'E-mail',g:'at',c:'#e5384f',ph:'contato@sualoja.com',s:_sk('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5 12 13l8.5-6.5"/>')},
+ location:{n:'Endereço',g:'at',c:'#d97706',ph:'Rua Exemplo, 123 - Cidade/UF',s:'<path fill="#fff" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.6A2.6 2.6 0 1 1 12 6.4a2.6 2.6 0 0 1 0 5.2z"/>'},
+ instagram:{n:'Instagram',g:'rs',c:'#d6246e',ph:'@sualoja ou link',s:_sk('<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/>')+'<circle cx="17.2" cy="6.8" r="1.2" fill="#fff"/>'},
+ facebook:{n:'Facebook',g:'rs',c:'#1877f2',ph:'link da página',s:'<path fill="#fff" d="M14 8.5V7c0-.8.3-1.2 1.3-1.2H17V2.2h-2.6C11.5 2.2 10.4 4 10.4 6.7v1.8H8v3.6h2.4V22H14v-9.9h2.7l.4-3.6z"/>'},
+ youtube:{n:'YouTube',g:'rs',c:'#ff0000',ph:'link do canal ou @canal',s:'<rect x="2" y="5" width="20" height="14" rx="4.5" fill="#fff"/><path d="M10 8.8v6.4l5.6-3.2z" fill="#ff0000"/>'},
+ tiktok:{n:'TikTok',g:'rs',c:'#111111',ph:'@sualoja ou link',s:'<path fill="#fff" d="M15.6 2.5h-3.3v12.7a2.7 2.7 0 1 1-2.7-2.7c.3 0 .5 0 .8.1V9.2a6.1 6.1 0 1 0 5.2 6V8.9a7.4 7.4 0 0 0 4.3 1.4V7a4.3 4.3 0 0 1-4.3-4.5z"/>'},
+ x:{n:'X (Twitter)',g:'rs',c:'#111111',ph:'@sualoja ou link',s:_sk('<path d="M4.5 4h4.2l10.8 16h-4.2zM19 4l-6.1 7M11.1 13 5 20"/>',1.8)},
+ telegram:{n:'Telegram',g:'rs',c:'#229ed9',ph:'@sualoja ou link',s:'<path fill="#fff" d="M21.4 3.6 2.9 10.8c-1 .4-1 1.5 0 1.8l4.6 1.5 1.8 5.6c.2.7 1.1.9 1.6.4l2.6-2.4 4.8 3.5c.7.5 1.6.1 1.8-.7l3.1-14.7c.2-1-.8-1.8-1.8-1.4zM9.6 14.3l8.2-7.4-6.7 8.6-.4 2.6z"/>'},
+ linkedin:{n:'LinkedIn',g:'rs',c:'#0a66c2',ph:'link do perfil',s:'<g fill="#fff"><rect x="3.5" y="9" width="3.6" height="11.5"/><circle cx="5.3" cy="5.3" r="2.1"/><path d="M9.8 9h3.4v1.6c.6-1 1.8-1.9 3.6-1.9 2.8 0 3.7 1.8 3.7 4.5v7.3h-3.6v-6.4c0-1.4-.4-2.3-1.7-2.3s-1.8 1-1.8 2.3v6.4H9.8z"/></g>'},
+ pinterest:{n:'Pinterest',g:'rs',c:'#e60023',ph:'@sualoja ou link',s:'<text x="12" y="18" text-anchor="middle" font-size="17" font-weight="700" font-family="Georgia,serif" fill="#fff">P</text>'},
+ site:{n:'Site',g:'lk',c:'#0f766e',ph:'www.seusite.com.br',s:_sk('<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="3.8" ry="9"/><path d="M3 12h18"/>',1.8)},
+ shop:{n:'Loja / marketplace',g:'lk',c:'#ee4d2d',ph:'link da sua loja',s:_sk('<path d="M5 8h14l-1.2 12.5H6.2z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>')},
+ link:{n:'Link personalizado',g:'lk',c:'#6a28b5',ph:'https://...',s:_sk('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>')}};
+export const CGROUPS={at:'Atendimento',rs:'Redes sociais',lk:'Outros sites e links'};
+export const cIcon=(it,sz=44)=>{const t=CTYPES[it.type]||CTYPES.link;
+ if(it.icon&&/^https?:\/\//i.test(it.icon))return `<img class=cic src="${esc(it.icon)}" alt="" width=${sz} height=${sz}>`;
+ return `<svg class=cic viewBox="-4 -4 32 32" width=${sz} height=${sz} aria-hidden=true><rect x="-4" y="-4" width="32" height="32" rx="9" fill="${it.color||t.c}"/>${t.s}</svg>`};
+export function cHref(it){const v=String(it.value||'').trim();if(!v)return '';const t=it.type,d=v.replace(/\D/g,'');
+ if(/^(https?:\/\/|mailto:|tel:)/i.test(v))return v.replace(/\s/g,'');
+ if(t==='whatsapp')return d.length>=10?'https://wa.me/'+(d.length<=11?'55'+d:d)+(it.msg?'?text='+encodeURIComponent(it.msg):''):'';
+ if(t==='phone')return d.length>=8?'tel:+'+(d.length<=11?'55'+d:d):'';
+ if(t==='email')return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)?'mailto:'+v:'';
+ if(t==='location')return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v);
+ const B={instagram:'https://instagram.com/',facebook:'https://facebook.com/',youtube:'https://youtube.com/@',tiktok:'https://www.tiktok.com/@',x:'https://x.com/',telegram:'https://t.me/',pinterest:'https://pinterest.com/',linkedin:'https://www.linkedin.com/in/'},h=v.replace(/^@/,'');
+ if(B[t]&&/^[\w.-]+$/.test(h))return B[t]+h;
+ if(/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v))return 'https://'+v;
+ return ''}
+export const CBLOCKS={sobre:'Sobre a loja',at:'Atendimento',rs:'Redes sociais',lk:'Outros sites e links',horario:'Horário de atendimento'};
+// configuração da página; se ainda não foi salva no painel, monta a partir dos dados que já existem (telefone, e-mail, Instagram, Facebook)
+export function contactCfg(s){const c=s?.contact;if(c&&Array.isArray(c.items))return {...c,blocks:c.blocks?.length?c.blocks:Object.keys(CBLOCKS).map(k=>({k,on:true}))};
+ const items=[];if(s?.phone)items.push({type:'whatsapp',label:'WhatsApp',value:s.phone,on:true});if(s?.email)items.push({type:'email',label:'E-mail',value:s.email,on:true});
+ if(s?.instagram)items.push({type:'instagram',label:'Instagram',value:s.instagram,on:true});if(s?.facebook)items.push({type:'facebook',label:'Facebook',value:s.facebook,on:true});
+ return {title:'Fale com a gente',subtitle:s?.contact_text||'Estamos aqui para ajudar. Escolha o canal que preferir.',store_name:'',intro:'',about:s?.about||'',hours:'',logo:'',show_logo:true,cover:'',
+  blocks:Object.keys(CBLOCKS).map(k=>({k,on:true})),items}}
