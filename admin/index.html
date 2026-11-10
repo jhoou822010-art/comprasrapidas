@@ -6,7 +6,7 @@ table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;bord
 .sm{padding:6px 10px;min-height:0;font-size:.85rem;margin:2px}</style></head>
 <body><div id=app class=w></div>
 <script type=module>
-import {sb,$,esc,money,CONFIGURED,THEMES,themeOn} from '../js/app.js';
+import {sb,$,esc,money,priceTxt,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref} from '../js/app.js';
 const A=$('#app');const W=window;
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,6);
 const num=v=>{if(v===''||v==null)return null;let s=String(v).replace(/[^\d.,]/g,'');if(!s)return NaN;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)};
@@ -30,7 +30,7 @@ async function init(){if(!CONFIGURED){A.innerHTML='<div class=box><h2>Não confi
  const {data}=await sb.from('cr_admins').select('user_id').eq('user_id',session.user.id);
  if(!data?.length){const {data:ok}=await sb.rpc('cr_claim_admin');if(ok)return init()}
  if(!data?.length){A.innerHTML='<div class=box><h2>Sem permissão</h2><p>Este usuário não está na lista de administradores (veja o Guia, passo do administrador).</p>'+out()+'</div>';return}
- const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Carrossel:carr,Temas:temas,Aparência:look,Estatísticas:stats,Importar:imp,Backup:backup};
+ const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Carrossel:carr,Temas:temas,Contato:contato,Aparência:look,Estatísticas:stats,Importar:imp,Backup:backup};
  A.innerHTML=`<div class=ad>${Object.keys(T).map(k=>`<button data-t="${k}">${k}</button>`).join('')}<button onclick="lo()">Sair</button></div><div id=main></div>`;
  A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{A.querySelectorAll('.ad button').forEach(x=>x.classList.remove('on'));b.classList.add('on');run(()=>T[b.dataset.t]($('#main')))});
  A.querySelector('[data-t]').click()}
@@ -51,10 +51,11 @@ const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',
 async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_ids||[]).filter(i=>i!==pid);if(on)ids.push(pid);
  const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:ids}});if(error)throw error}
 async function prods(el,term='',st=''){
- let q=sb.from('cr_products').select('id,name,price,status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)').order('created_at',{ascending:false}).limit(100);
- if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);const [{data},cfg]=await Promise.all([q,getSet()]);const BI=new Set(cfg.banner_ids||[]);
+ const mk=c=>{let q=sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`).order('created_at',{ascending:false}).limit(100);
+ if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);return q};
+ let [{data,error:qe},cfg]=await Promise.all([mk(1),getSet()]);if(qe&&/price_max/.test(qe.message||''))({data}=await mk(0));const BI=new Set(cfg.banner_ids||[]);
  el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
- <div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${(data||[]).map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${money(p.price)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join('')}</table></div>`;
+ <div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${(data||[]).map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join('')}</table></div>`;
  $('#ps').value=st;$('#pb').onclick=()=>prods(el,$('#pt').value,$('#ps').value);$('#pn').onclick=()=>run(()=>pform(el));
  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>run(()=>pform(el,b.dataset.e)));
  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>run(async()=>{await sb.from('cr_products').update({status:b.dataset.s==='archived'?'active':'archived'}).eq('id',b.dataset.a);prods(el,term,st)}));
@@ -66,7 +67,8 @@ async function pform(el,id){
   imgs=[...p.product_images].sort((a,b)=>a.sort-b.sort).map(i=>({url:i.url}));[...p.product_videos].sort((a,b)=>a.sort-b.sort).forEach((v,i)=>vids[i]=v.url)}
  const dt=v=>v?new Date(v).toISOString().slice(0,16):'';
  el.innerHTML=`<h2>${id?'Editar':'Novo'} produto</h2><div class=box><label>Nome*<input id=n value="${esc(p.name||'')}"></label><label>Descrição<textarea id=d>${esc(p.description||'')}</textarea></label>
- <div class=row><label>Preço atual (R$)<input id=pr inputmode=decimal value="${p.price??''}"></label><label>Preço anterior (R$)<input id=po inputmode=decimal value="${p.old_price??''}"></label>
+ <div class=row><label>Preço atual (R$) — ou o menor preço<input id=pr inputmode=decimal value="${p.price??''}"></label><label>Até (preço máximo, R$) — opcional<input id=pm inputmode=decimal value="${p.price_max??''}" placeholder="Ex.: 25,90"><small class=note>Para produtos com variações (ex.: Shopee). Aparece como “R$ 14,50 – R$ 25,90”. Deixe vazio para preço único.</small></label>
+ <label>Preço anterior (R$)<input id=po inputmode=decimal value="${p.old_price??''}"></label><span></span>
  <label>Categoria*<select id=c><option value="">Escolha…</option>${(cs||[]).map(c=>`<option value=${c.id} ${c.id===p.category_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
  <label>Loja parceira*<input id=m list=ml value="${esc(p.merchants?.name||'')}" placeholder="Shopee, Mercado Livre…"><datalist id=ml>${(ms||[]).map(m=>`<option>${esc(m.name)}`).join('')}</datalist></label></div>
  <label>Link de afiliado* (https://…)<input id=u value="${esc(p.affiliate_url||'')}"></label>
@@ -84,15 +86,17 @@ async function pform(el,id){
  el.querySelectorAll('[data-vf]').forEach(i=>i.onchange=()=>run(async()=>{const f=i.files[0];if(f)el.querySelector(`[data-v="${i.dataset.vf}"]`).value=await up(f)}));
  $('#cn').onclick=()=>prods(el);
  $('#sv').onclick=()=>run(async()=>{
-  const name=$('#n').value.trim(),url=$('#u').value.trim(),mn=$('#m').value.trim(),pr=num($('#pr').value),po=num($('#po').value);
+  const name=$('#n').value.trim(),url=$('#u').value.trim(),mn=$('#m').value.trim(),pr=num($('#pr').value),po=num($('#po').value),pm=num($('#pm').value);
   if(!name||!$('#c').value||!mn)throw new Error('Preencha nome, categoria e loja.');if(!/^https?:\/\//i.test(url))throw new Error('O link de afiliado deve começar com https://');
-  if(pr!=null&&isNaN(pr)||po!=null&&isNaN(po))throw new Error('Preço atual ou anterior inválido. Use só números, por exemplo 23,49.');if(po!=null&&pr!=null&&po<=pr&&!confirm('Preço anterior não é maior que o atual; o desconto não será exibido. Continuar?'))return;
+  if(pr!=null&&isNaN(pr)||po!=null&&isNaN(po)||pm!=null&&isNaN(pm))throw new Error('Preço atual, anterior ou máximo inválido. Use só números, por exemplo 23,49.');
+  if(pm!=null&&(pr==null||pm<=pr))throw new Error('O preço máximo precisa ser maior que o preço atual (ex.: de 14,50 até 25,90). Deixe vazio se o preço for único.');if(po!=null&&pr!=null&&po<=pr&&!confirm('Preço anterior não é maior que o atual; o desconto não será exibido. Continuar?'))return;
   const wantB=$('#bnr').checked;if(wantB&&!inB&&bids.length>=BMAX)throw new Error('O banner do topo já tem '+BMAX+' produtos. Desmarque algum antes (aba Banners).');
   $('#sv').disabled=true;$('#sv').textContent='Salvando…';
   let {data:m}=await sb.from('cr_merchants').select('id').ilike('name',mn).maybeSingle();if(!m){const r=await sb.from('cr_merchants').insert({name:mn}).select('id').single();if(r.error)throw r.error;m=r.data}
   const row={name,description:$('#d').value,price:pr,old_price:po,category_id:$('#c').value,merchant_id:m.id,affiliate_url:url,featured:$('#f').checked,offer:$('#o').checked,
-   offer_start:$('#os').value?new Date($('#os').value).toISOString():null,offer_end:$('#oe').value?new Date($('#oe').value).toISOString():null,status:$('#st').value};
-  let pid=id;if(id){const {error}=await sb.from('cr_products').update(row).eq('id',id);if(error)throw error}else{const r=await sb.from('cr_products').insert({...row,slug:slug(name)}).select('id').single();if(r.error)throw r.error;pid=r.data.id}
+   offer_start:$('#os').value?new Date($('#os').value).toISOString():null,offer_end:$('#oe').value?new Date($('#oe').value).toISOString():null,status:$('#st').value};if(pm!=null||p.price_max!=null)row.price_max=pm;
+  const nomax=e=>e&&/price_max/.test(e.message||'')?new Error('Para usar o preço máximo, rode antes o arquivo supabase/02-preco-maximo.sql no Supabase (SQL Editor). Ou deixe o preço máximo vazio.'):e;
+  let pid=id;if(id){const {error}=await sb.from('cr_products').update(row).eq('id',id);if(error)throw nomax(error)}else{const r=await sb.from('cr_products').insert({...row,slug:slug(name)}).select('id').single();if(r.error)throw nomax(r.error);pid=r.data.id}
   for(const x of imgs)if(x.file){x.url=await up(x.file);delete x.file}
   await sb.from('cr_product_images').delete().eq('product_id',pid);if(imgs.length)await sb.from('cr_product_images').insert(imgs.map((x,i)=>({product_id:pid,url:x.url,sort:i,is_cover:i===0})));
   const vs=[...el.querySelectorAll('[data-v]')].map(i=>i.value.trim()).filter(Boolean);if(vs.some(v=>!/^https?:\/\//i.test(v)))throw new Error('Link de vídeo inválido.');
@@ -122,12 +126,60 @@ const bansEd=(el,top,wire)=>editor(el,'cr_banners',[['title','Título','text'],[
 const home=el=>editor(el,'cr_homepage_sections',[['title','Título da seção','text'],['qty','Quantidade exibida','num'],['sort','Ordem','num'],['visible','Visível','bool']],{pk:'key',noNew:true,noDel:true,head:'<h2>Página inicial</h2><p class=note>Seções: ofertas, destaques, novidades e categorias. A oferta/destaque de cada produto é definida no cadastro do produto.</p>'});
 // ---------- Aparência / configurações
 async function look(el){const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).single();const s=data?.data||{};
- const F=[['name','Nome da loja','text'],['slogan','Slogan','text'],['c1','Cor principal','color'],['c2','Cor secundária','color'],['btn','Cor dos botões','color'],['logo','Logotipo','img'],['favicon','Favicon','img'],['footer_text','Texto do rodapé','text'],['instagram','Instagram (link)','text'],['facebook','Facebook (link)','text'],['phone','Telefone/WhatsApp','text'],['email','E-mail de contato','text'],['seo_title','Título do site (SEO)','text'],['seo_desc','Descrição do site (SEO)','text'],['per_page','Produtos por página (lista/busca)','num'],['about','Texto "Sobre a loja"','area'],['contact_text','Texto da página Contato','area'],['privacy','Política de privacidade','area']];
- el.innerHTML=`<h2>Aparência e configurações</h2><p class=note>As cores abaixo já são aplicadas aqui como prévia. Só vão para o site ao clicar em Salvar.</p><div class=box><div class=row>${F.map(([k,l,t])=>t==='img'?`<label>${l}<img class=thumb data-p=${k} src="${esc(s[k]||'')}" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'"><input type=file data-f=${k} accept="image/*"></label>`:t==='area'?`<label>${l}<textarea data-k=${k}>${esc(s[k]||'')}</textarea></label>`:`<label>${l}<input data-k=${k} type=${t==='color'?'color':t==='num'?'number':'text'} value="${esc(s[k]??(k==='c1'?'#0b2a5b':k==='c2'||k==='btn'?'#1e6bff':k==='per_page'?12:''))}"></label>`).join('')}</div></div><button class=btn id=sv>Salvar e publicar</button>`;
+ const F=[['name','Nome da loja','text'],['slogan','Slogan','text'],['c1','Cor principal','color'],['c2','Cor secundária','color'],['btn','Cor dos botões','color'],['logo','Logotipo','img'],['favicon','Favicon','img'],['footer_text','Texto do rodapé','text'],['seo_title','Título do site (SEO)','text'],['seo_desc','Descrição do site (SEO)','text'],['per_page','Produtos por página (lista/busca)','num'],['about','Texto "Sobre a loja"','area'],['privacy','Política de privacidade','area']];
+ el.innerHTML=`<h2>Aparência e configurações</h2><p class=note>Telefone, e-mail, redes sociais e o texto da página de contato agora ficam na aba <b>Contato</b>.</p><p class=note>As cores abaixo já são aplicadas aqui como prévia. Só vão para o site ao clicar em Salvar.</p><div class=box><div class=row>${F.map(([k,l,t])=>t==='img'?`<label>${l}<img class=thumb data-p=${k} src="${esc(s[k]||'')}" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'"><input type=file data-f=${k} accept="image/*"></label>`:t==='area'?`<label>${l}<textarea data-k=${k}>${esc(s[k]||'')}</textarea></label>`:`<label>${l}<input data-k=${k} type=${t==='color'?'color':t==='num'?'number':'text'} value="${esc(s[k]??(k==='c1'?'#0b2a5b':k==='c2'||k==='btn'?'#1e6bff':k==='per_page'?12:''))}"></label>`).join('')}</div></div><button class=btn id=sv>Salvar e publicar</button>`;
  const v={...s};const ap=()=>{const r=document.documentElement.style;r.setProperty('--c1',$('[data-k=c1]').value);r.setProperty('--c2',$('[data-k=c2]').value);r.setProperty('--btn',$('[data-k=btn]').value)};
  el.querySelectorAll('input[type=color]').forEach(i=>i.oninput=ap);
  el.querySelectorAll('[data-f]').forEach(i=>i.onchange=()=>run(async()=>{const u=await up(i.files[0]);v[i.dataset.f]=u;el.querySelector(`[data-p=${i.dataset.f}]`).src=u}));
  $('#sv').onclick=()=>run(async()=>{el.querySelectorAll('[data-k]').forEach(i=>v[i.dataset.k]=i.type==='number'?num(i.value)||12:i.value);const {error}=await sb.from('cr_site_settings').upsert({id:1,data:v});if(error)throw error;alert('Publicado! O site já usa as novas configurações.')})}
+// ---------- Gerenciar página de contato (salva em cr_site_settings.data.contact)
+async function contato(el){
+ const s0=(await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle()).data?.data||{};
+ const C=JSON.parse(JSON.stringify(contactCfg(s0)));const saved=!!s0.contact;
+ C.blocks=C.blocks.filter(b=>CBLOCKS[b.k]);Object.keys(CBLOCKS).forEach(k=>{if(!C.blocks.some(b=>b.k===k))C.blocks.push({k,on:true})});
+ const opts=sel=>Object.entries(CTYPES).map(([k,t])=>`<option value=${k} ${k===sel?'selected':''}>${esc(t.n)}${t.n===CGROUPS[t.g]?'':' ('+esc(CGROUPS[t.g])+')'}</option>`).join('');
+ const mv=(a,i,d)=>{const j=i+d;if(j<0||j>=a.length)return false;[a[i],a[j]]=[a[j],a[i]];return true};
+ const pic=(k,l)=>`<div class=box><b>${l}</b><div style="display:flex;gap:10px;align-items:center;margin-top:6px"><img class=thumb data-ci=${k} src="${esc(C[k]||'')}" style="${C[k]?'':'visibility:hidden'}"><span><input type=file accept="image/*" data-cf=${k}><button class="btn alt sm" data-cr=${k}>Remover imagem</button></span></div></div>`;
+ const link=it=>{const h=cHref(it);return (it.value||'').trim()?h?`<small class=note>Abre: ${esc(h)}</small>`:'<small class=note style="color:#e5384f">⚠ Endereço inválido: este item não terá link.</small>':''};
+ const draw=()=>{
+  el.innerHTML=`<h2>Gerenciar página de contato</h2>${saved?'':'<p class=note style="color:#b45309"><b>Ainda não salvo.</b> Preenchemos com os dados que o site já tinha (telefone, e-mail, Instagram, Facebook). Revise e clique em Salvar.</p>'}
+  <div class=box><h3>Apresentação</h3><div class=row><label>Título da página<input data-k=title value="${esc(C.title||'')}" placeholder="Fale com a gente"></label><label>Nome da loja exibido<input data-k=store_name value="${esc(C.store_name||'')}" placeholder="Em branco = nome da loja (Aparência)"></label></div>
+  <label>Apresentação (texto abaixo do título)<textarea data-k=subtitle>${esc(C.subtitle||'')}</textarea></label>
+  <label>Descrição institucional (bloco “Sobre a loja”)<textarea data-k=about>${esc(C.about||'')}</textarea></label>
+  <label>Horário de atendimento<textarea data-k=hours placeholder="Segunda a sexta, das 9h às 18h">${esc(C.hours||'')}</textarea></label></div>
+  <div class=row>${pic('logo','Logotipo da página (em branco = logotipo da loja)')}${pic('cover','Imagem de capa (fundo do topo)')}</div>
+  <label><input type=checkbox data-b=show_logo ${C.show_logo!==false?'checked':''}> Mostrar logotipo no topo da página</label>
+  <div class=box><h3>Seções da página (ordem e visibilidade)</h3>${C.blocks.map((b,i)=>`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid #e3e9f2;padding:6px 0"><label style="margin:0"><input type=checkbox data-bo=${i} ${b.on!==false?'checked':''}> Mostrar</label><input data-bt=${i} value="${esc(b.t||'')}" placeholder="${esc(CBLOCKS[b.k])}" style="flex:1;min-width:160px"><span><button class="btn alt sm" data-bm="${i}:-1">▲</button><button class="btn alt sm" data-bm="${i}:1">▼</button></span></div>`).join('')}<p class=note>Cada contato aparece na seção do seu tipo: Atendimento, Redes sociais ou Outro site.</p></div>
+  <div class=box><h3>Contatos, redes sociais e links</h3>${C.items.map((it,i)=>`<div style="border-top:1px solid #e3e9f2;padding:10px 0;${it.on===false?'opacity:.55':''}"><div style="display:flex;gap:10px;align-items:flex-start"><span data-ip=${i}>${cIcon(it,40)}</span><div style="flex:1;min-width:0"><div class=row><label>Tipo e ícone<select data-it=${i}>${opts(it.type)}</select></label><label>Nome exibido<input data-il=${i} value="${esc(it.label||'')}" placeholder="${esc((CTYPES[it.type]||CTYPES.site).n)}"></label></div>
+   <label>Número, e-mail, @usuário ou endereço (link)<input data-iv=${i} value="${esc(it.value||'')}" placeholder="${esc((CTYPES[it.type]||CTYPES.site).ph)}"></label><div data-ih=${i}>${link(it)}</div>
+   ${it.type==='whatsapp'?`<label>Mensagem inicial (opcional)<input data-im=${i} value="${esc(it.msg||'')}" placeholder="Olá! Vim pelo site."></label>`:''}
+   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label style="margin:0"><input type=checkbox data-io=${i} ${it.on!==false?'checked':''}> Ativo</label><button class="btn alt sm" data-mv="${i}:-1">▲</button><button class="btn alt sm" data-mv="${i}:1">▼</button><button class="btn alt sm" data-rm=${i}>✕ Remover</button>
+   <label class="btn alt sm" style="margin:2px;display:inline-block">Ícone próprio…<input type=file accept="image/*" data-iu=${i} style="display:none"></label>${it.icon?`<button class="btn alt sm" data-ix=${i}>Usar ícone padrão</button>`:''}</div></div></div></div>`).join('')||'<p class=note>Nenhum item ainda.</p>'}
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><select id=nt style="width:auto;flex:1;min-width:200px">${opts('whatsapp')}</select><button class="btn sm" id=na>+ Adicionar</button></div></div>
+  <button class=btn id=csv>Salvar</button> <button class="btn alt" id=cvw>Salvar e ver a página</button>`;
+  el.querySelectorAll('[data-k]').forEach(i=>i.oninput=()=>C[i.dataset.k]=i.value);
+  el.querySelectorAll('[data-b]').forEach(i=>i.onchange=()=>C[i.dataset.b]=i.checked);
+  el.querySelectorAll('[data-bo]').forEach(i=>i.onchange=()=>C.blocks[+i.dataset.bo].on=i.checked);
+  el.querySelectorAll('[data-bt]').forEach(i=>i.oninput=()=>C.blocks[+i.dataset.bt].t=i.value.trim());
+  el.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.bm.split(':');if(mv(C.blocks,+i,+d))draw()});
+  el.querySelectorAll('[data-cf]').forEach(i=>i.onchange=()=>run(async()=>{const k=i.dataset.cf;C[k]=await up(i.files[0]);draw()}));
+  el.querySelectorAll('[data-cr]').forEach(b=>b.onclick=()=>{C[b.dataset.cr]='';draw()});
+  el.querySelectorAll('[data-it]').forEach(i=>i.onchange=()=>{C.items[+i.dataset.it].type=i.value;draw()});
+  el.querySelectorAll('[data-il]').forEach(i=>i.oninput=()=>C.items[+i.dataset.il].label=i.value);
+  el.querySelectorAll('[data-iv]').forEach(i=>i.oninput=()=>{const n=+i.dataset.iv;C.items[n].value=i.value;el.querySelector(`[data-ih="${n}"]`).innerHTML=link(C.items[n])});
+  el.querySelectorAll('[data-im]').forEach(i=>i.oninput=()=>C.items[+i.dataset.im].msg=i.value);
+  el.querySelectorAll('[data-io]').forEach(i=>i.onchange=()=>{C.items[+i.dataset.io].on=i.checked;draw()});
+  el.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.mv.split(':');if(mv(C.items,+i,+d))draw()});
+  el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{if(confirm('Remover este item?')){C.items.splice(+b.dataset.rm,1);draw()}});
+  el.querySelectorAll('[data-iu]').forEach(i=>i.onchange=()=>run(async()=>{C.items[+i.dataset.iu].icon=await up(i.files[0]);draw()}));
+  el.querySelectorAll('[data-ix]').forEach(b=>b.onclick=()=>{delete C.items[+b.dataset.ix].icon;draw()});
+  $('#na').onclick=()=>{const t=$('#nt').value;C.items.push({type:t,label:CTYPES[t].n,value:'',on:true});draw();el.querySelector(`[data-iv="${C.items.length-1}"]`).focus()};
+  const save=async()=>{C.items=C.items.map(it=>({...it,label:(it.label||'').trim(),value:(it.value||'').trim()}));
+   const {data:cur}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();
+   const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...(cur?.data||{}),contact:C}});if(error)throw error};
+  $('#csv').onclick=()=>run(async()=>{await save();alert('Página de contato salva!');contato(el)});
+  $('#cvw').onclick=()=>{const w=window.open('about:blank','_blank');run(async()=>{try{await save()}catch(e){w?.close();throw e}if(w)w.location.href='../contato.html';else location.href='../contato.html';contato(el)})}};
+ draw()}
 // ---------- Estatísticas
 async function stats(el,d=30){const ck=await clicks(d);const g=f=>{const o={};ck.forEach(x=>{const k=f(x)||'(sem dado)';o[k]=(o[k]||0)+1});return Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,10)};
  const bl=(t,a)=>{const mx=a[0]?.[1]||1;return `<div class=box><h3>${t}</h3>${a.map(([k,v])=>`<p>${esc(k)} — <b>${v}</b><div class=bar style="width:${v/mx*100}%"></div></p>`).join('')||'<p>Sem dados.</p>'}</div>`};
@@ -135,13 +187,13 @@ async function stats(el,d=30){const ck=await clicks(d);const g=f=>{const o={};ck
  $('#d').value=d;$('#d').onchange=e=>stats(el,+e.target.value)}
 // ---------- Importar CSV
 function csv(t){const d=t.split('\n')[0].includes(';')?';':',';const R=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=h}else if(h=='"')q=true;else if(h==d){r.push(c);c=''}else if(h=='\n'||h=='\r'){if(h=='\r'&&t[i+1]=='\n')i++;r.push(c);R.push(r);r=[];c=''}else c+=h}if(c||r.length){r.push(c);R.push(r)}return R.filter(x=>x.some(v=>v.trim()))}
-async function imp(el){el.innerHTML=`<h2>Importar produtos (CSV)</h2><div class=box><p>Use o arquivo <b>modelo-importacao.csv</b> (abra no Excel/Planilhas e salve como CSV). Colunas: nome, descricao, preco, preco_anterior, categoria, loja, link, destaque, oferta, imagem_url. Categorias e lojas inexistentes são criadas.</p><input type=file id=cf accept=".csv,text/csv"></div><div id=pv></div>`;
- $('#cf').onchange=async e=>{const rows=csv((await e.target.files[0].text()).replace(/^\uFEFF/,'')),h=rows.shift().map(x=>x.trim().toLowerCase());const L=rows.map((r,n)=>{const o={};h.forEach((k,i)=>o[k]=(r[i]||'').trim());o.err=!o.nome?'sem nome':!o.categoria?'sem categoria':!o.loja?'sem loja':!/^https?:\/\//i.test(o.link)?'link inválido':isNaN(num(o.preco)||0)?'preço inválido':'';return o});
-  $('#pv').innerHTML=`<div class=tw><table><tr><th>Nome<th>Preço<th>Categoria<th>Loja<th>Situação</tr>${L.map(o=>`<tr><td>${esc(o.nome)}<td>${esc(o.preco)}<td>${esc(o.categoria)}<td>${esc(o.loja)}<td>${o.err?'❌ '+o.err:'✅ ok'}</tr>`).join('')}</table></div><button class=btn id=go>Importar ${L.filter(o=>!o.err).length} produto(s) válidos</button>`;
+async function imp(el){el.innerHTML=`<h2>Importar produtos (CSV)</h2><div class=box><p>Use o arquivo <b>modelo-importacao.csv</b> (abra no Excel/Planilhas e salve como CSV). Colunas: nome, descricao, preco, preco_anterior, categoria, loja, link, destaque, oferta, imagem_url e, opcional, preco_maximo (para faixa de preço, ex.: Shopee). Categorias e lojas inexistentes são criadas.</p><input type=file id=cf accept=".csv,text/csv"></div><div id=pv></div>`;
+ $('#cf').onchange=async e=>{const rows=csv((await e.target.files[0].text()).replace(/^\uFEFF/,'')),h=rows.shift().map(x=>x.trim().toLowerCase());const L=rows.map((r,n)=>{const o={};h.forEach((k,i)=>o[k]=(r[i]||'').trim());o.err=!o.nome?'sem nome':!o.categoria?'sem categoria':!o.loja?'sem loja':!/^https?:\/\//i.test(o.link)?'link inválido':isNaN(num(o.preco)||0)?'preço inválido':o.preco_maximo&&(isNaN(num(o.preco_maximo))||!(num(o.preco_maximo)>num(o.preco)))?'preço máximo inválido (precisa ser maior que o preço)':'';return o});
+  $('#pv').innerHTML=`<div class=tw><table><tr><th>Nome<th>Preço<th>Categoria<th>Loja<th>Situação</tr>${L.map(o=>`<tr><td>${esc(o.nome)}<td>${esc(o.preco)}${o.preco_maximo?' – '+esc(o.preco_maximo):''}<td>${esc(o.categoria)}<td>${esc(o.loja)}<td>${o.err?'❌ '+o.err:'✅ ok'}</tr>`).join('')}</table></div><button class=btn id=go>Importar ${L.filter(o=>!o.err).length} produto(s) válidos</button>`;
   $('#go').onclick=()=>run(async()=>{let n=0;const C={},M={};const sim=v=>/^(sim|s|1|true)$/i.test(v||'');
    for(const o of L.filter(o=>!o.err)){if(!C[o.categoria]){let {data:c}=await sb.from('cr_categories').select('id').ilike('name',o.categoria).maybeSingle();if(!c)c=(await sb.from('cr_categories').insert({name:o.categoria,slug:slug(o.categoria)}).select('id').single()).data;C[o.categoria]=c.id}
     if(!M[o.loja]){let {data:m}=await sb.from('cr_merchants').select('id').ilike('name',o.loja).maybeSingle();if(!m)m=(await sb.from('cr_merchants').insert({name:o.loja}).select('id').single()).data;M[o.loja]=m.id}
-    const {data:p,error}=await sb.from('cr_products').insert({name:o.nome,slug:slug(o.nome),description:o.descricao,price:num(o.preco),old_price:num(o.preco_anterior),category_id:C[o.categoria],merchant_id:M[o.loja],affiliate_url:o.link,featured:sim(o.destaque),offer:sim(o.oferta)}).select('id').single();
+    const {data:p,error}=await sb.from('cr_products').insert({name:o.nome,slug:slug(o.nome),description:o.descricao,price:num(o.preco),old_price:num(o.preco_anterior),category_id:C[o.categoria],merchant_id:M[o.loja],affiliate_url:o.link,featured:sim(o.destaque),offer:sim(o.oferta),...(o.preco_maximo?{price_max:num(o.preco_maximo)}:{})}).select('id').single();
     if(error)continue;n++;if(/^https?:\/\//i.test(o.imagem_url))await sb.from('cr_product_images').insert({product_id:p.id,url:o.imagem_url,sort:0,is_cover:true})}
    alert(n+' produto(s) importado(s).');imp(el)})}}
 // ---------- Temas sazonais
@@ -216,7 +268,7 @@ function backup(el){el.innerHTML=`<div id=bn></div><h2>Backup e restauração</h
  $('#bv').onclick=()=>run(async()=>{const [P,C,M,I]=await Promise.all(['cr_products','cr_categories','cr_merchants','cr_product_images'].map(allRows));
   const cn=Object.fromEntries(C.map(c=>[c.id,c.name])),mn=Object.fromEntries(M.map(m=>[m.id,m.name])),im={};I.sort((a,b)=>a.sort-b.sort).forEach(i=>{if(!im[i.product_id])im[i.product_id]=i.url});
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',pr=v=>v==null?'':String(v).replace('.',',');
-  const L=[['nome','descricao','preco','preco_anterior','categoria','loja','link','destaque','oferta','imagem_url'].join(';')].concat(P.map(p=>[p.name,p.description,pr(p.price),pr(p.old_price),cn[p.category_id],mn[p.merchant_id],p.affiliate_url,p.featured?'sim':'nao',p.offer?'sim':'nao',im[p.id]].map(q).join(';')));
+  const L=[['nome','descricao','preco','preco_anterior','categoria','loja','link','destaque','oferta','imagem_url','preco_maximo'].join(';')].concat(P.map(p=>[p.name,p.description,pr(p.price),pr(p.old_price),cn[p.category_id],mn[p.merchant_id],p.affiliate_url,p.featured?'sim':'nao',p.offer?'sim':'nao',im[p.id],pr(p.price_max)].map(q).join(';')));
   dl(`produtos-compras-rapidas-${stamp()}.csv`,'\ufeff'+L.join('\r\n'),'text/csv')});
  $('#rb').onclick=()=>run(async()=>{const f=$('#rf').files[0];if(!f)throw new Error('Escolha o arquivo de backup (.json).');let b;try{b=JSON.parse(await f.text())}catch(e){throw new Error('Arquivo inválido.')}
   if(b.app!=='compras-rapidas'||!b.tables)throw new Error('Este arquivo não é um backup da Compras Rápidas.');

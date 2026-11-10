@@ -9,7 +9,7 @@ create table cr_admins(user_id uuid primary key references auth.users on delete 
 create function cr_is_admin() returns boolean language sql security definer stable set search_path=public as $$ select exists(select 1 from cr_admins where user_id=auth.uid()) $$;
 create table cr_categories(id uuid primary key default gen_random_uuid(), name text not null, slug text unique not null, image_url text, sort int default 0, active boolean default true);
 create table cr_merchants(id uuid primary key default gen_random_uuid(), name text not null unique);
-create table cr_products(id uuid primary key default gen_random_uuid(), name text not null, slug text unique not null, description text, price numeric(12,2) check(price>=0), old_price numeric(12,2) check(old_price>=0),
+create table cr_products(id uuid primary key default gen_random_uuid(), name text not null, slug text unique not null, description text, price numeric(12,2) check(price>=0), old_price numeric(12,2) check(old_price>=0), price_max numeric(12,2) check(price_max>=0),
  category_id uuid references cr_categories(id) on delete restrict, merchant_id uuid references cr_merchants(id), affiliate_url text not null check(affiliate_url ~* '^https?://'),
  featured boolean default false, offer boolean default false, offer_start timestamptz, offer_end timestamptz,
  status text default 'active' check(status in ('active','inactive','archived')), created_at timestamptz default now());

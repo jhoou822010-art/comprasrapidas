@@ -1,0 +1,37 @@
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Contato</title><link rel=stylesheet href=css/style.css><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content="Compras Rápidas">
+<style>
+/* mesmo padrão do banner da página inicial (.car/.sl/.hb) e dos cards de produto (.card) */
+.ch{position:relative;margin:14px 0;border-radius:14px;overflow:hidden;min-height:240px;display:flex;align-items:center;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2)) center/cover no-repeat}
+@media(min-width:800px){.ch{min-height:340px}}
+.ch.img::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#000b,#0006 50%,#0002)}
+.ch>div{position:relative;padding:28px 24px 40px;max-width:620px}
+.ch .lg{height:56px;width:56px;object-fit:contain;background:#fff;border-radius:12px;margin-bottom:10px}
+.ch .sn{font-size:.9rem;opacity:.9;margin-bottom:4px;text-shadow:0 1px 6px #0009}
+.ch h1{margin:0 0 8px;font-size:clamp(1.5rem,5vw,2.6rem);line-height:1.15;text-shadow:0 2px 8px #0009}.ch p{margin:0 0 16px;white-space:pre-line;text-shadow:0 1px 6px #0009}
+.hb{display:inline-block;background:var(--btn);color:#fff;font-weight:700;padding:12px 26px;border-radius:999px;border:2px solid #fff;box-shadow:0 4px 14px #0006}.hb:hover{filter:brightness(1.1)}
+.cg{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}@media(min-width:1000px){.cg{gap:16px}}
+.ci{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:10px;box-shadow:0 1px 4px #0001;transition:.15s;min-width:0}
+a.ci:hover{transform:translateY(-2px);box-shadow:0 4px 14px #0002}.ci .cic{flex:0 0 auto;border-radius:10px;object-fit:cover}
+.ci span{flex:1;min-width:0}.ci b{display:block;font-size:.95rem}.ci small{display:block;color:#667;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ci i{font-style:normal;color:var(--c2);font-size:1.3rem}
+</style></head>
+<body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
+<script type=module>
+import {boot,esc,$,contactCfg,CTYPES,CBLOCKS,cIcon,cHref} from './js/app.js';
+const S=await boot();const C=contactCfg(S);
+document.title='Contato | '+(S.seo_title||S.name);
+const cssUrl=u=>encodeURI(u).replace(/[()']/g,c=>'%'+c.charCodeAt(0).toString(16));
+const img=u=>/^https?:\/\//i.test(u||'')?u:'';
+const items=(C.items||[]).filter(it=>it.on!==false&&(it.value||'').trim());
+const logo=C.show_logo===false?'':img(C.logo)||img(S.logo),cover=img(C.cover);
+const wa=items.find(it=>it.type==='whatsapp'&&cHref(it));
+const cardH=it=>{const t=CTYPES[it.type]||CTYPES.site,h=cHref(it),ext=/^https?:/i.test(h),lab=esc(it.label||t.n),val=esc(it.value);
+ const inner=`${cIcon(it,40)}<span><b>${lab}</b><small>${val}</small></span>`;
+ return h?`<a class=ci href="${esc(h)}"${ext?' target=_blank rel=noopener':''}>${inner}<i aria-hidden=true>›</i></a>`:`<div class=ci>${inner}</div>`};
+const block=b=>{const title=esc(b.t||CBLOCKS[b.k]||'');
+ if(b.k==='sobre')return C.about?.trim()?`<div class=sh><h2>${title}</h2></div><div class=box style="white-space:pre-line">${esc(C.about)}</div>`:'';
+ if(b.k==='horario')return C.hours?.trim()?`<div class=sh><h2>${title}</h2></div><div class=box style="white-space:pre-line">${esc(C.hours)}</div>`:'';
+ const L=items.filter(it=>(CTYPES[it.type]||CTYPES.site).g===b.k);return L.length?`<div class=sh><h2>${title}</h2></div><div class=cg>${L.map(cardH).join('')}</div>`:''};
+const body=(C.blocks||[]).filter(b=>b.on!==false).map(block).join('');
+$('#m').innerHTML=`<div class="ch${cover?' img':''}"${cover?` style="background-image:url('${esc(cssUrl(cover))}')"`:''}><div>${logo?`<img class=lg src="${esc(logo)}" alt="">`:''}<div class=sn>${esc(C.store_name||S.name)}</div><h1>${esc(C.title||'Contato')}</h1>${C.subtitle?`<p>${esc(C.subtitle)}</p>`:''}${wa?`<a class=hb href="${esc(cHref(wa))}" target=_blank rel=noopener>Chamar no WhatsApp →</a>`:''}</div></div>
+${body||'<div class=box>Em breve, nossos canais de atendimento estarão disponíveis aqui.</div>'}`;
+</script></body></html>

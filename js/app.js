@@ -93,25 +93,64 @@ export async function boot(){
  if(S.favicon){let l=document.querySelector('link[rel=icon]')||document.head.appendChild(Object.assign(document.createElement('link'),{rel:'icon'}));l.href=S.favicon}
  $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>
  <form action=lista.html><input type=hidden name=tipo value=busca><input name=q placeholder="O que você está procurando?" aria-label="Pesquisar"><button aria-label="Buscar">🔍</button></form></div>
- <nav><a href=index.html>Início</a><a href="lista.html?tipo=categorias">Categorias</a><a href="lista.html?tipo=ofertas">Ofertas</a><a href="lista.html?tipo=destaques">Destaques</a></nav></div></header>${stripHtml()}`;
+ <nav><a href=index.html>Início</a><a href="lista.html?tipo=categorias">Categorias</a><a href="lista.html?tipo=ofertas">Ofertas</a><a href="lista.html?tipo=destaques">Destaques</a><a href=contato.html>Contato</a></nav></div></header>${stripHtml()}`;
  $('#ftr').innerHTML=`${AREA==='top'?'':stripHtml()}<footer><div class=w><p><b>${esc(S.name)}</b> — ${esc(S.slogan)}</p><p>${DISCLAIMER}</p><p>${S.footer_text?esc(S.footer_text)+'<br>':''}
- <a href="pagina.html?p=sobre">Sobre</a><a href="pagina.html?p=contato">Contato</a><a href="pagina.html?p=privacidade">Privacidade</a>${S.instagram?`<a href="${esc(safeUrl(S.instagram))}" rel=noopener>Instagram</a>`:''}${S.facebook?`<a href="${esc(safeUrl(S.facebook))}" rel=noopener>Facebook</a>`:''}</p></div></footer>
+ <a href="pagina.html?p=sobre">Sobre</a><a href=contato.html>Contato</a><a href="pagina.html?p=privacidade">Privacidade</a></p><p class=cpy>© ${new Date().getFullYear()} ${esc(S.name)}. Todos os direitos reservados.</p></div></footer>
  <div id=lb></div>`;
+ {const here=(location.pathname.split('/').pop()||'index.html')+location.search;document.querySelectorAll('header nav a').forEach(a=>{if(a.getAttribute('href')===here){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
  return S}
-const SEL='id,name,price,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
+const SEL='id,name,price,price_max,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
 export const isOffer=p=>p.offer&&(!p.offer_end||new Date(p.offer_end)>new Date())&&(!p.offer_start||new Date(p.offer_start)<=new Date());
+// preço em faixa (ex.: Shopee): "R$ 14,50 – R$ 25,90" quando price_max for maior que o preço
+export const isRange=p=>p.price!=null&&p.price_max!=null&&+p.price_max>+p.price;
+export const priceTxt=p=>p.price==null?'':money(p.price)+(isRange(p)?' – '+money(p.price_max):'');
+// se a coluna price_max ainda não existir no banco (SQL 02 não executado), busca sem ela para o site não parar
+let NOMAX=false;const sel=()=>NOMAX?SEL.replace('price_max,',''):SEL,miss=e=>!!e&&/price_max/.test(e.message||'');
 export const showOld=p=>p.old_price>p.price&&(!p.offer||isOffer(p));
 export const cover=p=>[...(p.product_images||[])].sort((a,b)=>a.sort-b.sort)[0]?.url||PH;
-export async function list({offer,featured,q,cat,page=1,per=12}={}){
- let r=sb.from('cr_products').select(SEL,{count:'exact'}).eq('status','active');const now=new Date().toISOString();
+export async function list(o={}){let res=await list1(o);if(miss(res.error)){NOMAX=true;res=await list1(o)}return res}
+async function list1({offer,featured,q,cat,page=1,per=12}={}){
+ let r=sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active');const now=new Date().toISOString();
  if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
  if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);
  if(q){q=q.replace(/[,()%*]/g,' ').trim();r=r.or(`name.ilike.%${q}%,description.ilike.%${q}%`)}
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
-export async function byIds(ids){if(!ids?.length)return [];const {data}=await sb.from('cr_products').select(SEL).eq('status','active').in('id',ids);const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
+export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
 export function card(p){const o=isOffer(p);
  return `<a class=card href="produto.html?id=${p.id}"><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async src="${esc(cover(p))}" alt="${esc(p.name)}">${cornerDeco()}</div>
- <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b>${money(p.price)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}
+ <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}
+
+// ---- página de contato: ícones, links e configuração (guardada em cr_site_settings.data.contact)
+const _sk=(d,w=2)=>`<g fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</g>`;
+const _PH='M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z';
+export const CTYPES={
+ whatsapp:{n:'WhatsApp',g:'at',c:'#25D366',ph:'(11) 91234-5678',s:_sk('<path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z"/>')+`<path fill="#fff" transform="translate(6.6 6.6) scale(.45)" d="${_PH}"/>`},
+ phone:{n:'Telefone',g:'at',c:'#1e6bff',ph:'(11) 3333-4444',s:`<path fill="#fff" d="${_PH}"/>`},
+ email:{n:'E-mail',g:'at',c:'#e5384f',ph:'contato@sualoja.com',s:_sk('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5 12 13l8.5-6.5"/>')},
+ instagram:{n:'Instagram',g:'rs',c:'#d6246e',ph:'@sualoja ou link',s:_sk('<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/>')+'<circle cx="17.2" cy="6.8" r="1.2" fill="#fff"/>'},
+ facebook:{n:'Facebook',g:'rs',c:'#1877f2',ph:'link da página',s:'<path fill="#fff" d="M14 8.5V7c0-.8.3-1.2 1.3-1.2H17V2.2h-2.6C11.5 2.2 10.4 4 10.4 6.7v1.8H8v3.6h2.4V22H14v-9.9h2.7l.4-3.6z"/>'},
+ youtube:{n:'YouTube',g:'rs',c:'#ff0000',ph:'link do canal ou @canal',s:'<rect x="2" y="5" width="20" height="14" rx="4.5" fill="#fff"/><path d="M10 8.8v6.4l5.6-3.2z" fill="#ff0000"/>'},
+ site:{n:'Outro site',g:'lk',c:'#0f766e',ph:'www.seusite.com.br',s:_sk('<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="3.8" ry="9"/><path d="M3 12h18"/>',1.8)}};
+export const CGROUPS={at:'Atendimento',rs:'Redes sociais',lk:'Outro site'};
+export const cIcon=(it,sz=44)=>{const t=CTYPES[it.type]||CTYPES.site;
+ if(it.icon&&/^https?:\/\//i.test(it.icon))return `<img class=cic src="${esc(it.icon)}" alt="" width=${sz} height=${sz}>`;
+ return `<svg class=cic viewBox="-4 -4 32 32" width=${sz} height=${sz} aria-hidden=true><rect x="-4" y="-4" width="32" height="32" rx="9" fill="${it.color||t.c}"/>${t.s}</svg>`};
+export function cHref(it){const v=String(it.value||'').trim();if(!v)return '';const t=it.type,d=v.replace(/\D/g,'');
+ if(/^(https?:\/\/|mailto:|tel:)/i.test(v))return v.replace(/\s/g,'');
+ if(t==='whatsapp')return d.length>=10?'https://wa.me/'+(d.length<=11?'55'+d:d)+(it.msg?'?text='+encodeURIComponent(it.msg):''):'';
+ if(t==='phone')return d.length>=8?'tel:+'+(d.length<=11?'55'+d:d):'';
+ if(t==='email')return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)?'mailto:'+v:'';
+ const B={instagram:'https://instagram.com/',facebook:'https://facebook.com/',youtube:'https://youtube.com/@'},h=v.replace(/^@/,'');
+ if(B[t]&&/^[\w.-]+$/.test(h))return B[t]+h;
+ if(/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(v))return 'https://'+v;
+ return ''}
+export const CBLOCKS={sobre:'Sobre a loja',at:'Atendimento',rs:'Redes sociais',lk:'Outro site',horario:'Horário de atendimento'};
+// configuração da página; se ainda não foi salva no painel, monta a partir dos dados que já existem (telefone, e-mail, Instagram, Facebook)
+export function contactCfg(s){const c=s?.contact;if(c&&Array.isArray(c.items))return {...c,blocks:c.blocks?.length?c.blocks:Object.keys(CBLOCKS).map(k=>({k,on:true}))};
+ const items=[];if(s?.phone)items.push({type:'whatsapp',label:'WhatsApp',value:s.phone,on:true});if(s?.email)items.push({type:'email',label:'E-mail',value:s.email,on:true});
+ if(s?.instagram)items.push({type:'instagram',label:'Instagram',value:s.instagram,on:true});if(s?.facebook)items.push({type:'facebook',label:'Facebook',value:s.facebook,on:true});
+ return {title:'Fale com a gente',subtitle:s?.contact_text||'Estamos aqui para ajudar. Escolha o canal que preferir.',store_name:'',intro:'',about:s?.about||'',hours:'',logo:'',show_logo:true,cover:'',
+  blocks:Object.keys(CBLOCKS).map(k=>({k,on:true})),items}}

@@ -21,7 +21,7 @@
 </style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
-import {sb,boot,list,card,esc,byIds,decorHero,cover,money,isOffer,showOld} from './js/app.js';
+import {sb,boot,list,card,esc,byIds,decorHero,cover,money,isOffer,showOld,priceTxt} from './js/app.js';
 const pre=Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const S=await boot();
 const [{data:bn},{data:sec}]=await pre;
@@ -37,7 +37,7 @@ const jobs=(sec||[]).map(x=>{if(x.key==='categorias')return sb.from('cr_categori
 const [bp,cp,...res]=await Promise.all([bids.length?byIds(bids):[],useCar?byIds(cids):[],...jobs]);
 // produto no banner do topo: foto, nome, preço e botão para a página do produto
 const pslide=(p,i)=>{const T=i?'h2':'h1',im=p.product_images?.length?cover(p):'';
- return `<div class="sl ps"${im?` style="background-image:url('${esc(cssUrl(im))}')"`:''}><div>${isOffer(p)?'<span class=ptag>Oferta</span>':''}<${T}>${esc(p.name)}</${T}><p class=ppr>${p.price!=null?`<b>${money(p.price)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</p><a class=hb href="produto.html?id=${esc(p.id)}">Ver produto →</a></div></div>`};
+ return `<div class="sl ps"${im?` style="background-image:url('${esc(cssUrl(im))}')"`:''}><div>${isOffer(p)?'<span class=ptag>Oferta</span>':''}<${T}>${esc(p.name)}</${T}><p class=ppr>${p.price!=null?`<b>${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</p><a class=hb href="produto.html?id=${esc(p.id)}">Ver produto →</a></div></div>`};
 const bs=[...(bn||[]).map(b=>i=>slide(b,i)),...bp.map(p=>i=>pslide(p,i))];
 if(!bs.length)bs.push(i=>slide({title:'Encontre o que procura!',subtitle:'Produtos selecionados, novidades e oportunidades em um só lugar.',button_text:'Ver ofertas',button_url:'lista.html?tipo=ofertas'},i));
 let h=`<div class=car><div class=trk id=trk>${bs.map((f,i)=>f(i)).join('')}</div>${bs.length>1?`<button class=nv id=pv aria-label=Anterior>‹</button><button class=nv id=nx aria-label=Próximo>›</button><div class=dots id=dots>${bs.map((_,i)=>`<button aria-label="Banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
