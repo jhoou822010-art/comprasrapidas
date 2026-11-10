@@ -101,21 +101,27 @@ export async function boot(){
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
  return S}
-const SEL='id,name,price,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
+const SEL='id,name,price,price_max,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
 export const isOffer=p=>p.offer&&(!p.offer_end||new Date(p.offer_end)>new Date())&&(!p.offer_start||new Date(p.offer_start)<=new Date());
+// preço em faixa (ex.: Shopee): "R$ 14,50 – R$ 25,90" quando price_max for maior que o preço
+export const isRange=p=>p.price!=null&&p.price_max!=null&&+p.price_max>+p.price;
+export const priceTxt=p=>p.price==null?'':money(p.price)+(isRange(p)?' – '+money(p.price_max):'');
+// se a coluna price_max ainda não existir no banco (SQL 02 não executado), busca sem ela para o site não parar
+let NOMAX=false;const sel=()=>NOMAX?SEL.replace('price_max,',''):SEL,miss=e=>!!e&&/price_max/.test(e.message||'');
 export const showOld=p=>p.old_price>p.price&&(!p.offer||isOffer(p));
 export const cover=p=>[...(p.product_images||[])].sort((a,b)=>a.sort-b.sort)[0]?.url||PH;
-export async function list({offer,featured,q,cat,page=1,per=12}={}){
- let r=sb.from('cr_products').select(SEL,{count:'exact'}).eq('status','active');const now=new Date().toISOString();
+export async function list(o={}){let res=await list1(o);if(miss(res.error)){NOMAX=true;res=await list1(o)}return res}
+async function list1({offer,featured,q,cat,page=1,per=12}={}){
+ let r=sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active');const now=new Date().toISOString();
  if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
  if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);
  if(q){q=q.replace(/[,()%*]/g,' ').trim();r=r.or(`name.ilike.%${q}%,description.ilike.%${q}%`)}
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
-export async function byIds(ids){if(!ids?.length)return [];const {data}=await sb.from('cr_products').select(SEL).eq('status','active').in('id',ids);const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
+export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
 export function card(p){const o=isOffer(p);
  return `<a class=card href="produto.html?id=${p.id}"><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async src="${esc(cover(p))}" alt="${esc(p.name)}">${cornerDeco()}</div>
- <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b>${money(p.price)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}
+ <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}
 
 // ---- página de contato: ícones, links e configuração (guardada em cr_site_settings.data.contact)
 const _sk=(d,w=2)=>`<g fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</g>`;

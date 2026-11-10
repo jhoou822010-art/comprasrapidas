@@ -6,7 +6,7 @@ table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;bord
 .sm{padding:6px 10px;min-height:0;font-size:.85rem;margin:2px}</style></head>
 <body><div id=app class=w></div>
 <script type=module>
-import {sb,$,esc,money,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref} from '../js/app.js';
+import {sb,$,esc,money,priceTxt,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref} from '../js/app.js';
 const A=$('#app');const W=window;
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,6);
 const num=v=>{if(v===''||v==null)return null;let s=String(v).replace(/[^\d.,]/g,'');if(!s)return NaN;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)};
@@ -51,10 +51,11 @@ const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',
 async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_ids||[]).filter(i=>i!==pid);if(on)ids.push(pid);
  const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:ids}});if(error)throw error}
 async function prods(el,term='',st=''){
- let q=sb.from('cr_products').select('id,name,price,status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)').order('created_at',{ascending:false}).limit(100);
- if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);const [{data},cfg]=await Promise.all([q,getSet()]);const BI=new Set(cfg.banner_ids||[]);
+ const mk=c=>{let q=sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`).order('created_at',{ascending:false}).limit(100);
+ if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);return q};
+ let [{data,error:qe},cfg]=await Promise.all([mk(1),getSet()]);if(qe&&/price_max/.test(qe.message||''))({data}=await mk(0));const BI=new Set(cfg.banner_ids||[]);
  el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
- <div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${(data||[]).map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${money(p.price)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join('')}</table></div>`;
+ <div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${(data||[]).map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join('')}</table></div>`;
  $('#ps').value=st;$('#pb').onclick=()=>prods(el,$('#pt').value,$('#ps').value);$('#pn').onclick=()=>run(()=>pform(el));
  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>run(()=>pform(el,b.dataset.e)));
  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>run(async()=>{await sb.from('cr_products').update({status:b.dataset.s==='archived'?'active':'archived'}).eq('id',b.dataset.a);prods(el,term,st)}));
@@ -66,7 +67,8 @@ async function pform(el,id){
   imgs=[...p.product_images].sort((a,b)=>a.sort-b.sort).map(i=>({url:i.url}));[...p.product_videos].sort((a,b)=>a.sort-b.sort).forEach((v,i)=>vids[i]=v.url)}
  const dt=v=>v?new Date(v).toISOString().slice(0,16):'';
  el.innerHTML=`<h2>${id?'Editar':'Novo'} produto</h2><div class=box><label>Nome*<input id=n value="${esc(p.name||'')}"></label><label>Descrição<textarea id=d>${esc(p.description||'')}</textarea></label>
- <div class=row><label>Preço atual (R$)<input id=pr inputmode=decimal value="${p.price??''}"></label><label>Preço anterior (R$)<input id=po inputmode=decimal value="${p.old_price??''}"></label>
+ <div class=row><label>Preço atual (R$) — ou o menor preço<input id=pr inputmode=decimal value="${p.price??''}"></label><label>Até (preço máximo, R$) — opcional<input id=pm inputmode=decimal value="${p.price_max??''}" placeholder="Ex.: 25,90"><small class=note>Para produtos com variações (ex.: Shopee). Aparece como “R$ 14,50 – R$ 25,90”. Deixe vazio para preço único.</small></label>
+ <label>Preço anterior (R$)<input id=po inputmode=decimal value="${p.old_price??''}"></label><span></span>
  <label>Categoria*<select id=c><option value="">Escolha…</option>${(cs||[]).map(c=>`<option value=${c.id} ${c.id===p.category_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
  <label>Loja parceira*<input id=m list=ml value="${esc(p.merchants?.name||'')}" placeholder="Shopee, Mercado Livre…"><datalist id=ml>${(ms||[]).map(m=>`<option>${esc(m.name)}`).join('')}</datalist></label></div>
  <label>Link de afiliado* (https://…)<input id=u value="${esc(p.affiliate_url||'')}"></label>
@@ -84,15 +86,17 @@ async function pform(el,id){
  el.querySelectorAll('[data-vf]').forEach(i=>i.onchange=()=>run(async()=>{const f=i.files[0];if(f)el.querySelector(`[data-v="${i.dataset.vf}"]`).value=await up(f)}));
  $('#cn').onclick=()=>prods(el);
  $('#sv').onclick=()=>run(async()=>{
-  const name=$('#n').value.trim(),url=$('#u').value.trim(),mn=$('#m').value.trim(),pr=num($('#pr').value),po=num($('#po').value);
+  const name=$('#n').value.trim(),url=$('#u').value.trim(),mn=$('#m').value.trim(),pr=num($('#pr').value),po=num($('#po').value),pm=num($('#pm').value);
   if(!name||!$('#c').value||!mn)throw new Error('Preencha nome, categoria e loja.');if(!/^https?:\/\//i.test(url))throw new Error('O link de afiliado deve começar com https://');
-  if(pr!=null&&isNaN(pr)||po!=null&&isNaN(po))throw new Error('Preço atual ou anterior inválido. Use só números, por exemplo 23,49.');if(po!=null&&pr!=null&&po<=pr&&!confirm('Preço anterior não é maior que o atual; o desconto não será exibido. Continuar?'))return;
+  if(pr!=null&&isNaN(pr)||po!=null&&isNaN(po)||pm!=null&&isNaN(pm))throw new Error('Preço atual, anterior ou máximo inválido. Use só números, por exemplo 23,49.');
+  if(pm!=null&&(pr==null||pm<=pr))throw new Error('O preço máximo precisa ser maior que o preço atual (ex.: de 14,50 até 25,90). Deixe vazio se o preço for único.');if(po!=null&&pr!=null&&po<=pr&&!confirm('Preço anterior não é maior que o atual; o desconto não será exibido. Continuar?'))return;
   const wantB=$('#bnr').checked;if(wantB&&!inB&&bids.length>=BMAX)throw new Error('O banner do topo já tem '+BMAX+' produtos. Desmarque algum antes (aba Banners).');
   $('#sv').disabled=true;$('#sv').textContent='Salvando…';
   let {data:m}=await sb.from('cr_merchants').select('id').ilike('name',mn).maybeSingle();if(!m){const r=await sb.from('cr_merchants').insert({name:mn}).select('id').single();if(r.error)throw r.error;m=r.data}
   const row={name,description:$('#d').value,price:pr,old_price:po,category_id:$('#c').value,merchant_id:m.id,affiliate_url:url,featured:$('#f').checked,offer:$('#o').checked,
-   offer_start:$('#os').value?new Date($('#os').value).toISOString():null,offer_end:$('#oe').value?new Date($('#oe').value).toISOString():null,status:$('#st').value};
-  let pid=id;if(id){const {error}=await sb.from('cr_products').update(row).eq('id',id);if(error)throw error}else{const r=await sb.from('cr_products').insert({...row,slug:slug(name)}).select('id').single();if(r.error)throw r.error;pid=r.data.id}
+   offer_start:$('#os').value?new Date($('#os').value).toISOString():null,offer_end:$('#oe').value?new Date($('#oe').value).toISOString():null,status:$('#st').value};if(pm!=null||p.price_max!=null)row.price_max=pm;
+  const nomax=e=>e&&/price_max/.test(e.message||'')?new Error('Para usar o preço máximo, rode antes o arquivo supabase/02-preco-maximo.sql no Supabase (SQL Editor). Ou deixe o preço máximo vazio.'):e;
+  let pid=id;if(id){const {error}=await sb.from('cr_products').update(row).eq('id',id);if(error)throw nomax(error)}else{const r=await sb.from('cr_products').insert({...row,slug:slug(name)}).select('id').single();if(r.error)throw nomax(r.error);pid=r.data.id}
   for(const x of imgs)if(x.file){x.url=await up(x.file);delete x.file}
   await sb.from('cr_product_images').delete().eq('product_id',pid);if(imgs.length)await sb.from('cr_product_images').insert(imgs.map((x,i)=>({product_id:pid,url:x.url,sort:i,is_cover:i===0})));
   const vs=[...el.querySelectorAll('[data-v]')].map(i=>i.value.trim()).filter(Boolean);if(vs.some(v=>!/^https?:\/\//i.test(v)))throw new Error('Link de vídeo inválido.');
@@ -183,13 +187,13 @@ async function stats(el,d=30){const ck=await clicks(d);const g=f=>{const o={};ck
  $('#d').value=d;$('#d').onchange=e=>stats(el,+e.target.value)}
 // ---------- Importar CSV
 function csv(t){const d=t.split('\n')[0].includes(';')?';':',';const R=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=h}else if(h=='"')q=true;else if(h==d){r.push(c);c=''}else if(h=='\n'||h=='\r'){if(h=='\r'&&t[i+1]=='\n')i++;r.push(c);R.push(r);r=[];c=''}else c+=h}if(c||r.length){r.push(c);R.push(r)}return R.filter(x=>x.some(v=>v.trim()))}
-async function imp(el){el.innerHTML=`<h2>Importar produtos (CSV)</h2><div class=box><p>Use o arquivo <b>modelo-importacao.csv</b> (abra no Excel/Planilhas e salve como CSV). Colunas: nome, descricao, preco, preco_anterior, categoria, loja, link, destaque, oferta, imagem_url. Categorias e lojas inexistentes são criadas.</p><input type=file id=cf accept=".csv,text/csv"></div><div id=pv></div>`;
- $('#cf').onchange=async e=>{const rows=csv((await e.target.files[0].text()).replace(/^\uFEFF/,'')),h=rows.shift().map(x=>x.trim().toLowerCase());const L=rows.map((r,n)=>{const o={};h.forEach((k,i)=>o[k]=(r[i]||'').trim());o.err=!o.nome?'sem nome':!o.categoria?'sem categoria':!o.loja?'sem loja':!/^https?:\/\//i.test(o.link)?'link inválido':isNaN(num(o.preco)||0)?'preço inválido':'';return o});
-  $('#pv').innerHTML=`<div class=tw><table><tr><th>Nome<th>Preço<th>Categoria<th>Loja<th>Situação</tr>${L.map(o=>`<tr><td>${esc(o.nome)}<td>${esc(o.preco)}<td>${esc(o.categoria)}<td>${esc(o.loja)}<td>${o.err?'❌ '+o.err:'✅ ok'}</tr>`).join('')}</table></div><button class=btn id=go>Importar ${L.filter(o=>!o.err).length} produto(s) válidos</button>`;
+async function imp(el){el.innerHTML=`<h2>Importar produtos (CSV)</h2><div class=box><p>Use o arquivo <b>modelo-importacao.csv</b> (abra no Excel/Planilhas e salve como CSV). Colunas: nome, descricao, preco, preco_anterior, categoria, loja, link, destaque, oferta, imagem_url e, opcional, preco_maximo (para faixa de preço, ex.: Shopee). Categorias e lojas inexistentes são criadas.</p><input type=file id=cf accept=".csv,text/csv"></div><div id=pv></div>`;
+ $('#cf').onchange=async e=>{const rows=csv((await e.target.files[0].text()).replace(/^\uFEFF/,'')),h=rows.shift().map(x=>x.trim().toLowerCase());const L=rows.map((r,n)=>{const o={};h.forEach((k,i)=>o[k]=(r[i]||'').trim());o.err=!o.nome?'sem nome':!o.categoria?'sem categoria':!o.loja?'sem loja':!/^https?:\/\//i.test(o.link)?'link inválido':isNaN(num(o.preco)||0)?'preço inválido':o.preco_maximo&&(isNaN(num(o.preco_maximo))||!(num(o.preco_maximo)>num(o.preco)))?'preço máximo inválido (precisa ser maior que o preço)':'';return o});
+  $('#pv').innerHTML=`<div class=tw><table><tr><th>Nome<th>Preço<th>Categoria<th>Loja<th>Situação</tr>${L.map(o=>`<tr><td>${esc(o.nome)}<td>${esc(o.preco)}${o.preco_maximo?' – '+esc(o.preco_maximo):''}<td>${esc(o.categoria)}<td>${esc(o.loja)}<td>${o.err?'❌ '+o.err:'✅ ok'}</tr>`).join('')}</table></div><button class=btn id=go>Importar ${L.filter(o=>!o.err).length} produto(s) válidos</button>`;
   $('#go').onclick=()=>run(async()=>{let n=0;const C={},M={};const sim=v=>/^(sim|s|1|true)$/i.test(v||'');
    for(const o of L.filter(o=>!o.err)){if(!C[o.categoria]){let {data:c}=await sb.from('cr_categories').select('id').ilike('name',o.categoria).maybeSingle();if(!c)c=(await sb.from('cr_categories').insert({name:o.categoria,slug:slug(o.categoria)}).select('id').single()).data;C[o.categoria]=c.id}
     if(!M[o.loja]){let {data:m}=await sb.from('cr_merchants').select('id').ilike('name',o.loja).maybeSingle();if(!m)m=(await sb.from('cr_merchants').insert({name:o.loja}).select('id').single()).data;M[o.loja]=m.id}
-    const {data:p,error}=await sb.from('cr_products').insert({name:o.nome,slug:slug(o.nome),description:o.descricao,price:num(o.preco),old_price:num(o.preco_anterior),category_id:C[o.categoria],merchant_id:M[o.loja],affiliate_url:o.link,featured:sim(o.destaque),offer:sim(o.oferta)}).select('id').single();
+    const {data:p,error}=await sb.from('cr_products').insert({name:o.nome,slug:slug(o.nome),description:o.descricao,price:num(o.preco),old_price:num(o.preco_anterior),category_id:C[o.categoria],merchant_id:M[o.loja],affiliate_url:o.link,featured:sim(o.destaque),offer:sim(o.oferta),...(o.preco_maximo?{price_max:num(o.preco_maximo)}:{})}).select('id').single();
     if(error)continue;n++;if(/^https?:\/\//i.test(o.imagem_url))await sb.from('cr_product_images').insert({product_id:p.id,url:o.imagem_url,sort:0,is_cover:true})}
    alert(n+' produto(s) importado(s).');imp(el)})}}
 // ---------- Temas sazonais
@@ -264,7 +268,7 @@ function backup(el){el.innerHTML=`<div id=bn></div><h2>Backup e restauração</h
  $('#bv').onclick=()=>run(async()=>{const [P,C,M,I]=await Promise.all(['cr_products','cr_categories','cr_merchants','cr_product_images'].map(allRows));
   const cn=Object.fromEntries(C.map(c=>[c.id,c.name])),mn=Object.fromEntries(M.map(m=>[m.id,m.name])),im={};I.sort((a,b)=>a.sort-b.sort).forEach(i=>{if(!im[i.product_id])im[i.product_id]=i.url});
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',pr=v=>v==null?'':String(v).replace('.',',');
-  const L=[['nome','descricao','preco','preco_anterior','categoria','loja','link','destaque','oferta','imagem_url'].join(';')].concat(P.map(p=>[p.name,p.description,pr(p.price),pr(p.old_price),cn[p.category_id],mn[p.merchant_id],p.affiliate_url,p.featured?'sim':'nao',p.offer?'sim':'nao',im[p.id]].map(q).join(';')));
+  const L=[['nome','descricao','preco','preco_anterior','categoria','loja','link','destaque','oferta','imagem_url','preco_maximo'].join(';')].concat(P.map(p=>[p.name,p.description,pr(p.price),pr(p.old_price),cn[p.category_id],mn[p.merchant_id],p.affiliate_url,p.featured?'sim':'nao',p.offer?'sim':'nao',im[p.id],pr(p.price_max)].map(q).join(';')));
   dl(`produtos-compras-rapidas-${stamp()}.csv`,'\ufeff'+L.join('\r\n'),'text/csv')});
  $('#rb').onclick=()=>run(async()=>{const f=$('#rf').files[0];if(!f)throw new Error('Escolha o arquivo de backup (.json).');let b;try{b=JSON.parse(await f.text())}catch(e){throw new Error('Arquivo inválido.')}
   if(b.app!=='compras-rapidas'||!b.tables)throw new Error('Este arquivo não é um backup da Compras Rápidas.');

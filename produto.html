@@ -1,7 +1,7 @@
 <!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><link rel=stylesheet href=css/style.css><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content="Compras Rápidas"><style>#bb{display:none}@media(max-width:799px){body{padding-bottom:84px}#bb{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;background:#fff;border-top:1px solid #cdd8e8;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));gap:12px;align-items:center;justify-content:space-between;box-shadow:0 -2px 10px #0002}#bb .btn{flex:1;font-weight:700}}</style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
-import {sb,boot,list,card,esc,money,qs,isOffer,showOld,$,safeUrl} from './js/app.js';
+import {sb,boot,list,card,esc,money,qs,isOffer,showOld,$,safeUrl,priceTxt,isRange} from './js/app.js';
 const pq=Promise.resolve(sb.from('cr_products').select('*,merchants:cr_merchants(name),categories:cr_categories(name),product_images:cr_product_images(url,sort),product_videos:cr_product_videos(url,sort)').eq('id',qs('id')||'').eq('status','active').maybeSingle());
 const S=await boot();const m=$('#m');const {data:p}=await pq;
 if(!p){m.innerHTML='<p>Produto não encontrado.</p><a class=btn href=index.html>Voltar ao início</a>';throw 0}
@@ -12,14 +12,14 @@ const embed=u=>{u=safeUrl(u);let y=u.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)(
  if(v)return `<iframe class=vid loading=lazy allowfullscreen src="https://player.vimeo.com/video/${v[1]}"></iframe>`;
  if(u!=='#')return `<video class=vid controls preload=metadata src="${esc(u)}"></video>`;return ''};
 const o=isOffer(p);
-const wa='https://wa.me/?text='+encodeURIComponent(p.name+(p.price!=null?' por '+money(p.price):'')+'\n'+location.href);
+const wa='https://wa.me/?text='+encodeURIComponent(p.name+(p.price!=null?' por '+(isRange(p)?money(p.price)+' a '+money(p.price_max):money(p.price)):'')+'\n'+location.href);
 m.innerHTML=`<div class=pd><div class=gal><div class=main id=mi><img id=big alt="${esc(p.name)}"></div><div class=th>${imgs.map((u,i)=>`<img data-i=${i} src="${esc(u)}" alt="">`).join('')}</div></div>
 <div><h1>${esc(p.name)}</h1>${o?'<span class=tag style="position:static;display:inline-block">Oferta</span>':''}
-<div class=pr style="margin:8px 0">${p.price!=null?`<b style="font-size:1.8rem">${money(p.price)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div>
+<div class=pr style="margin:8px 0">${p.price!=null?`<b style="font-size:${isRange(p)?'1.5rem':'1.8rem'}">${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div>
 <p class=note>Preço informativo, sujeito às condições da loja de destino.</p><p>Loja parceira: <b>${esc(p.merchants?.name||'—')}</b></p>
 <a class="btn big" href="saindo.html?id=${p.id}">Comprar</a><a class="btn alt big" style="margin-top:8px" target=_blank rel=noopener href="${esc(wa)}">Compartilhar no WhatsApp</a><div class=box style="white-space:pre-line">${esc(p.description||'')}</div></div></div>
 ${p.product_videos.length?`<h2>Vídeos</h2>${[...p.product_videos].sort((a,b)=>a.sort-b.sort).map(v=>embed(v.url)).join('')}`:''}<div id=rel></div>`;
-document.body.insertAdjacentHTML('beforeend',`<div id=bb><span class=pr><b>${p.price!=null?money(p.price):''}</b></span><a class=btn href="saindo.html?id=${p.id}">Comprar agora</a></div>`);
+document.body.insertAdjacentHTML('beforeend',`<div id=bb><span class=pr><b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b></span><a class=btn href="saindo.html?id=${p.id}">Comprar agora</a></div>`);
 let i=0;const big=$('#big'),lb=$('#lb');
 const show=n=>{if(!imgs.length)return;i=(n+imgs.length)%imgs.length;big.src=imgs[i];document.querySelectorAll('.th img').forEach((e,k)=>e.classList.toggle('on',k===i));if(lb.classList.contains('on'))$('#lbi').src=imgs[i]};show(0);
 document.querySelectorAll('.th img').forEach(e=>e.onclick=()=>show(+e.dataset.i));
