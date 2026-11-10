@@ -1,0 +1,4 @@
+dados/
+*.csv
+!modelo-importacao.csv
+backup-imagens.zip
