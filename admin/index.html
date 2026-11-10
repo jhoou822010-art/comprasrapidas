@@ -51,7 +51,7 @@ const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',
 async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_ids||[]).filter(i=>i!==pid);if(on)ids.push(pid);
  const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:ids}});if(error)throw error}
 async function prods(el,term='',st=''){
- const mk=c=>{let q=sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`).order('created_at',{ascending:false}).limit(100);
+ const mk=c=>{let q=sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`).order('name',{ascending:true}).limit(100);
  if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);return q};
  let [{data,error:qe},cfg]=await Promise.all([mk(1),getSet()]);if(qe&&/price_max/.test(qe.message||''))({data}=await mk(0));const BI=new Set(cfg.banner_ids||[]);
  el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
