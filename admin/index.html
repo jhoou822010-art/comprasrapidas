@@ -15,7 +15,7 @@ table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;bord
 </style></head>
 <body><div id=app class=w></div>
 <script type=module>
-import {sb,$,esc,money,priceTxt,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref,pushSubscribe,currentSub} from '../js/app.js';
+import {sb,$,esc,money,priceTxt,sTokens,sPat,sMatch,sFilter,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref,pushSubscribe,currentSub} from '../js/app.js';
 const A=$('#app');const W=window;
 const slug=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,6);
 const num=v=>{if(v===''||v==null)return null;let s=String(v).replace(/[^\d.,]/g,'');if(!s)return NaN;if(s.includes(',')){s=s.replace(/\./g,'').replace(',','.')}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,'')}return Number(s)};
@@ -62,8 +62,12 @@ async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_id
 let PF={};const PP=50;
 async function prods(el,f=PF){
  f={term:'',st:'',cat:'',pg:0,...f};PF=f;const {term,st,cat}=f;
- const mk=(c,pg)=>{let q=sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`,{count:'exact'}).order('name',{ascending:true}).order('id',{ascending:true}).range(pg*PP,pg*PP+PP-1);
- if(term)q=q.ilike('name',`%${term.replace(/[%,]/g,' ')}%`);if(st)q=q.eq('status',st);if(cat==='none')q=q.is('category_id',null);else if(cat)q=q.eq('category_id',cat);return q};
+ const toks=sTokens(term),flt=q=>{if(st)q=q.eq('status',st);if(cat==='none')q=q.is('category_id',null);else if(cat)q=q.eq('category_id',cat);return q};
+ // com busca: acha os candidatos (todas as palavras, com ou sem acento), ordena por relevância e pagina aqui
+ let hit=null;if(toks.length){let q=flt(sb.from('cr_products').select('id,name'));for(const t of toks)q=q.ilike('name',sPat(t));const {data,error}=await q.order('name').limit(5000);if(error)throw error;hit=sFilter(toks,data||[]).map(p=>p.id)}
+ const mk=(c,pg)=>{const S=`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`;
+ if(hit){const ids=hit.slice(pg*PP,pg*PP+PP);return sb.from('cr_products').select(S).in('id',ids.length?ids:['00000000-0000-0000-0000-000000000000']).then(r=>r.error?r:{...r,count:hit.length,data:ids.map(i=>r.data.find(p=>p.id===i)).filter(Boolean)})}
+ return flt(sb.from('cr_products').select(S,{count:'exact'}).order('name',{ascending:true}).order('id',{ascending:true}).range(pg*PP,pg*PP+PP-1))};
  const [{data:cs},cfg]=await Promise.all([sb.from('cr_categories').select('id,name').order('name'),getSet()]);
  const load=async pg=>{let r=await mk(1,pg);if(r.error&&/price_max/.test(r.error.message||''))r=await mk(0,pg);if(r.error)throw r.error;return r};
  let r=f.pg?await load(f.pg).catch(()=>null):await load(0);if(!r){r=await load(0);f.pg=1e9}
@@ -265,7 +269,7 @@ async function carr(el){
  const s0=st?.data||{},P=Object.fromEntries((ps||[]).map(p=>[p.id,p]));let ids=(s0.carousel_ids||[]).filter(i=>P[i]),term='';
  const row=(p,b)=>`<div class=box style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span>${esc(p.name)}<br><small class=note>${p.price!=null?money(p.price):'sem preço'}</small></span><span>${b}</span></div>`;
  const draw=()=>{$('#cs').innerHTML=ids.map((id,i)=>row(P[id],`<button class="btn alt sm" data-cu="${i}">▲</button><button class="btn alt sm" data-cd="${i}">▼</button><button class="btn alt sm" data-cx="${i}">✕</button>`)).join('')||'<p class=note>Nenhum produto escolhido. O carrossel só aparece no site quando houver pelo menos 1.</p>';
-  const q=term.toLowerCase();$('#ca').innerHTML=(ps||[]).filter(p=>!ids.includes(p.id)&&p.name.toLowerCase().includes(q)).slice(0,40).map(p=>row(p,`<button class="btn sm" data-cadd="${p.id}">+ Adicionar</button>`)).join('')||'<p class=note>Nenhum produto encontrado.</p>'};
+  $('#ca').innerHTML=sFilter(sTokens(term),(ps||[]).filter(p=>!ids.includes(p.id))).slice(0,40).map(p=>row(p,`<button class="btn sm" data-cadd="${p.id}">+ Adicionar</button>`)).join('')||'<p class=note>Nenhum produto encontrado.</p>'};
  el.innerHTML=`<h2>Carrossel da página inicial</h2><p class=note>Escolha quais produtos passam no carrossel (até 12) e a ordem. Só produtos ativos aparecem aqui.</p><div class=box><label>Título do carrossel<input id=ct value="${esc(s0.carousel_title||'')}" placeholder="Em destaque na vitrine"></label><label><input type=checkbox id=co ${s0.carousel_on===false?'':'checked'}> Mostrar o carrossel no site</label></div>
  <h3>No carrossel (nesta ordem)</h3><div id=cs></div><h3>Adicionar produtos</h3><label>Buscar<input id=cq></label><div id=ca></div><button class=btn id=csv>Salvar carrossel</button>`;
  $('#cs').onclick=e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
@@ -365,7 +369,7 @@ async function notif(el,editId=null){
  const pv=()=>{$('#pvt').textContent=t.value||'Título da notificação';$('#pvb').textContent=b.value||'Sua mensagem aparece aqui.';const i=$('#pvi');i.style.display=im.value?'block':'none';if(im.value)i.src=im.value;
   $('#nftc').textContent=t.value.length+'/80';$('#nfbc').textContent=b.value.length+'/200';$('#nfclock').textContent=new Date().toLocaleTimeString('pt-BR',{timeZone:BR,hour:'2-digit',minute:'2-digit'})};
  [t,b,im].forEach(i=>i.oninput=pv);im.onchange=pv;pv();
- $('#nfq').oninput=e=>{const q=e.target.value.toLowerCase();[...ps.options].forEach(o=>{if(o.value)o.hidden=!!q&&!o.text.toLowerCase().includes(q)})};
+ $('#nfq').oninput=e=>{const t=sTokens(e.target.value);[...ps.options].forEach(o=>{if(o.value)o.hidden=!!t.length&&!sMatch(t,o.text)})};
  ps.onchange=()=>{const p=P.find(x=>x.id===ps.value);if(!p)return;u.value=plink(p);const i=pimg(p);if(i)im.value=i;if(!t.value)t.value=p.name.slice(0,80);pv()};
  $('#nff').onchange=e=>run(async()=>{if(!e.target.files[0])return;msg('Enviando imagem…');im.value=await up(e.target.files[0]);msg('');pv()});
  const row=extra=>{const ti=t.value.trim(),bo=b.value.trim();if(!ti)throw new Error('Escreva o título.');if(ti.length>80||bo.length>200)throw new Error('Título até 80 e mensagem até 200 caracteres.');

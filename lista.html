@@ -10,9 +10,9 @@ else{
  if(tipo==='ofertas'){title='Ofertas';opt.offer=true}else if(tipo==='destaques'){title='Destaques';opt.featured=true}
  else if(tipo==='categoria'){const {data:c}=await sb.from('cr_categories').select('id,name').eq('slug',qs('slug')||'').eq('active',true).maybeSingle();if(!c){m.innerHTML='<p>Categoria não encontrada.</p>';throw 0}title=c.name;opt.cat=c.id}
  else if(q)title=`Resultados para “${q}”`;
- document.title=title;const {data,count}=await list({...opt,q:tipo==='busca'?q:'',page,per});
+ document.title=title;const {data,count,similar}=await list({...opt,q:tipo==='busca'?q:'',page,per});
  const pages=Math.max(1,Math.ceil(count/per)),u=n=>{const p=new URLSearchParams(location.search);p.set('page',n);return '?'+p};
- m.innerHTML=`<div class=sh><h2>${esc(title)}</h2><span class=note>${count} produto(s)</span></div>${data.length?`<div class=grid>${data.map(card).join('')}</div>`:'<p>Nenhum produto encontrado.</p>'}
+ m.innerHTML=`<div class=sh><h2>${esc(title)}</h2><span class=note>${count} produto(s)</span></div>${similar?'<p class=note>Não achamos produtos com todas as palavras. Veja os mais parecidos:</p>':''}${data.length?`<div class=grid>${data.map(card).join('')}</div>`:'<p>Nenhum produto encontrado.</p>'}
  <div class=pg>${page>1?`<a class="btn alt" href="${u(page-1)}">‹ Anterior</a>`:''}<span>Página ${page} de ${pages}</span>${page<pages?`<a class="btn alt" href="${u(page+1)}">Próxima ›</a>`:''}</div>
  <p class=note>Preços informativos, sujeitos às condições da loja parceira.</p>`}
 </script></body></html>

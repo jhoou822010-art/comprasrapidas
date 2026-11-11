@@ -139,12 +139,39 @@ export const showOld=p=>p.old_price>p.price&&(!p.offer||isOffer(p));
 export const cover=p=>[...(p.product_images||[])].sort((a,b)=>a.sort-b.sort)[0]?.url||PH;
 // miniatura (320px) para os cards: fotos da Shopee aceitam o sufixo _tn e ficam ~10x mais leves; as demais ficam como estão
 export const thumb=p=>{const u=cover(p);return /^https:\/\/cf\.shopee\.com\.br\/file\/[\w-]+(?<!_tn)$/.test(u)?u+'_tn':u};
-export async function list(o={}){let res=await list1(o);if(miss(res.error)){NOMAX=true;res=await list1(o)}return res}
+// ---- busca: ignora acentos, maiúsculas e espaços extras; exige TODAS as palavras (em qualquer ordem) e ordena por relevância
+export const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const STOP=new Set('a o e de da do das dos com sem para pra por em no na nos nas um uma ou'.split(' '));
+// palavras da busca já normalizadas; "calças" vira "calca" para achar singular e plural
+export const sTokens=q=>{const w=norm(q).split(' ').filter(Boolean),t=w.filter(x=>!STOP.has(x)&&(x.length>1||/\d/.test(x)));
+ return [...new Set((t.length?t:w).map(x=>x.length>3&&/[^s]s$/.test(x)?x.slice(0,-1):x))]};
+// padrão ilike que aceita a letra com ou sem acento (o servidor traz candidatos; a conferência exata é feita em sMatch)
+export const sPat=t=>'%'+t.replace(/[aeiouc]/g,'_')+'%';
+const sWords=s=>norm(s).split(' ');
+// pontuação de relevância (0 = não atende); name e desc são o texto original
+export function sMatch(toks,name,desc=''){if(!toks.length)return 1;const n=norm(name),d=norm(desc),nw=sWords(name);let sc=0;
+ for(const t of toks){const inN=n.includes(t);if(!inN&&!d.includes(t))return 0;
+  if(inN){sc+=10;if(nw.some(w=>w===t||w===t+'s'||w===t+'es'))sc+=6;else if(nw.some(w=>w.startsWith(t)))sc+=3;if(nw[0]?.startsWith(t))sc+=2}else sc+=1}
+ const ph=toks.join(' ');if(toks.length>1&&n.includes(ph))sc+=15;if(n.startsWith(ph))sc+=5;return sc}
+export const sFilter=(toks,arr,get=x=>x.name)=>!toks.length?arr:arr.map(x=>[x,sMatch(toks,get(x))]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+// candidatos no banco: cada palavra tem que aparecer no nome OU na descrição
+function sQuery(r,toks,desc=true){for(const t of toks)r=desc?r.or(`name.ilike.${sPat(t)},description.ilike.${sPat(t)}`):r.ilike('name',sPat(t));return r}
+export async function list(o={}){if(o.q&&sTokens(o.q).length)return search(o);let res=await list1(o);if(miss(res.error)){NOMAX=true;res=await list1(o)}return res}
+async function search({q,offer,featured,cat,page=1,per=12}){const toks=sTokens(q),now=new Date().toISOString();
+ const cand=async tk=>{let r=sb.from('cr_products').select('id,name,description,created_at').eq('status','active');
+  if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
+  if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);
+  const {data,error}=await sQuery(r,tk).limit(2000);if(error)return {error,rows:[]};
+  return {rows:(data||[]).map(p=>({id:p.id,c:p.created_at,s:sMatch(tk,p.name,p.description)})).filter(x=>x.s)}};
+ let {rows,error}=await cand(toks),similar=false;
+ // nada com todas as palavras: mostra os que têm pelo menos uma no nome (avisando que são parecidos)
+ if(!rows.length&&!error&&toks.length>1){const m=new Map();for(const t of toks)for(const x of (await cand([t])).rows)if(x.s>=10){const o=m.get(x.id);if(o)o.s+=x.s;else m.set(x.id,x)}rows=[...m.values()];similar=rows.length>0}
+ rows.sort((a,b)=>b.s-a.s||(a.c<b.c?1:-1));const ids=rows.slice((page-1)*per,page*per).map(x=>x.id);
+ return {data:await byIds(ids),count:rows.length,error,similar}}
 async function list1({offer,featured,q,cat,page=1,per=12}={}){
  let r=sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active');const now=new Date().toISOString();
  if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
  if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);
- if(q){q=q.replace(/[,()%*]/g,' ').trim();r=r.or(`name.ilike.%${q}%,description.ilike.%${q}%`)}
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
 export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
