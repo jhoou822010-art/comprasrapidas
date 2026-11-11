@@ -2,7 +2,10 @@
 -- Cria somente objetos novos com prefixo cr_visit*. Nada existente é alterado.
 -- Registra apenas: entradas, saídas, atividade (último sinal) e permanência, por sessão anônima.
 -- Nenhum dado pessoal é guardado (sem IP, sem navegador, sem usuário): só um código aleatório da sessão.
--- Rode este arquivo inteiro UMA vez no SQL Editor do Supabase.
+-- Rode este arquivo inteiro UMA vez no SQL Editor do Supabase, no MESMO projeto do site (o do config.js).
+do $$ begin
+ if to_regprocedure('public.cr_is_admin()') is null then
+  raise exception 'Projeto errado: este projeto não tem as tabelas da Compras Rápidas. Abra o projeto usado no config.js.'; end if; end $$;
 
 create table if not exists cr_visitor_sessions(
  id uuid primary key,                         -- código anônimo gerado no navegador (crypto.randomUUID)
@@ -16,8 +19,9 @@ create index if not exists cr_visitor_sessions_open on cr_visitor_sessions(last_
 
 -- Somente administradores leem/alteram a tabela diretamente; visitantes usam apenas a função cr_visit_track.
 alter table cr_visitor_sessions enable row level security;
-drop policy if exists cr_admin_all on cr_visitor_sessions;
+do $$ begin if not exists(select 1 from pg_policies where tablename='cr_visitor_sessions' and policyname='cr_admin_all') then
 create policy cr_admin_all on cr_visitor_sessions for all using (cr_is_admin()) with check (cr_is_admin());
+end if; end $$;
 
 -- Encerra sessões sem sinal há mais de 3 minutos (aba fechada sem aviso, celular bloqueado, queda de internet).
 -- A saída é registrada no horário do último sinal recebido.
@@ -73,7 +77,7 @@ begin
  select jsonb_build_object(
   'online',(select count(*) from cr_visitor_sessions where ended_at is null and last_seen > now()-interval '75 seconds'),
   'now',now(),
-  'days',coalesce((select jsonb_agg(jsonb_build_object('day',d.dia,'entries',coalesce(e.n,0),'exits',coalesce(s.n,0),'avg_seconds',round(coalesce(s.media,0)))) order by d.dia desc)
+  'days',coalesce((select jsonb_agg(jsonb_build_object('day',d.dia,'entries',coalesce(e.n,0),'exits',coalesce(s.n,0),'avg_seconds',round(coalesce(s.media,0))) order by d.dia desc)
           from dias d left join ent e on e.dia=d.dia left join sai s on s.dia=d.dia),'[]'::jsonb)) into res;
  return res;
 end $$;
