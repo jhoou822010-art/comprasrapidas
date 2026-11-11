@@ -7,11 +7,6 @@ export const $=(s,r=document)=>r.querySelector(s);
 export const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const money=v=>v==null?'':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 export const qs=k=>new URLSearchParams(location.search).get(k);
-// link curto do produto: código de até 7 letras/números tirado do início do id (sem tabela nova). Ex.: site/?3kx9w1a
-export const shortCode=id=>parseInt(String(id).slice(0,8),16).toString(36);
-export const shortUrl=(id,base=new URL('./',location.href).href)=>base.replace(/[?#].*$/,'')+'?'+shortCode(id);
-export const fromShort=c=>{if(!/^[0-9a-z]{1,7}$/.test(c||''))return null;const h=parseInt(c,36).toString(16);return h.length>8?null:h.padStart(8,'0')};
-export async function copyTxt(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
 export const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
 const PH='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#e8f1ff"/><text x="200" y="210" font-size="22" text-anchor="middle" fill="#1e6bff">Sem foto</text></svg>');
 export const DISCLAIMER='A Compras Rápidas é uma plataforma de divulgação e recomendação de produtos. Alguns links são links de afiliados e podem gerar uma comissão para a plataforma, sem custo adicional para o comprador. A compra, o pagamento, a entrega e as condições comerciais são de responsabilidade da loja parceira.';
