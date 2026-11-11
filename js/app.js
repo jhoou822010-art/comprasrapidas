@@ -101,8 +101,33 @@ export async function boot(){
  {const here=(location.pathname.split('/').pop()||'index.html')+location.search;document.querySelectorAll('header nav a').forEach(a=>{if(a.getAttribute('href')===here){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
- if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e))}
+ if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e));visitTrack()}
  return S}
+// ---- monitoramento de visitantes (Estatísticas do painel): só um código anônimo de sessão, sem dados pessoais.
+// Entrada ao abrir o site; sinal de atividade a cada 30 s com a aba visível; saída ao fechar/sair.
+// A mesma sessão é reaproveitada por 30 min (recarregar ou trocar de página não conta nova entrada).
+// Se o navegador fechar sem aviso, o servidor encerra a sessão após 3 min sem sinal.
+const VK='cr_visit',VIDLE=30*60e3,VBEAT=30e3;let vOn=false;
+function visitTrack(){if(vOn||navigator.webdriver||!crypto.randomUUID)return;vOn=true;
+ let mem=null;const rd=()=>{try{return JSON.parse(localStorage.getItem(VK))||mem}catch(e){return mem}},wr=o=>{mem=o;try{localStorage.setItem(VK,JSON.stringify(o))}catch(e){}};
+ const sid=(fresh)=>{let o=rd();if(fresh||!o||!o.id||Date.now()-(o.t||0)>VIDLE)o={id:crypto.randomUUID(),t:Date.now()};wr(o);return o.id};
+ let act=Date.now(),timer=null,ended=false,inNav=0;
+ const send=async(ev,keep)=>{const o=rd()||{};if(ev!=='end'&&o.id)wr({...o,t:Date.now()});
+  try{const r=await fetch(U+'/rest/v1/rpc/cr_visit_track',{method:'POST',keepalive:!!keep,headers:{apikey:K,'Content-Type':'application/json'},body:JSON.stringify({p_sid:o.id,p_event:ev})});
+   if(ev!=='end'&&r.ok&&(await r.json())==='expired'){sid(true);await send('start')}}catch(e){}};
+ const stop=()=>{clearInterval(timer);timer=null};
+ const beat=()=>{if(document.visibilityState!=='visible'){stop();return}
+  if(Date.now()-act>VIDLE){stop();if(!ended){ended=true;send('end')}return}send('ping')};
+ const wake=()=>{act=Date.now();if(document.visibilityState!=='visible')return;
+  if(ended){ended=false;sid(true);send('start')}else if(!timer)send('ping');if(!timer)timer=setInterval(beat,VBEAT)};
+ ['pointerdown','keydown','scroll','touchstart'].forEach(e=>addEventListener(e,()=>{const was=Date.now()-act>VIDLE;act=Date.now();if(was||ended)wake()},{passive:true,capture:true}));
+ document.addEventListener('visibilitychange',()=>document.visibilityState==='visible'?wake():stop());
+ // navegação interna (links do próprio site / busca): não é saída, a próxima página continua a sessão
+ document.addEventListener('click',e=>{const a=e.target.closest?.('a[href]');if(a&&!e.defaultPrevented&&a.origin===location.origin&&a.target!=='_blank'&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey)inNav=Date.now()},true);
+ document.addEventListener('submit',()=>{inNav=Date.now()},true);
+ addEventListener('pagehide',()=>{stop();if(ended||Date.now()-inNav<5e3)return;send('end',true)});
+ addEventListener('pageshow',e=>{if(e.persisted){ended=false;wake()}});
+ sid();send('start');timer=setInterval(beat,VBEAT)}
 const SEL='id,name,price,price_max,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
 export const isOffer=p=>p.offer&&(!p.offer_end||new Date(p.offer_end)>new Date())&&(!p.offer_start||new Date(p.offer_start)<=new Date());
 // preço em faixa (ex.: Shopee): "R$ 14,50 – R$ 25,90" quando price_max for maior que o preço
