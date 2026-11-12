@@ -88,7 +88,7 @@ export async function boot(){
  const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();
  S={...DEF,...(data?.data||{})};const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';if(th&&th.cfg.colors!==false)S={...S,c1:th.c1,c2:th.c2,btn:th.btn};const r=document.documentElement.style;
  r.setProperty('--c1',S.c1);r.setProperty('--c2',S.c2);r.setProperty('--btn',S.btn);
- document.title=(document.title&&document.title!=='x'?document.title+' | ':'')+(S.seo_title||S.name);
+ if(!document.querySelector('title[data-auto]'))document.title=(document.title&&document.title!=='x'?document.title+' | ':'')+(S.seo_title||S.name); // data-auto: título já gravado pelo gerar-previas.mjs
  if(S.seo_desc){let m=document.querySelector('meta[name=description]')||document.head.appendChild(Object.assign(document.createElement('meta'),{name:'description'}));m.content=S.seo_desc}
  if(S.favicon){let l=document.querySelector('link[rel=icon]')||document.head.appendChild(Object.assign(document.createElement('link'),{rel:'icon'}));l.href=S.favicon}
  $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>

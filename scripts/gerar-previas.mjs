@@ -29,6 +29,13 @@ const S = (await get('cr_site_settings?select=data&id=eq.1'))[0]?.data || {};
 const store = S.name || 'Compras Rápidas';
 const storeDesc = oneLine(S.seo_desc || S.slogan || '');
 const storeImg = S.logo || SITE + 'icon-512.png';
+// Imagem da prévia da página inicial: o WhatsApp não mostra .webp de forma confiável,
+// então, se a logo for .webp, usa a og-image.jpg do site (1200x630, feita a partir da logo).
+const isWebp = u => /\.webp(\?|#|$)/i.test(u || '');
+const homeImg = S.og_image || (S.logo && !isWebp(S.logo) ? S.logo : SITE + 'og-image.jpg');
+const homeImgMeta = homeImg === SITE + 'og-image.jpg'
+  ? '<meta property=og:image:type content=image/jpeg><meta property=og:image:width content=1200><meta property=og:image:height content=630>' : '';
+const homeTitle = store + (S.slogan ? ' — ' + oneLine(S.slogan) : '');
 
 const products = await getAll('cr_products?select=slug,name,price,price_max,description,created_at,product_images:cr_product_images(url,sort,is_cover)&status=eq.active&order=created_at.desc');
 if (!products.length) throw new Error('Nenhum produto ativo retornado; nada foi alterado.');
@@ -58,9 +65,11 @@ ${p.price != null ? `<meta property=product:price:amount content="${Number(p.pri
 }
 
 // Prévia da página inicial (bloco entre <!--og--> e <!--/og--> no index.html).
-const homeOg = `<!--og--><meta name=description content="${esc(storeDesc)}"><meta property=og:type content=website><meta property=og:locale content=pt_BR><meta property=og:site_name content="${esc(store)}"><meta property=og:title content="${esc(store + (S.slogan ? ' — ' + oneLine(S.slogan) : ''))}"><meta property=og:description content="${esc(storeDesc)}"><meta property=og:url content="${esc(SITE)}"><meta property=og:image content="${esc(storeImg)}"><meta name=twitter:card content=summary><!--/og-->`;
+// O <title> fica dentro do bloco com o nome real da loja (o WhatsApp lê o título sem rodar JavaScript).
+const homeOg = `<!--og--><title data-auto>${esc(homeTitle)}</title><meta name=description content="${esc(storeDesc)}"><meta property=og:type content=website><meta property=og:locale content=pt_BR><meta property=og:site_name content="${esc(store)}"><meta property=og:title content="${esc(homeTitle)}"><meta property=og:description content="${esc(storeDesc)}"><meta property=og:url content="${esc(SITE)}"><meta property=og:image content="${esc(homeImg)}"><meta property=og:image:secure_url content="${esc(homeImg)}">${homeImgMeta}<meta property=og:image:alt content="${esc(store)}"><meta name=twitter:card content=summary_large_image><!--/og-->`;
 let index = readFileSync('index.html', 'utf8');
-index = /<!--og-->[\s\S]*?<!--\/og-->/.test(index) ? index.replace(/<!--og-->[\s\S]*?<!--\/og-->/, () => homeOg) : index.replace('<title>x</title>', () => '<title>x</title>' + homeOg);
+index = index.replace(/<title>x<\/title>/, ''); // título provisório antigo: o bloco abaixo traz o título real
+index = /<!--og-->[\s\S]*?<!--\/og-->/.test(index) ? index.replace(/<!--og-->[\s\S]*?<!--\/og-->/, () => homeOg) : index.replace('<meta charset=utf-8>', () => '<meta charset=utf-8>' + homeOg);
 writeFileSync('index.html', index);
 
 // sitemap.xml e robots.txt (para o Google achar todos os produtos).
