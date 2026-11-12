@@ -221,7 +221,7 @@ export function swReg(){if(!('serviceWorker' in navigator))return Promise.resolv
  return _reg||(_reg=navigator.serviceWorker.register(SW_URL,{scope:new URL('../',import.meta.url).pathname}).then(()=>navigator.serviceWorker.ready).catch(e=>{console.warn('SW',e);_reg=null;return null}))}
 // chave VAPID em base64url -> Uint8Array (formato exigido pelo pushManager.subscribe)
 export function b64uToBytes(s){s=String(s).trim();const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
-async function saveSub(sub){const j=sub.toJSON();const {error}=await sb.rpc('cr_push_subscribe',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_user_agent:navigator.userAgent.slice(0,300)});if(error)throw error;return sub}
+async function saveSub(sub){const j=sub.toJSON();const {error}=await sb.rpc('cr_push_subscribe',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_user_agent:navigator.userAgent.slice(0,300),p_origin:location.origin});if(error)throw error;return sub}
 export async function currentSub(){if(!pushOk())return null;const r=await swReg();return r?r.pushManager.getSubscription():null}
 // só chame depois de um toque do visitante (o navegador exige)
 export async function pushSubscribe(){

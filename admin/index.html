@@ -335,10 +335,14 @@ const NST={draft:'📝 Rascunho',scheduled:'⏰ Agendada',sending:'📤 Enviando
 const NSRC={manual:'Manual',auto_new:'Auto · novo',auto_offer:'Auto · oferta',auto_ending:'Auto · acabando'};
 async function callPush(body){const {data,error}=await sb.functions.invoke('send-push',{body});
  if(error){let m=error.message;try{const j=await error.context.json();if(j?.error)m=j.error}catch(_){}throw new Error(m)}return data}
+// origem do site atual (ex.: https://comprasrapidasandrade.com.br) — mesma regra da função send-push
+const siteOrigin=u=>{try{return new URL(u).origin}catch(_){return location.origin}};
 async function notif(el,editId=null){
- const [{data:ns},{data:hist},nSubs,{data:pr}]=await Promise.all([sb.from('cr_notification_settings').select('*').eq('id',1).maybeSingle(),
-  sb.from('cr_notifications').select('*').order('created_at',{ascending:false}).limit(60),cnt('cr_push_subscriptions'),
+ const [{data:ns},{data:hist},{data:pr}]=await Promise.all([sb.from('cr_notification_settings').select('*').eq('id',1).maybeSingle(),
+  sb.from('cr_notifications').select('*').order('created_at',{ascending:false}).limit(60),
   sb.from('cr_products').select('id,name,slug,product_images:cr_product_images(url,sort,is_cover)').eq('status','active').order('name',{ascending:true}).limit(2000)]);
+ // conta só as inscrições do domínio atual (ou sem origem registrada)
+ const nSubs=await cnt('cr_push_subscriptions',q=>q.or(`origin.is.null,origin.eq."${siteOrigin(ns?.site_url||location.href)}"`));
  const N=ns||{},P=pr||[],H=hist||[],ed=editId?H.find(x=>x.id===editId):null;
  const pimg=p=>[...(p.product_images||[])].sort((a,b)=>(b.is_cover-a.is_cover)||(a.sort-b.sort))[0]?.url||'';
  const site=N.site_url||new URL('../',location.href).href;
@@ -377,9 +381,18 @@ async function notif(el,editId=null){
   return {title:ti,body:bo||null,image_url:im2||null,url:u2||site,product_id:ps.value||null,source:'manual',error:null,...extra}};
  const save=async r=>{const q=ed?sb.from('cr_notifications').update(r).eq('id',ed.id):sb.from('cr_notifications').insert(r);const {data,error}=await q.select('id').single();if(error)throw error;return data.id};
  const busy=async(btn,f)=>{const all=el.querySelectorAll('.box button');all.forEach(x=>x.disabled=true);try{await run(f)}finally{all.forEach(x=>x.disabled=false)}};
- $('#nfnow').onclick=e=>busy(e.target,async()=>{const r=row({status:'scheduled',scheduled_at:new Date().toISOString()});if(!confirm(`Enviar agora para ${nSubs} inscrito(s)?`))return;
-  msg('Enviando…');const id=await save(r);const res=await callPush({notification_id:id}),x=res?.result||{};
-  alert(x.skipped?'O agendador já pegou esta notificação; ela está sendo enviada.':x.status==='sent'?`Enviada! ✅ Entregues: ${x.ok??0} · falhas: ${x.fail??0}`:'Não foi possível enviar: '+(x.error||x.lastError||'erro desconhecido'));notif(el)});
+ $('#nfnow').onclick=e=>{const btn=e.target,lbl=btn.textContent;msg('Enviando… aguarde, não toque de novo.');btn.textContent='⏳ Enviando…';
+  busy(btn,async()=>{try{const r=row({status:'scheduled',scheduled_at:new Date().toISOString()});
+  // evita mandar a mesma notificação duas vezes: procura envio com o mesmo título ou produto nos últimos 30 min
+  const lim=Date.now()-30*6e4,{data:rec,error:re}=await sb.from('cr_notifications').select('id,title,product_id,status,sent_at,scheduled_at,created_at')
+   .in('status',['sent','sending','scheduled']).order('created_at',{ascending:false}).limit(50);if(re)throw re;
+  const dup=(rec||[]).filter(x=>x.id!==ed?.id).map(x=>({...x,when:new Date(x.sent_at||x.scheduled_at||x.created_at).getTime()}))
+   .find(x=>x.when>=lim&&x.when<=Date.now()+6e4&&(x.title.trim().toLowerCase()===r.title.toLowerCase()||(r.product_id&&x.product_id===r.product_id)));
+  if(dup){const m=Math.max(0,Math.round((Date.now()-dup.when)/6e4));if(!confirm(`Você já enviou esta há ${m} min. Enviar de novo?`)){msg('Envio cancelado.');return}}
+  if(!confirm(`Enviar agora para ${nSubs} inscrito(s)?`)){msg('Envio cancelado.');return}
+  msg('Enviando… aguarde, não toque de novo.');const id=await save(r);const res=await callPush({notification_id:id}),x=res?.result||{};
+  alert(x.skipped?'O agendador já pegou esta notificação; ela está sendo enviada.':x.status==='sent'?`Enviada! ✅ Entregues: ${x.ok??0} · falhas: ${x.fail??0}`:'Não foi possível enviar: '+(x.error||x.lastError||'erro desconhecido'));notif(el)}
+  catch(err){msg('');throw err}finally{btn.textContent=lbl}})};
  $('#nfsch').onclick=e=>busy(e.target,async()=>{const v=$('#nfd').value;if(!v)throw new Error('Escolha a data e a hora.');const d=brParse(v);if(isNaN(d))throw new Error('Data inválida.');
   if(d<Date.now()-6e4)throw new Error('Escolha um horário no futuro.');await save(row({status:'scheduled',scheduled_at:d.toISOString()}));alert('Agendada para '+brDate(d)+' (Brasília).');notif(el)});
  $('#nfdraft').onclick=e=>busy(e.target,async()=>{await save(row({status:'draft',scheduled_at:null}));alert('Rascunho salvo.');notif(el)});

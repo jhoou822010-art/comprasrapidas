@@ -13,8 +13,8 @@ self.addEventListener('push', e => {
   const title = d.title || 'Compras Rápidas';
   const opt = {
     body: d.body || '',
-    icon: d.icon || BASE + 'icon-192.png',
-    badge: BASE + 'icon-192.png',
+    icon: d.icon || d.image || BASE + 'icon-192.png', // foto do produto aparece mesmo com a notificação recolhida
+    badge: BASE + 'icon-192.png', // logo da loja
     data: { id: d.id || null, url: d.url || BASE },
     tag: d.id || undefined,
   };
