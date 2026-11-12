@@ -22,6 +22,8 @@
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
 import {sb,boot,list,card,esc,byIds,decorHero,cover,money,isOffer,showOld,priceTxt} from './js/app.js';
+// Sistema Inteligente da Vitrine (módulo opcional): se não carregar, a vitrine original funciona normalmente
+const V=await import('./js/vitrine.js').catch(()=>null);try{V?.prefetch()}catch(e){}
 const pre=Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const S=await boot();
 const [{data:bn},{data:sec}]=await pre;
@@ -35,6 +37,10 @@ let extra=useCar?cids.length:0;
 const jobs=(sec||[]).map(x=>{if(x.key==='categorias')return sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
  const q=x.qty||8,per=q+extra;extra+=q;return list({offer:x.key==='ofertas',featured:x.key==='destaques',per})});
 const [bp,cp,...res]=await Promise.all([bids.length?byIds(bids):[],useCar?byIds(cids):[],...jobs]);
+// vitrine inteligente: escolhe e ordena Ofertas/Novidades para este visitante; em qualquer falha mantém as listas originais acima
+let vok=false;try{if(V&&V.start(S)){const ks=(sec||[]).filter(x=>V.area(x.key)).map(x=>({key:x.key,qty:x.qty||8}));
+ if(ks.length){const rows=await V.poolWithin();const sel=V.home(rows,ks,new Set(cids));const all=[...new Set(Object.values(sel).flat())];const full=all.length?await byIds(all):[];
+  if(full.length){const m=Object.fromEntries(full.map(p=>[p.id,p]));(sec||[]).forEach((x,n)=>{const ids=sel[x.key];if(ids){const d=ids.map(i=>m[i]).filter(Boolean);if(d.length>=Math.min(x.qty||8,ids.length)/2)res[n]={data:d}}});vok=true}}}}catch(e){console.warn('vitrine: usando a original',e)}
 // produto no banner do topo: foto, nome, preço e botão para a página do produto
 const pslide=(p,i)=>{const T=i?'h2':'h1',im=p.product_images?.length?cover(p):'';
  return `<div class="sl ps"${im?` style="background-image:url('${esc(cssUrl(im))}')"`:''}><div>${isOffer(p)?'<span class=ptag>Oferta</span>':''}<${T}>${esc(p.name)}</${T}><p class=ppr>${p.price!=null?`<b>${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</p><a class=hb href="produto.html?id=${esc(p.id)}">Ver produto →</a></div></div>`};
@@ -51,6 +57,7 @@ for(const [n,x] of (sec||[]).entries()){
  if(data.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=${x.key==='novidades'?'busca':x.key}">Ver todos</a></div><div class=grid>${data.map(card).join('')}</div>`}
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';
 document.getElementById('m').innerHTML=h;decorHero();
+if(vok)try{V.shown([...seen])}catch(e){}
 {const pc=document.getElementById('pc');if(pc){const step=()=>{const c=pc.querySelector('.card');return c?c.getBoundingClientRect().width+10:300};
  const nxt=()=>{if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
  const a=document.getElementById('ppv'),b=document.getElementById('pnx');if(a){a.onclick=()=>pc.scrollBy({left:-step(),behavior:'smooth'});b.onclick=nxt}

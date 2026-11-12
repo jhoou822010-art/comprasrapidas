@@ -39,7 +39,7 @@ async function init(){if(!CONFIGURED){A.innerHTML='<div class=box><h2>Não confi
  const {data}=await sb.from('cr_admins').select('user_id').eq('user_id',session.user.id);
  if(!data?.length){const {data:ok}=await sb.rpc('cr_claim_admin');if(ok)return init()}
  if(!data?.length){A.innerHTML='<div class=box><h2>Sem permissão</h2><p>Este usuário não está na lista de administradores (veja o Guia, passo do administrador).</p>'+out()+'</div>';return}
- const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Carrossel:carr,Temas:temas,Contato:contato,Aparência:look,Estatísticas:stats,Notificações:notif,Importar:imp,Backup:backup};
+ const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Carrossel:carr,Temas:temas,Contato:contato,Aparência:look,Estatísticas:stats,Notificações:notif,Importar:imp,Backup:backup,'Sistema Inteligente da Vitrine':async el=>(await import('../js/vitrine-admin.js')).panel(el,{sb,$,esc,run})};
  A.innerHTML=`<div class=ad>${Object.keys(T).map(k=>`<button data-t="${k}">${k}</button>`).join('')}<button onclick="lo()">Sair</button></div><div id=main></div>`;
  A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{A.querySelectorAll('.ad button').forEach(x=>x.classList.remove('on'));b.classList.add('on');run(()=>T[b.dataset.t]($('#main')))});
  A.querySelector('[data-t]').click()}
