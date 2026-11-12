@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /gestor/
+Sitemap: https://comprasrapidasandrade.com.br/sitemap.xml

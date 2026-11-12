@@ -12,7 +12,7 @@ const embed=u=>{u=safeUrl(u);let y=u.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)(
  if(v)return `<iframe class=vid loading=lazy allowfullscreen src="https://player.vimeo.com/video/${v[1]}"></iframe>`;
  if(u!=='#')return `<video class=vid controls preload=metadata src="${esc(u)}"></video>`;return ''};
 const o=isOffer(p);
-const wa='https://wa.me/?text='+encodeURIComponent(p.name+(p.price!=null?' por '+(isRange(p)?money(p.price)+' a '+money(p.price_max):money(p.price)):'')+'\n'+location.href);
+const wa='https://wa.me/?text='+encodeURIComponent(p.name+(p.price!=null?' por '+(isRange(p)?money(p.price)+' a '+money(p.price_max):money(p.price)):'')+'\n'+new URL('p/'+p.slug+'/',location.href).href);/* link com prévia (foto e preço) no WhatsApp; gerado por scripts/gerar-previas.mjs */
 m.innerHTML=`<div class=pd><div class=gal><div class=main id=mi><img id=big alt="${esc(p.name)}"></div><div class=th>${imgs.map((u,i)=>`<img data-i=${i} src="${esc(u)}" alt="">`).join('')}</div></div>
 <div><h1>${esc(p.name)}</h1>${o?'<span class=tag style="position:static;display:inline-block">Oferta</span>':''}
 <div class=pr style="margin:8px 0">${p.price!=null?`<b style="font-size:${isRange(p)?'1.5rem':'1.8rem'}">${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div>
