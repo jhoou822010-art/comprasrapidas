@@ -4,8 +4,21 @@ const P = new URL(self.location.href).searchParams;
 const SB_URL = P.get('u') || '', SB_KEY = P.get('k') || '';
 const BASE = new URL('./', self.location.href).href; // pasta do site (ex.: .../comprasrapidas/)
 
-self.addEventListener('install', () => self.skipWaiting());
+// Página mostrada quando o app/site abre sem internet (exigência de qualidade do app na Play Store).
+const OFFLINE_CACHE = 'cr-offline-v1';
+const OFFLINE_URL = BASE + 'offline.html';
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(OFFLINE_CACHE).then(c => c.addAll([OFFLINE_URL, BASE + 'icon-192.png'])).catch(() => {}));
+});
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+
+// Só intercepta a abertura de páginas: tenta a rede normalmente e, se falhar, mostra a página offline.
+self.addEventListener('fetch', e => {
+  if (e.request.mode !== 'navigate') return;
+  e.respondWith(fetch(e.request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
+});
 
 self.addEventListener('push', e => {
   let d = {};
