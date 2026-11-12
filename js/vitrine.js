@@ -223,3 +223,27 @@ export function simulate(rows,c,signals,{qty=15,seed='simulacao',key='ofertas'}=
  const mx=mixFor(P,C);let cands=key==='ofertas'?rows.filter(offerOn):rows;
  const list=compose(cands,Math.min(qty,cands.length),mx.mix,scorer(P,C,seed,R),R);
  return {mix:mx,list,segs:list.map(p=>segsOf(p,R))}}
+
+// ---- Produtos relacionados (página do produto). Funciona com o sistema ligado ou desligado:
+// semelhança com o produto aberto (palavras do nome, categoria, tipo e faixa de preço). Com o sistema ligado, soma também os interesses do visitante.
+let idfMem=null;
+const relToks=n=>[...new Set(norm(n).split(' ').filter(x=>x.length>=3&&!STOPW.has(x)&&!/^\d+[a-z]{0,3}$/.test(x)))];
+function idfOf(rows){if(idfMem&&idfMem.rows===rows)return idfMem.m;const df=new Map();for(const p of rows)for(const t of relToks(p.n))df.set(t,(df.get(t)||0)+1);
+ const N=rows.length||1,m=t=>Math.log(1+N/(df.get(t)||1));idfMem={rows,m};return m}
+export function related(rows,prod,n=12){const C0=C||cfg(null),R=compile(C0),base=prod.n!=null?prod:slim(prod),idf=idfOf(rows);
+ const bt=relToks(base.n),bs=segsOf(base,R),lp=base.p>0?Math.log(base.p):null;
+ const P=ON&&!optedOut()?loadProf():null,pers=P?scorer(P,C0,P.id+':rel:'+epochOf(P,C0),R,{jit:.4}):null;
+ const sc=new Map();
+ for(const p of rows){if(p.id===base.id)continue;const nn=' '+norm(p.n)+' ';let s=0,sh=0;
+  for(const t of bt)if(nn.includes(' '+t))sh+=Math.min(idf(t),4);s+=Math.min(6,1.4*sh);   // palavras em comum (raras valem mais)
+  if(p.c&&p.c===base.c)s+=2.5;                                                        // mesma categoria
+  const ps=segsOf(p,R);for(const k in bs)if(k!=='economico'&&ps[k])s+=.8*Math.min(bs[k],ps[k]);   // mesmo tipo (tecnologia, feminino…)
+  if(lp!=null&&p.p>0)s+=1.2*Math.exp(-Math.pow(Math.log(p.p)-lp,2)/.5);              // preço parecido
+  if(lp!=null&&p.p>0&&Math.abs(Math.log(p.p)-lp)>Math.log(5)&&p.c!==base.c)s-=2;      // outra categoria e preço muito diferente: provavelmente não tem relação
+  if(s<2.5)continue;                                                                  // precisa ter relação de verdade
+  if(pers)s+=.35*pers(p);                                                             // toque pessoal (sistema ligado)
+  sc.set(p.id,s)}
+ let ids=[...sc.keys()].sort((a,b)=>sc.get(b)-sc.get(a));
+ // evita encher a seção com variações quase iguais do mesmo item
+ const out=[],seenName=new Set();for(const id of ids){const p=rows.find(x=>x.id===id),k=relToks(p.n).slice(0,3).join(' ');if(seenName.has(k)&&out.length<ids.length-1)continue;seenName.add(k);out.push(id);if(out.length>=n)break}
+ return out}
