@@ -193,7 +193,7 @@ const sigOf=(P,mx)=>Object.entries(mx.mix).sort((a,b)=>b[1]-a[1]).slice(0,2).map
 
 // Vitrine do Início. keys = seções a personalizar com a quantidade; devolve {chave: [ids em ordem]} com folga extra
 // (a página remove os já exibidos no carrossel/seções anteriores e corta na quantidade). Mesma seleção dentro do período.
-export function home(rows,secs,exclude=new Set()){const {P,e,seed,R}=ctx();const mx=mixFor(P,C),sig=sigOf(P,mx);
+export function home(rows,secs,exclude=new Set()){secs=secs.filter(x=>x.key==='ofertas'||x.key==='novidades');const {P,e,seed,R}=ctx();const mx=mixFor(P,C),sig=sigOf(P,mx);
  const valid=new Set(rows.map(p=>p.id));const out={};
  for(const {key,qty} of secs){const n=Math.max(1,qty|0),want=n+12;
   const cached=P.sel&&P.sel.e===e&&P.sel.sig===sig&&P.sel[key];
