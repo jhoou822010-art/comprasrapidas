@@ -25,6 +25,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Conferir se o domínio já está no ar
+        run: |
+          D=https://comprasrapidasandrade.com.br
+          for f in manifest.json icon-512.png .well-known/assetlinks.json; do
+            if ! curl -sfL -o /dev/null "$D/$f"; then
+              echo "::error::$D/$f ainda não abre. Espere o domínio (com HTTPS) entrar no ar e o site ser publicado com a pasta .well-known, depois rode de novo."
+              exit 1
+            fi
+          done
+          echo "Domínio no ar com HTTPS."
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
