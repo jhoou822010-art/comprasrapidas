@@ -30,8 +30,8 @@ big.onclick=()=>{if(imgs.length){lb.classList.add('on');$('#lbi').src=imgs[i]}};
 // vitrine inteligente: registra o interesse só neste aparelho (sem envio ao servidor)
 let V=null;try{V=await import('./js/vitrine.js');if(V.start(S)){V.track('view',{p});document.querySelectorAll('a[href^="saindo.html"]').forEach(a=>a.addEventListener('click',()=>V.track('buy',{p}),{once:true}))}}catch(e){V=null}
 // produtos relacionados: os mais parecidos com este (nome, categoria, tipo e preço); se algo falhar, usa a lista simples da categoria
-let r=null;try{if(V){const ids=V.related(await V.poolWithin(4000),p,12);if(ids.length>=4)r=await byIds(ids)}}catch(e){console.warn('relacionados: usando a lista simples',e)}
-if(!r||r.length<4){const {data:rel}=await list({cat:p.category_id,per:13});r=(rel||[]).filter(x=>x.id!==p.id).slice(0,12)}
+let r=null;try{if(V){const ids=V.related(await V.poolWithin(4000),p,30);if(ids.length>=4)r=await byIds(ids)}}catch(e){console.warn('relacionados: usando a lista simples',e)}
+if(!r||r.length<4){const {data:rel}=await list({cat:p.category_id,per:31});r=(rel||[]).filter(x=>x.id!==p.id).slice(0,30)}
 const cs=p.categories?.slug;
 if(r.length)$('#rel').innerHTML=`<div class=sh><h2>Produtos relacionados</h2>${cs?`<a href="lista.html?tipo=categoria&slug=${encodeURIComponent(cs)}">Ver mais</a>`:''}</div><div class=grid>${r.map(card).join('')}</div>`;
 </script></body></html>
