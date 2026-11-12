@@ -2,3 +2,4 @@ dados/
 *.csv
 !modelo-importacao.csv
 backup-imagens.zip
+node_modules/
