@@ -3,7 +3,8 @@
 // com as tags Open Graph já preenchidas; quem abre o link é levado na hora para produto.html.
 // Também gera sitemap.xml, robots.txt e a prévia da página inicial (index.html).
 // Uso: node scripts/gerar-previas.mjs   (roda sozinho pelo GitHub Actions, ver .github/workflows/previas.yml)
-import { readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const cfg = readFileSync('config.js', 'utf8');
 const SB_URL = process.env.SUPABASE_URL || cfg.match(/SUPABASE_URL\s*=\s*'([^']+)'/)[1];
@@ -37,6 +38,34 @@ const homeImgMeta = homeImg === SITE + 'og-image.jpg'
   ? '<meta property=og:image:type content=image/jpeg><meta property=og:image:width content=1200><meta property=og:image:height content=630>' : '';
 const homeTitle = store + (S.slogan ? ' — ' + oneLine(S.slogan) : '');
 
+// Fotos .webp: o WhatsApp não mostra esse formato de forma confiável, então cada foto .webp usada
+// numa prévia ganha uma cópia em JPG na pasta og/ (só é baixada e convertida uma vez).
+// A conversão usa o pacote sharp (instalado pelo GitHub Actions); sem ele, a foto .webp fica como está.
+let sharp = null;
+try { sharp = (await import('sharp')).default; } catch { console.warn('sharp não instalado: fotos .webp ficam como estão.'); }
+mkdirSync('og', { recursive: true });
+const ogUsed = new Set();
+let ogNew = 0;
+async function shareImg(url) {
+  if (!isWebp(url)) return { url, jpg: false };
+  const file = 'og/' + createHash('sha1').update(url).digest('hex').slice(0, 20) + '.jpg';
+  if (!existsSync(file)) {
+    if (!sharp) return { url, jpg: false };
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      await sharp(Buffer.from(await r.arrayBuffer()))
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .flatten({ background: '#ffffff' })
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toFile(file);
+      ogNew++;
+    } catch (e) { console.warn('não converti', url, e.message); return { url, jpg: false }; }
+  }
+  ogUsed.add(file);
+  return { url: SITE + file, jpg: true };
+}
+
 const products = await getAll('cr_products?select=slug,name,price,price_max,description,created_at,product_images:cr_product_images(url,sort,is_cover)&status=eq.active&order=created_at.desc');
 if (!products.length) throw new Error('Nenhum produto ativo retornado; nada foi alterado.');
 
@@ -45,7 +74,7 @@ rmSync('p', { recursive: true, force: true });
 for (const p of products) {
   if (!/^[\w-]+$/.test(p.slug)) { console.warn('slug ignorado:', p.slug); continue; }
   const imgs = [...(p.product_images || [])].sort((a, b) => (b.is_cover - a.is_cover) || (a.sort - b.sort));
-  const img = imgs[0]?.url || storeImg;
+  const { url: img, jpg } = await shareImg(imgs[0]?.url || storeImg);
   const price = p.price == null ? '' : money(p.price) + (p.price_max != null && Number(p.price_max) > Number(p.price) ? ' a ' + money(p.price_max) : '');
   const title = p.name + (price ? ' — ' + price : '');
   const desc = cut([price && 'Por ' + price, p.description].filter(Boolean).join(' · '), 200) || store;
@@ -57,12 +86,16 @@ for (const p of products) {
 <link rel=canonical href="${esc(SITE + 'produto.html?produto=' + p.slug)}">
 <meta property=og:type content=product><meta property=og:locale content=pt_BR><meta property=og:site_name content="${esc(store)}">
 <meta property=og:title content="${esc(title)}"><meta property=og:description content="${esc(desc)}"><meta property=og:url content="${esc(url)}">
-<meta property=og:image content="${esc(img)}"><meta property=og:image:alt content="${esc(p.name)}">
+<meta property=og:image content="${esc(img)}"><meta property=og:image:secure_url content="${esc(img)}">${jpg ? '<meta property=og:image:type content=image/jpeg>' : ''}<meta property=og:image:alt content="${esc(p.name)}">
 ${p.price != null ? `<meta property=product:price:amount content="${Number(p.price).toFixed(2)}"><meta property=product:price:currency content=BRL>\n` : ''}<meta name=twitter:card content=summary_large_image>
 <meta http-equiv=refresh content="0;url=${esc(dest)}"><script>location.replace(${JSON.stringify(dest)})</script></head>
 <body style="font:16px system-ui,sans-serif;text-align:center;padding:40px 12px"><img src="${esc(img)}" alt="" style="max-width:240px;max-height:240px"><h1 style="font-size:1.2rem">${esc(p.name)}</h1>${price ? `<p><b>${esc(price)}</b></p>` : ''}<p><a href="${esc(dest)}">Ver produto</a></p></body></html>
 `);
 }
+
+// Apaga as cópias em JPG que nenhum produto usa mais (produto removido ou foto trocada).
+for (const f of readdirSync('og')) if (f.endsWith('.jpg') && !ogUsed.has('og/' + f)) rmSync('og/' + f);
+console.log(`Fotos em JPG para as prévias: ${ogUsed.size} (${ogNew} novas).`);
 
 // Prévia da página inicial (bloco entre <!--og--> e <!--/og--> no index.html).
 // O <title> fica dentro do bloco com o nome real da loja (o WhatsApp lê o título sem rodar JavaScript).
