@@ -31,8 +31,8 @@ function steps(){const ua=navigator.userAgent;
  if(/Firefox|FxiOS/.test(ua))return '<li>Toque no menu <b>⋮</b> do navegador.</li><li>Escolha <b>Instalar</b> ou <b>Adicionar à tela inicial</b>.</li>';
  if(/Android/.test(ua))return '<li>Toque no menu <b>⋮</b> (canto superior direito do navegador).</li><li>Escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme em <b>Instalar</b>.</li>';
  return '<li>Clique no ícone de <b>instalar</b> <span aria-hidden=true>⊕</span> na barra de endereço do navegador,</li><li>ou abra o menu <b>⋮</b> e escolha <b>Instalar Compras Rápidas</b> / <b>Aplicativos → Instalar este site</b>.</li>'}
-function manual(){css();const d=document.createElement('div');d.id='pwah';
- d.innerHTML=`<div role=dialog aria-modal=true aria-labelledby=pwaht><h3 id=pwaht>📲 Instalar a loja</h3><p>Instale a <b>Compras Rápidas</b> no seu aparelho para abrir com um toque e receber nossas ofertas:</p><ol>${steps()}</ol>
+function manual(chrome){css();const d=document.createElement('div');d.id='pwah';
+ d.innerHTML=`<div role=dialog aria-modal=true aria-labelledby=pwaht><h3 id=pwaht>📲 Instalar a loja</h3>${chrome?'<p><b>A loja já está instalada?</b> Então é só abrir pelo ícone <b>Compras</b> na tela inicial do celular.</p><p>Se ainda não instalou, faça assim:</p>':'<p>Instale a <b>Compras Rápidas</b> no seu aparelho para abrir com um toque e receber nossas ofertas:</p>'}<ol>${steps()}</ol>
  <p class=note>Se você já instalou, é só abrir a loja pelo ícone na tela inicial.</p><button class="btn big" type=button>Entendi</button></div>`;
  d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d);d.querySelector('button').focus()}
 
@@ -61,16 +61,15 @@ export async function init(){
  css();
  // Chrome no Android: detecta o app desta loja já instalado (manifest: related_applications)
  try{if(navigator.getInstalledRelatedApps){const r=await navigator.getInstalledRelatedApps();if(r?.length){markInstalled();b.remove();fitFx();return}}}catch(_){}
- // Chrome/Edge/Samsung (Android e computador): instalação direta pelo botão, sem precisar do menu ⋮ do navegador.
- // O botão só aparece quando o navegador libera a instalação (evento beforeinstallprompt).
- // Navegadores sem esse recurso (iPhone/Safari, Firefox): o botão aparece e mostra o passo a passo.
+ // Com SIM no painel o botão sempre aparece.
+ // Chrome/Edge/Samsung: o toque abre a janela de instalação do próprio celular (sem precisar do menu ⋮).
+ // Se o navegador não liberar (loja já instalada, ou iPhone/Firefox), mostra o que fazer.
  const direct='onbeforeinstallprompt' in window;
- const show=()=>{if(ss.get(HIDE_KEY)||installed()||!b.isConnected)return;b.hidden=false;fitFx()};
- if(!direct||PWA.evt)show();else addEventListener('cr-bip',show);
+ b.hidden=false;fitFx();
  b.onclick=async()=>{
   if(b.disabled)return;b.disabled=true;b.hidden=true;ss.set(HIDE_KEY,'1');fitFx();  // some na hora e evita cliques repetidos
-  const ev=PWA.evt||(direct?await waitBip(1500):null);
-  if(!ev){manual();return}                                          // sem instalação direta: instruções manuais
+  const ev=PWA.evt||(direct?await waitBip(3000):null);
+  if(!ev){manual(direct);return}                                          // sem instalação direta: instruções manuais
   PWA.evt=null;                                                     // o evento só pode ser usado uma vez
   try{await ev.prompt();await ev.userChoice}catch(_){manual()}
   // a confirmação real vem do evento "appinstalled" (registrado no app.js); cancelar não marca nada,
