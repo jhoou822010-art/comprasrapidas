@@ -248,14 +248,19 @@ function iosHelp(){const d=document.createElement('div');d.id='pnh';
  <ol><li>Toque em <b>Compartilhar</b> <span aria-hidden=true>⬆️</span> (na barra do Safari).</li><li>Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.</li><li>Abra o <b>Compras Rápidas</b> pelo novo ícone e toque de novo em <b>Receber ofertas no celular</b>.</li></ol>
  <p class=note>Precisa do iOS 16.4 ou mais novo.</p><button class="btn big" type=button>Entendi</button></div>`;
  d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d);d.querySelector('button').focus()}
-const PN_KEY='cr_push_dismiss';
+const PN_KEY='cr_push_dismiss',PN_OK='cr_push_ok';
 async function pushBar(){
  const ios=isIOS(),inst=isStandalone();
  if(!pushOk()&&!(ios&&!inst))return;          // navegador sem suporte: não mostra nada
  if(pushOk()&&Notification.permission==='denied')return;
  try{if(+localStorage.getItem(PN_KEY)>Date.now())return}catch(_){}
+ let ok=false;try{ok=localStorage.getItem(PN_OK)==='1'}catch(_){}
  if(pushOk()){const sub=await currentSub().catch(()=>null);
-  if(sub){if(Notification.permission==='granted')saveSub(sub).catch(()=>{});return}} // já inscrito: esconde (e confirma no banco)
+  if(sub){if(Notification.permission==='granted')saveSub(sub).catch(()=>{});try{localStorage.setItem(PN_OK,'1')}catch(_){}return} // já inscrito: esconde (e confirma no banco)
+  // permissão já dada (ex.: app instalado/APK, que às vezes perde a inscrição ao fechar): reinscreve em silêncio, sem perguntar de novo
+  if(Notification.permission==='granted'){try{await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}return}catch(e){console.warn('push',e);if(ok)return}}
+ }
+ if(ok)return; // já aceitou antes neste aparelho: não pergunta de novo
  document.head.insertAdjacentHTML('beforeend',`<style>#pnb{background:#fff;border-bottom:1px solid #cdd8e8;color:#12213a}#pnb .w{display:flex;align-items:center;gap:10px;padding:8px 12px;flex-wrap:wrap}#pnb p{margin:0;flex:1 1 180px;font-size:.92rem}#pnb .btn{padding:8px 14px;font-weight:700;font-size:.92rem}#pnb .x{background:none;border:0;font-size:1.4rem;line-height:1;color:#556;cursor:pointer;min-width:44px;min-height:44px}
 #pnh{position:fixed;inset:0;background:#000a;z-index:60;display:grid;place-items:center;padding:16px}#pnh>div{background:#fff;border-radius:14px;padding:18px;max-width:420px;width:100%}#pnh h3{margin:0 0 8px;color:var(--c1)}#pnh ol{padding-left:20px}#pnh li{margin:6px 0}</style>`);
  const bar=document.createElement('div');bar.id='pnb';
@@ -263,7 +268,7 @@ async function pushBar(){
  const h=$('#hdr');(h?h:document.body).insertAdjacentElement(h?'afterend':'afterbegin',bar);
  $('#pnx').onclick=()=>{try{localStorage.setItem(PN_KEY,Date.now()+7*864e5)}catch(_){}bar.remove();fitFx()};
  $('#pnok').onclick=async()=>{if(ios&&!inst)return iosHelp();const b=$('#pnok');b.disabled=true;b.textContent='Ativando…';
-  try{await pushSubscribe();bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
+  try{await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
   catch(e){b.disabled=false;b.textContent='Receber ofertas no celular';alert(e.message||e);if(Notification.permission==='denied'){bar.remove();fitFx()}}};
  fitFx()}
 // Chave do tema (no rodapé): "claro" (padrão) mantém a página clara mesmo com o celular no modo escuro; "auto" deixa o navegador seguir o tema do celular.
