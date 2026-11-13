@@ -93,6 +93,8 @@ const kwList=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean).map(x=
 const kwHit=(list,nn,words)=>list.some(k=>k.multi?(' '+nn+' ').includes(' '+k.t+(k.pre?'':' ')):k.pre?words.some(w=>w.startsWith(k.t)):words.some(w=>w===k.t||w===k.t+'s'||w===k.t+'es'));
 const disc=p=>p.o>0&&p.p!=null&&p.o>p.p?(p.o-p.p)/p.o*100:0;
 const offerOn=p=>isOffer({offer:p.of,offer_start:p.os,offer_end:p.oe});
+// bônus para as melhores ofertas: até +1,2 conforme o desconto (70% ou mais = bônus máximo)
+const bestDeal=p=>offerOn(p)?1.2*Math.min(disc(p),70)/70:0;
 
 // Regras compiladas (uma vez por configuração)
 function compile(c){const R={};for(const k of SEG_KEYS){const r=c.rules[k];let pat=null;try{pat=r.cat_pat?new RegExp(r.cat_pat,'i'):null}catch(e){}
@@ -201,6 +203,7 @@ export function home(rows,secs,exclude=new Set()){secs=secs.filter(x=>x.key==='o
   let cands=rows.filter(p=>!exclude.has(p.id));
   if(key==='ofertas')cands=cands.filter(offerOn);
   const score0=scorer(P,C,seed+':'+key,R);let score=score0;
+  if(key==='ofertas')score=p=>score0(p)+bestDeal(p);   // melhores ofertas (maior desconto) ganham prioridade
   if(key==='novidades'){const win=Math.max(60,n*5);cands=cands.slice().sort((a,b)=>a.t<b.t?1:-1).slice(0,win);const rk=new Map(cands.map((p,i)=>[p.id,i]));score=p=>score0(p)+1.6*(1-rk.get(p.id)/win)}
   if(!cands.length){out[key]=[];continue}
   out[key]=compose(cands,Math.min(want,cands.length),mx.mix,score,R).map(p=>p.id)}
@@ -222,7 +225,7 @@ export function explore(rows,n=40,min=30){try{const C0=C||cfg(null),R=compile(C0
  const P=ON&&!optedOut()?loadProf():null,mx=P?mixFor(P,C0):null;n=Math.min(Math.max(1,n|0),rows.length);if(!n)return [];
  if(!P||!mx.interests.length){const seed='xp:'+(P?.id||'')+':'+bucket;   // sem perfil: aleatório, estável dentro do período
   return rows.map(p=>[p.id,rnd(seed,p.id)]).sort((a,b)=>a[1]-b[1]).slice(0,n).map(x=>x[0])}
- const base=scorer(P,C0,P.id+':xp:'+bucket,R,{jit:2.2});const score=p=>base(p)+(offerOn(p)?.6:0);   // ofertas ganham um empurrão
+ const base=scorer(P,C0,P.id+':xp:'+bucket,R,{jit:2.2});const score=p=>base(p)+(offerOn(p)?.6:0)+bestDeal(p);   // ofertas ganham um empurrão, as de maior desconto mais ainda
  return compose(rows,n,mx.mix,score,R).map(p=>p.id)}catch(e){return []}}
 
 // ---- usado pelo painel (prévia/simulação). Não grava nada.
