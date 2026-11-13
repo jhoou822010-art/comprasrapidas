@@ -61,10 +61,15 @@ export async function init(){
  css();
  // Chrome no Android: detecta o app desta loja já instalado (manifest: related_applications)
  try{if(navigator.getInstalledRelatedApps){const r=await navigator.getInstalledRelatedApps();if(r?.length){markInstalled();b.remove();fitFx();return}}}catch(_){}
- b.hidden=false;fitFx();
+ // Chrome/Edge/Samsung (Android e computador): instalação direta pelo botão, sem precisar do menu ⋮ do navegador.
+ // O botão só aparece quando o navegador libera a instalação (evento beforeinstallprompt).
+ // Navegadores sem esse recurso (iPhone/Safari, Firefox): o botão aparece e mostra o passo a passo.
+ const direct='onbeforeinstallprompt' in window;
+ const show=()=>{if(ss.get(HIDE_KEY)||installed()||!b.isConnected)return;b.hidden=false;fitFx()};
+ if(!direct||PWA.evt)show();else addEventListener('cr-bip',show);
  b.onclick=async()=>{
   if(b.disabled)return;b.disabled=true;b.hidden=true;ss.set(HIDE_KEY,'1');fitFx();  // some na hora e evita cliques repetidos
-  const ev=PWA.evt||('onbeforeinstallprompt' in window?await waitBip(1500):null);
+  const ev=PWA.evt||(direct?await waitBip(1500):null);
   if(!ev){manual();return}                                          // sem instalação direta: instruções manuais
   PWA.evt=null;                                                     // o evento só pode ser usado uma vez
   try{await ev.prompt();await ev.userChoice}catch(_){manual()}
