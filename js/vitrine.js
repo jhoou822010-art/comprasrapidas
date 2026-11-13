@@ -215,6 +215,16 @@ export function category(rows,catId){const {P,seed,R}=ctx();const cands=rows.fil
 export function shown(ids){try{if(!ON||optedOut())return;const P=loadProf(),e=epochOf(P,C);if(P.hist?.e!==e){if(P.hist&&P.hist.e>=0&&P.hist.ids?.length)P.prev=[P.hist.ids,...(P.prev||[])].slice(0,2);P.hist={e,ids:[]}}
  P.hist.ids=[...new Set([...P.hist.ids,...ids])].slice(0,150);LS.set(K_PROF,P)}catch(e){}}
 
+// ---- Seção "Explore" do Início: produtos de todas as categorias misturados, trocados a cada `min` minutos.
+// Com a vitrine ligada e o visitante com interesses claros (ex.: econômico, masculino), segue o perfil dele;
+// sem perfil (ou vitrine desligada / visitante recusou), sorteia. Só LÊ o perfil: não grava nada e não mexe nas outras seções.
+export function explore(rows,n=40,min=30){try{const C0=C||cfg(null),R=compile(C0),bucket=Math.floor(Date.now()/(Math.max(5,min)*6e4));
+ const P=ON&&!optedOut()?loadProf():null,mx=P?mixFor(P,C0):null;n=Math.min(Math.max(1,n|0),rows.length);if(!n)return [];
+ if(!P||!mx.interests.length){const seed='xp:'+(P?.id||'')+':'+bucket;   // sem perfil: aleatório, estável dentro do período
+  return rows.map(p=>[p.id,rnd(seed,p.id)]).sort((a,b)=>a[1]-b[1]).slice(0,n).map(x=>x[0])}
+ const base=scorer(P,C0,P.id+':xp:'+bucket,R,{jit:2.2});const score=p=>base(p)+(offerOn(p)?.6:0);   // ofertas ganham um empurrão
+ return compose(rows,n,mx.mix,score,R).map(p=>p.id)}catch(e){return []}}
+
 // ---- usado pelo painel (prévia/simulação). Não grava nada.
 export function simulate(rows,c,signals,{qty=15,seed='simulacao',key='ofertas'}={}){C=cfg({vitrine:c});C.areas={ofertas:true,novidades:true,categorias:true};
  const P=newProf();P.id=seed;const R=compile(C);
