@@ -3,3 +3,9 @@ dados/
 !modelo-importacao.csv
 backup-imagens.zip
 node_modules/
+
+# projeto Android gerado e chaves de assinatura (nunca versionar)
+build-android/
+saida/
+*.jks
+*.keystore

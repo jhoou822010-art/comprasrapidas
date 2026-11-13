@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.comprasrapidasandrade.app",
+      "sha256_cert_fingerprints": [
+        "5E:21:C2:38:BC:82:0F:6E:53:17:14:9A:56:7E:E4:88:29:4C:A7:90:93:58:A8:13:0F:46:C0:85:F4:A5:ED:E8"
+      ]
+    }
+  }
+]
