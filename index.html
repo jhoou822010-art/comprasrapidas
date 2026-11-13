@@ -18,6 +18,10 @@
 .sl.ps h1,.sl.ps h2{font-size:clamp(1.15rem,4.5vw,2.3rem);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px #0008;padding:2px 0}
 .ppr{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}.ppr b{font-size:clamp(1.4rem,5vw,2.4rem);text-shadow:0 1px 4px #0008}.ppr s{opacity:.85}
 .ptag{display:inline-block;background:#e5384f;color:#fff;font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:8px}
+/* Explore por categoria: um bloco só, rola para baixo e arrasta para os lados (indo e voltando) */
+.xg{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding-bottom:8px;cursor:grab}.xg.dg{cursor:grabbing;user-select:none}.xg.dg a{pointer-events:none}
+.xr{width:max-content;min-width:100%;margin-bottom:16px}.xl{position:sticky;left:0;display:inline-block;font-weight:700;color:var(--c1);margin:2px 0 8px;padding-right:12px}
+.xt{display:flex;gap:10px}.xt .card{flex:0 0 clamp(150px,44vw,220px);width:clamp(150px,44vw,220px)}.xh{color:var(--c2);font-size:.9rem}
 </style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
@@ -34,7 +38,11 @@ const slide=(b,i)=>{const T=i?'h2':'h1',txt=b.title||b.subtitle||b.button_text;
 const bids=Array.isArray(S.banner_ids)?S.banner_ids:[];const seen=new Set();const cids=Array.isArray(S.carousel_ids)?S.carousel_ids:[];const useCar=S.carousel_on!==false&&cids.length;
 // busca o carrossel e todas as seções ao mesmo tempo (antes era uma depois da outra)
 let extra=useCar?cids.length:0;
-const jobs=(sec||[]).map(x=>{if(x.key==='categorias')return sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
+// Explore por categoria: uma linha por categoria (ofertas primeiro, depois as mais novas), sem escolha manual
+const explorar=async q=>{const {data:cs}=await sb.from('cr_categories').select('id,name,slug').eq('active',true).order('sort');
+ const rows=await Promise.all((cs||[]).map(c=>list({cat:c.id,per:q}).then(r=>({c,ps:[...(r.data||[])].sort((a,b)=>isOffer(b)-isOffer(a))})).catch(()=>({c,ps:[]}))));
+ return {data:rows.filter(r=>r.ps.length)}};
+const jobs=(sec||[]).map(x=>{if(x.key==='explorar')return explorar(x.qty||10).catch(()=>({data:[]}));if(x.key==='categorias')return sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
  const q=x.qty||8,per=q+extra;extra+=q;return list({offer:x.key==='ofertas',featured:x.key==='destaques',per})});
 const [bp,cp,...res]=await Promise.all([bids.length?byIds(bids):[],useCar?byIds(cids):[],...jobs]);
 // vitrine inteligente: escolhe e ordena Ofertas/Novidades para este visitante; em qualquer falha mantém as listas originais acima
@@ -51,6 +59,8 @@ let h=`<div class=car><div class=trk id=trk>${bs.map((f,i)=>f(i)).join('')}</div
 if(cp.length){cp.forEach(p=>seen.add(p.id));
  h+=`<div class=sh><h2>${esc(S.carousel_title||'Em destaque na vitrine')}</h2></div><div class=pcw><div class=pc id=pc>${cp.map(card).join('')}</div>${cp.length>2?'<button class=nv id=ppv aria-label=Anterior>‹</button><button class=nv id=pnx aria-label=Próximo>›</button>':''}</div>`}
 for(const [n,x] of (sec||[]).entries()){
+ if(x.key==='explorar'){const {data}=res[n];
+  if(data?.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><span class=xh>⇆ arraste para os lados</span></div><div class=xg id=xg>${data.map(({c,ps})=>`<div class=xr><a class=xl href="lista.html?tipo=categoria&slug=${esc(c.slug)}">${esc(c.name)} ›</a><div class=xt>${ps.map(card).join('')}</div></div>`).join('')}</div>`;continue}
  if(x.key==='categorias'){const {data}=res[n];
   if(data?.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=categorias">Ver todas</a></div><div class=cats>${data.map(c=>`<a class=cat href="lista.html?tipo=categoria&slug=${esc(c.slug)}">${c.image_url?`<img loading=lazy src="${esc(c.image_url)}" alt="">`:`<i>${esc(c.name[0])}</i>`}${esc(c.name)}</a>`).join('')}</div>`;continue}
  const q=x.qty||8;const all=res[n].data;
@@ -59,6 +69,12 @@ for(const [n,x] of (sec||[]).entries()){
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';
 document.getElementById('m').innerHTML=h;decorHero();
 if(vok)try{V.shown([...seen])}catch(e){}
+// Explore: no celular o dedo já arrasta; no computador, arrastar com o mouse também funciona
+{const xg=document.getElementById('xg');if(xg){let d=null;
+ xg.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;d={x:e.clientX,l:xg.scrollLeft,m:false}});
+ addEventListener('pointermove',e=>{if(!d)return;const dx=e.clientX-d.x;if(!d.m&&Math.abs(dx)>6){d.m=true;xg.classList.add('dg')}if(d.m){xg.scrollLeft=d.l-dx;e.preventDefault()}});
+ addEventListener('pointerup',()=>{if(!d)return;const m=d.m;d=null;if(m)setTimeout(()=>xg.classList.remove('dg'),0)});
+ xg.addEventListener('dragstart',e=>e.preventDefault())}}
 {const pc=document.getElementById('pc');if(pc){const step=()=>{const c=pc.querySelector('.card');return c?c.getBoundingClientRect().width+10:300};
  const nxt=()=>{if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
  const a=document.getElementById('ppv'),b=document.getElementById('pnx');if(a){a.onclick=()=>pc.scrollBy({left:-step(),behavior:'smooth'});b.onclick=nxt}
