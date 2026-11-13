@@ -14,13 +14,6 @@ const DEF={name:'Compras Rápidas',slogan:'Encontre boas escolhas.',c1:'#0b2a5b'
  about:'A Compras Rápidas reúne produtos selecionados de lojas parceiras para você encontrar boas escolhas com facilidade.',
  privacy:'Edite este texto no painel (Aparência da loja). Explique quais dados coleta (ex.: cliques anônimos em links de compra), como usa e como o visitante pode falar com você.',contact_text:'Fale com a gente pelos canais abaixo.'};
 export let S=DEF;
-// ---- instalador do aplicativo (PWA): guarda o convite de instalação do navegador e registra instalações concluídas.
-// Só nas páginas da loja (o painel /admin/ e o /gestor/ têm o próprio app e não são afetados).
-export const INST_KEY='cr_app_installed';
-export const PWA={evt:null,on:false};
-if(!/\/(admin|gestor)\//.test(location.pathname)){
- addEventListener('beforeinstallprompt',e=>{PWA.evt=e;if(PWA.on)e.preventDefault();dispatchEvent(new Event('cr-bip'))}); // com o botão ligado, a instalação fica no botão
- addEventListener('appinstalled',()=>{PWA.evt=null;try{localStorage.setItem(INST_KEY,String(Date.now()))}catch(_){}})}
 export const THEMES={
  natal:{n:'Natal',e:'🎄',c1:'#8b1a1a',c2:'#1f8a4c',btn:'#1f8a4c',t:'Especial de Natal: ofertas para presentear!',fx:['❄️'],deco:'hats'},
  carnaval:{n:'Carnaval',e:'🎭',c1:'#5b2a86',c2:'#e08a00',btn:'#d6246e',t:'Folia de ofertas de Carnaval!',fx:['🎊','✨']},
@@ -93,12 +86,12 @@ function themeUi(th){if(!th)return '';const x=th.cfg,txt=x.text||(th.e+' '+th.t)
 export async function boot(){
  if(!CONFIGURED){document.body.insertAdjacentHTML('afterbegin','<p style="background:#fde2e2;color:#7a1010;padding:12px;margin:0;text-align:center">Site ainda não configurado: preencha o arquivo config.js (veja o Guia, Parte 3).</p>')}
  const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();
- S={...DEF,...(data?.data||{})};const inst=S.install_btn===true&&CONFIGURED;PWA.on=inst;const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';if(th&&th.cfg.colors!==false)S={...S,c1:th.c1,c2:th.c2,btn:th.btn};const r=document.documentElement.style;
+ S={...DEF,...(data?.data||{})};const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';if(th&&th.cfg.colors!==false)S={...S,c1:th.c1,c2:th.c2,btn:th.btn};const r=document.documentElement.style;
  r.setProperty('--c1',S.c1);r.setProperty('--c2',S.c2);r.setProperty('--btn',S.btn);
  document.title=(document.title&&document.title!=='x'&&!document.querySelector('title[data-auto]')?document.title+' | ':'')+(S.seo_title||S.name); // data-auto: título provisório gravado pelo gerar-previas.mjs; aqui vale o valor atual do painel
  if(S.seo_desc){let m=document.querySelector('meta[name=description]')||document.head.appendChild(Object.assign(document.createElement('meta'),{name:'description'}));m.content=S.seo_desc}
  if(S.favicon){let l=document.querySelector('link[rel=icon]')||document.head.appendChild(Object.assign(document.createElement('link'),{rel:'icon'}));l.href=S.favicon}
- $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>${inst?'<button type=button id=pwai hidden aria-label="Instalar para receber ofertas">📲 <span class=t>Instalar para receber ofertas</span></button>':''}
+ $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>
  <form action=lista.html><input type=hidden name=tipo value=busca><input name=q placeholder="O que você está procurando?" aria-label="Pesquisar"><button aria-label="Buscar">🔍</button></form></div>
  <nav><a href=index.html>Início</a><a href="lista.html?tipo=categorias">Categorias</a><a href="lista.html?tipo=ofertas">Ofertas</a><a href="lista.html?tipo=destaques">Destaques</a><a href=contato.html>Contato</a></nav></div></header>${stripHtml()}`;
  $('#ftr').innerHTML=`${AREA==='top'?'':stripHtml()}<footer><div class=w><p><b>${esc(S.name)}</b> — ${esc(S.slogan)}</p><p><button type=button id=tema class=temabtn></button></p><p>${DISCLAIMER}</p><p>${S.footer_text?esc(S.footer_text)+'<br>':''}
@@ -109,7 +102,6 @@ export async function boot(){
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
  if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e));visitTrack()}
- if(inst)import('./instalador.js').then(m=>m.init()).catch(e=>{console.warn('instalador',e);document.getElementById('pwai')?.remove()});
  return S}
 // ---- monitoramento de visitantes (Estatísticas do painel): só um código anônimo de sessão, sem dados pessoais.
 // Entrada ao abrir o site; sinal de atividade a cada 30 s com a aba visível; saída ao fechar/sair.
@@ -234,7 +226,10 @@ export async function currentSub(){if(!pushOk())return null;const r=await swReg(
 // só chame depois de um toque do visitante (o navegador exige)
 export async function pushSubscribe(){
  if(!pushOk())throw new Error(isIOS()&&!isStandalone()?'No iPhone, adicione o site à Tela de Início e abra pelo ícone para ativar.':'Este navegador não aceita notificações.');
- const perm=await Notification.requestPermission();
+ // no app (APK) a resposta da janela do Android às vezes nunca chega à página: também confere a permissão de tempos em tempos
+ const perm=await new Promise(res=>{let done=false;const end=v=>{if(!done){done=true;clearInterval(t);res(v)}};
+  const t=setInterval(()=>{if(Notification.permission!=='default')end(Notification.permission)},500);
+  try{const p=Notification.requestPermission(end);if(p&&p.then)p.then(end,()=>end(Notification.permission))}catch(_){end(Notification.permission)}});
  if(perm!=='granted')throw new Error(perm==='denied'?'As notificações estão bloqueadas. Libere nas configurações do navegador para este site.':'Permissão não concedida.');
  const r=await swReg();if(!r)throw new Error('Não foi possível preparar as notificações neste aparelho.');
  let sub=await r.pushManager.getSubscription();
@@ -248,14 +243,19 @@ function iosHelp(){const d=document.createElement('div');d.id='pnh';
  <ol><li>Toque em <b>Compartilhar</b> <span aria-hidden=true>⬆️</span> (na barra do Safari).</li><li>Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.</li><li>Abra o <b>Compras Rápidas</b> pelo novo ícone e toque de novo em <b>Receber ofertas no celular</b>.</li></ol>
  <p class=note>Precisa do iOS 16.4 ou mais novo.</p><button class="btn big" type=button>Entendi</button></div>`;
  d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d);d.querySelector('button').focus()}
-const PN_KEY='cr_push_dismiss';
+const PN_KEY='cr_push_dismiss',PN_OK='cr_push_ok';
 async function pushBar(){
  const ios=isIOS(),inst=isStandalone();
  if(!pushOk()&&!(ios&&!inst))return;          // navegador sem suporte: não mostra nada
  if(pushOk()&&Notification.permission==='denied')return;
  try{if(+localStorage.getItem(PN_KEY)>Date.now())return}catch(_){}
+ let ok=false;try{ok=localStorage.getItem(PN_OK)==='1'}catch(_){}
  if(pushOk()){const sub=await currentSub().catch(()=>null);
-  if(sub){if(Notification.permission==='granted')saveSub(sub).catch(()=>{});return}} // já inscrito: esconde (e confirma no banco)
+  if(sub){if(Notification.permission==='granted')saveSub(sub).catch(()=>{});try{localStorage.setItem(PN_OK,'1')}catch(_){}return} // já inscrito: esconde (e confirma no banco)
+  // permissão já dada (ex.: app instalado/APK, que às vezes perde a inscrição ao fechar): reinscreve em silêncio, sem perguntar de novo
+  if(Notification.permission==='granted'){try{await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}return}catch(e){console.warn('push',e);if(ok)return}}
+ }
+ if(ok)return; // já aceitou antes neste aparelho: não pergunta de novo
  document.head.insertAdjacentHTML('beforeend',`<style>#pnb{background:#fff;border-bottom:1px solid #cdd8e8;color:#12213a}#pnb .w{display:flex;align-items:center;gap:10px;padding:8px 12px;flex-wrap:wrap}#pnb p{margin:0;flex:1 1 180px;font-size:.92rem}#pnb .btn{padding:8px 14px;font-weight:700;font-size:.92rem}#pnb .x{background:none;border:0;font-size:1.4rem;line-height:1;color:#556;cursor:pointer;min-width:44px;min-height:44px}
 #pnh{position:fixed;inset:0;background:#000a;z-index:60;display:grid;place-items:center;padding:16px}#pnh>div{background:#fff;border-radius:14px;padding:18px;max-width:420px;width:100%}#pnh h3{margin:0 0 8px;color:var(--c1)}#pnh ol{padding-left:20px}#pnh li{margin:6px 0}</style>`);
  const bar=document.createElement('div');bar.id='pnb';
@@ -263,8 +263,14 @@ async function pushBar(){
  const h=$('#hdr');(h?h:document.body).insertAdjacentElement(h?'afterend':'afterbegin',bar);
  $('#pnx').onclick=()=>{try{localStorage.setItem(PN_KEY,Date.now()+7*864e5)}catch(_){}bar.remove();fitFx()};
  $('#pnok').onclick=async()=>{if(ios&&!inst)return iosHelp();const b=$('#pnok');b.disabled=true;b.textContent='Ativando…';
-  try{await pushSubscribe();bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
+  try{await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
   catch(e){b.disabled=false;b.textContent='Receber ofertas no celular';alert(e.message||e);if(Notification.permission==='denied'){bar.remove();fitFx()}}};
+ // ao voltar para o app (depois da janela de permissão do Android), fecha a faixa se já estiver tudo certo
+ const chk=async()=>{if(document.hidden||!bar.isConnected||!pushOk())return;
+  if(Notification.permission==='denied'){bar.remove();fitFx();return}
+  if(Notification.permission!=='granted')return;
+  try{if(!await currentSub())await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}bar.remove();fitFx()}catch(e){console.warn('push',e)}};
+ document.addEventListener('visibilitychange',chk);addEventListener('focus',chk);addEventListener('pageshow',chk);
  fitFx()}
 // Chave do tema (no rodapé): "claro" (padrão) mantém a página clara mesmo com o celular no modo escuro; "auto" deixa o navegador seguir o tema do celular.
 function temaBtn(){const b=$('#tema');if(!b)return;const R=document.documentElement;let auto=R.dataset.tema==='auto';
