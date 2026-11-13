@@ -27,7 +27,7 @@ self.addEventListener('push', e => {
   const opt = {
     body: d.body || '',
     icon: d.icon || d.image || BASE + 'icon-192.png', // foto do produto aparece mesmo com a notificação recolhida
-    badge: BASE + 'icon-192.png', // logo da loja
+    badge: BASE + 'badge-96.png', // carrinho branco com fundo transparente (o Android só usa o contorno)
     data: { id: d.id || null, url: d.url || BASE },
     tag: d.id || undefined,
   };
