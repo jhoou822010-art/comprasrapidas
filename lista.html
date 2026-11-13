@@ -1,8 +1,9 @@
 <!doctype html><html lang=pt-BR><head><meta charset=utf-8><script>/* tema: claro por padrão; "auto" segue o tema do celular */try{if(localStorage.getItem("cr_tema")==="auto")document.documentElement.dataset.tema="auto"}catch(e){}</script><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><link rel=stylesheet href=css/style.css><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content="Compras Rápidas"></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
-import {sb,boot,list,card,esc,qs} from './js/app.js';
-const S=await boot();const tipo=qs('tipo')||'busca',q=qs('q')||'',page=Math.max(1,+qs('page')||1),per=+S.per_page||12;
+import {sb,boot,list,card,esc,qs,byIds} from './js/app.js';
+const V=await import('./js/vitrine.js').catch(()=>null);try{V?.prefetch()}catch(e){}
+const S=await boot();let von=false;try{von=!!V?.start(S)}catch(e){}const tipo=qs('tipo')||'busca',q=qs('q')||'',page=Math.max(1,+qs('page')||1),per=+S.per_page||12;
 const m=document.getElementById('m');let title='Todos os produtos',opt={};
 if(tipo==='categorias'){const {data}=await sb.from('cr_categories').select('*').eq('active',true).order('sort');
  m.innerHTML=`<div class=sh><h2>Categorias</h2></div><div class=cats>${(data||[]).map(c=>`<a class=cat href="lista.html?tipo=categoria&slug=${esc(c.slug)}">${c.image_url?`<img loading=lazy src="${esc(c.image_url)}" alt="">`:`<i>${esc(c.name[0])}</i>`}${esc(c.name)}</a>`).join('')||'<p>Sem categorias.</p>'}</div>`;}
@@ -10,7 +11,11 @@ else{
  if(tipo==='ofertas'){title='Ofertas';opt.offer=true}else if(tipo==='destaques'){title='Destaques';opt.featured=true}
  else if(tipo==='categoria'){const {data:c}=await sb.from('cr_categories').select('id,name').eq('slug',qs('slug')||'').eq('active',true).maybeSingle();if(!c){m.innerHTML='<p>Categoria não encontrada.</p>';throw 0}title=c.name;opt.cat=c.id}
  else if(q)title=`Resultados para “${q}”`;
- document.title=title;const {data,count,similar}=await list({...opt,q:tipo==='busca'?q:'',page,per});
+ document.title=title;
+ try{if(von){if(tipo==='busca'&&q)V.track('search',{q});else if(opt.cat)V.track('cat',{id:opt.cat})}}catch(e){}
+ // vitrine inteligente: ordem personalizada dentro da categoria (a busca continua por relevância); se falhar, usa a ordem original
+ let vres=null;if(von&&opt.cat&&V.area('categorias')){try{const ids=V.category(await V.poolWithin(),opt.cat);if(ids.length){const pg=ids.slice((page-1)*per,page*per),d=pg.length?await byIds(pg):[];if(d.length||!pg.length)vres={data:d,count:ids.length,similar:false}}}catch(e){console.warn('vitrine: usando a original',e)}}
+ const {data,count,similar}=vres||await list({...opt,q:tipo==='busca'?q:'',page,per});
  const pages=Math.max(1,Math.ceil(count/per)),u=n=>{const p=new URLSearchParams(location.search);p.set('page',n);return '?'+p};
  m.innerHTML=`<div class=sh><h2>${esc(title)}</h2><span class=note>${count} produto(s)</span></div>${similar?'<p class=note>Não achamos produtos com todas as palavras. Veja os mais parecidos:</p>':''}${data.length?`<div class=grid>${data.map(card).join('')}</div>`:'<p>Nenhum produto encontrado.</p>'}
  <div class=pg>${page>1?`<a class="btn alt" href="${u(page-1)}">‹ Anterior</a>`:''}<span>Página ${page} de ${pages}</span>${page<pages?`<a class="btn alt" href="${u(page+1)}">Próxima ›</a>`:''}</div>

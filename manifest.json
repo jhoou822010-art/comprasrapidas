@@ -9,6 +9,12 @@
   "background_color": "#0a2a7a",
   "theme_color": "#0b2a5b",
   "lang": "pt-BR",
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://comprasrapidasandrade.com.br/manifest.json"
+    }
+  ],
   "icons": [
     {
       "src": "icon-192.png",

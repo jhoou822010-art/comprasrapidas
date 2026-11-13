@@ -1,4 +1,4 @@
-<!doctype html><html lang=pt-BR><head><meta charset=utf-8><script>/* tema: claro por padrão; "auto" segue o tema do celular */try{if(localStorage.getItem("cr_tema")==="auto")document.documentElement.dataset.tema="auto"}catch(e){}</script><script>/* link das notificações: ?produto={slug} abre a página do produto */{const p=new URLSearchParams(location.search).get('produto');if(p)location.replace('produto.html?produto='+encodeURIComponent(p))}</script><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><!--og--><meta name=description content="Encontre ofertas, produtos e novidades na Compras Rápidas Andrade! Variedade, praticidade e boas oportunidades para comprar melhor e economizar. Confira!"><meta property=og:type content=website><meta property=og:locale content=pt_BR><meta property=og:site_name content="Compras Rápidas Andrade"><meta property=og:title content="Compras Rápidas Andrade — Praticidade para comprar, economia para aproveitar."><meta property=og:description content="Encontre ofertas, produtos e novidades na Compras Rápidas Andrade! Variedade, praticidade e boas oportunidades para comprar melhor e economizar. Confira!"><meta property=og:url content="https://comprasrapidasandrade.com.br/"><meta property=og:image content="https://pmozxjkdtknqyochwdrf.supabase.co/storage/v1/object/public/compras-rapidas/i/8f16cf08-99a4-4715-b6cb-37d5efc8fdbe.webp"><meta name=twitter:card content=summary><!--/og--><link rel=stylesheet href=css/style.css><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content="Compras Rápidas">
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><script>/* tema: claro por padrão; "auto" segue o tema do celular */try{if(localStorage.getItem("cr_tema")==="auto")document.documentElement.dataset.tema="auto"}catch(e){}</script><script>/* link das notificações: ?produto={slug} abre a página do produto */{const p=new URLSearchParams(location.search).get('produto');if(p)location.replace('produto.html?produto='+encodeURIComponent(p))}</script><meta name=viewport content="width=device-width,initial-scale=1"><!--og--><title data-auto>Compras Rápidas Andrade | Ofertas, Variedades e economia</title><meta name=description content="Encontre ofertas, produtos e novidades na Compras Rápidas Andrade! Variedade, praticidade e boas oportunidades para comprar melhor e economizar. Confira!"><meta property=og:type content=website><meta property=og:locale content=pt_BR><meta property=og:site_name content="Compras Rápidas Andrade"><meta property=og:title content="Compras Rápidas Andrade — Praticidade para comprar, economia para aproveitar."><meta property=og:description content="Encontre ofertas, produtos e novidades na Compras Rápidas Andrade! Variedade, praticidade e boas oportunidades para comprar melhor e economizar. Confira!"><meta property=og:url content="https://comprasrapidasandrade.com.br/"><meta property=og:image content="https://comprasrapidasandrade.com.br/og-image.jpg"><meta property=og:image:secure_url content="https://comprasrapidasandrade.com.br/og-image.jpg"><meta property=og:image:type content=image/jpeg><meta property=og:image:width content=1200><meta property=og:image:height content=630><meta property=og:image:alt content="Compras Rápidas Andrade"><meta name=twitter:card content=summary_large_image><!--/og--><link rel=stylesheet href=css/style.css><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content="Compras Rápidas">
 <style>
 .car{position:relative;margin:14px 0;border-radius:14px;overflow:hidden}
 .trk{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;scroll-behavior:smooth}.trk::-webkit-scrollbar{display:none}
@@ -18,10 +18,15 @@
 .sl.ps h1,.sl.ps h2{font-size:clamp(1.15rem,4.5vw,2.3rem);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 1px 3px #0008;padding:2px 0}
 .ppr{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}.ppr b{font-size:clamp(1.4rem,5vw,2.4rem);text-shadow:0 1px 4px #0008}.ppr s{opacity:.85}
 .ptag{display:inline-block;background:#e5384f;color:#fff;font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:8px}
+/* Explore por categoria: um bloco só, rola para baixo e arrasta para os lados (indo e voltando) */
+.xg{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding-bottom:8px;cursor:grab}.xg.dg{cursor:grabbing;user-select:none}.xg.dg a{pointer-events:none}
+.xgg{display:grid;grid-auto-flow:row;gap:10px;width:max-content}.xgg .card{width:clamp(150px,44vw,220px)}.xh{color:var(--c2);font-size:.9rem}
 </style></head>
 <body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
 <script type=module>
 import {sb,boot,list,card,esc,byIds,decorHero,cover,money,isOffer,showOld,priceTxt} from './js/app.js';
+// Sistema Inteligente da Vitrine (módulo opcional): se não carregar, a vitrine original funciona normalmente
+const V=await import('./js/vitrine.js').catch(()=>null);try{V?.prefetch()}catch(e){}
 const pre=Promise.all([sb.from('cr_banners').select('*').eq('active',true).order('sort').limit(8),sb.from('cr_homepage_sections').select('*').eq('visible',true).order('sort')]);
 const S=await boot();
 const [{data:bn},{data:sec}]=await pre;
@@ -32,9 +37,20 @@ const slide=(b,i)=>{const T=i?'h2':'h1',txt=b.title||b.subtitle||b.button_text;
 const bids=Array.isArray(S.banner_ids)?S.banner_ids:[];const seen=new Set();const cids=Array.isArray(S.carousel_ids)?S.carousel_ids:[];const useCar=S.carousel_on!==false&&cids.length;
 // busca o carrossel e todas as seções ao mesmo tempo (antes era uma depois da outra)
 let extra=useCar?cids.length:0;
-const jobs=(sec||[]).map(x=>{if(x.key==='categorias')return sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
+// Explore: produtos de todas as categorias misturados, trocados a cada 30 min. Com a vitrine inteligente ligada segue o perfil
+// do visitante (ex.: econômico → mais baratos); sem perfil, sorteia. Se a vitrine falhar, sorteia entre os mais novos.
+const XMIN=30;
+const explorar=async q=>{try{if(V){V.start(S);const ids=V.explore(await V.poolWithin(),q,XMIN);if(ids.length){const d=await byIds(ids);if(d.length)return {data:d}}}}catch(e){console.warn('explore: sorteio simples',e)}
+ const {data}=await list({per:Math.max(q*3,60)}),b=Math.floor(Date.now()/(XMIN*6e4)),r=id=>{let h=2166136261^b;for(const c of id)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0};
+ return {data:[...(data||[])].sort((x,y)=>r(x.id)-r(y.id)).slice(0,q)}};
+const jobs=(sec||[]).map(x=>{if(x.key==='explorar')return explorar(x.qty||40).catch(()=>({data:[]}));if(x.key==='categorias')return sb.from('cr_categories').select('*').eq('active',true).order('sort').limit(x.qty||12);
  const q=x.qty||8,per=q+extra;extra+=q;return list({offer:x.key==='ofertas',featured:x.key==='destaques',per})});
 const [bp,cp,...res]=await Promise.all([bids.length?byIds(bids):[],useCar?byIds(cids):[],...jobs]);
+// vitrine inteligente: escolhe e ordena Ofertas/Novidades para este visitante; em qualquer falha mantém as listas originais acima
+let vok=false;try{if(V&&V.start(S)){const ks=(sec||[]).filter(x=>(x.key==='ofertas'||x.key==='novidades')&&V.area(x.key))   // só seções de produtos; a seção Categoria fica intacta
+.map(x=>({key:x.key,qty:x.qty||8}));
+ if(ks.length){const rows=await V.poolWithin();const sel=V.home(rows,ks,new Set(cids));const all=[...new Set(Object.values(sel).flat())];const full=all.length?await byIds(all):[];
+  if(full.length){const m=Object.fromEntries(full.map(p=>[p.id,p]));(sec||[]).forEach((x,n)=>{const ids=sel[x.key];if(ids){const d=ids.map(i=>m[i]).filter(Boolean);if(d.length>=Math.min(x.qty||8,ids.length)/2)res[n]={data:d}}});vok=true}}}}catch(e){console.warn('vitrine: usando a original',e)}
 // produto no banner do topo: foto, nome, preço e botão para a página do produto
 const pslide=(p,i)=>{const T=i?'h2':'h1',im=p.product_images?.length?cover(p):'';
  return `<div class="sl ps"${im?` style="background-image:url('${esc(cssUrl(im))}')"`:''}><div>${isOffer(p)?'<span class=ptag>Oferta</span>':''}<${T}>${esc(p.name)}</${T}><p class=ppr>${p.price!=null?`<b>${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</p><a class=hb href="produto.html?id=${esc(p.id)}">Ver produto →</a></div></div>`};
@@ -44,6 +60,8 @@ let h=`<div class=car><div class=trk id=trk>${bs.map((f,i)=>f(i)).join('')}</div
 if(cp.length){cp.forEach(p=>seen.add(p.id));
  h+=`<div class=sh><h2>${esc(S.carousel_title||'Em destaque na vitrine')}</h2></div><div class=pcw><div class=pc id=pc>${cp.map(card).join('')}</div>${cp.length>2?'<button class=nv id=ppv aria-label=Anterior>‹</button><button class=nv id=pnx aria-label=Próximo>›</button>':''}</div>`}
 for(const [n,x] of (sec||[]).entries()){
+ if(x.key==='explorar'){const {data}=res[n];const cols=Math.ceil((data?.length||0)/4);
+  if(data?.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><span class=xh>⇆ arraste para os lados</span></div><div class=xg id=xg><div class=xgg style="grid-template-columns:repeat(${cols},clamp(150px,44vw,220px))">${data.map(card).join('')}</div></div>`;continue}
  if(x.key==='categorias'){const {data}=res[n];
   if(data?.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=categorias">Ver todas</a></div><div class=cats>${data.map(c=>`<a class=cat href="lista.html?tipo=categoria&slug=${esc(c.slug)}">${c.image_url?`<img loading=lazy src="${esc(c.image_url)}" alt="">`:`<i>${esc(c.name[0])}</i>`}${esc(c.name)}</a>`).join('')}</div>`;continue}
  const q=x.qty||8;const all=res[n].data;
@@ -51,6 +69,13 @@ for(const [n,x] of (sec||[]).entries()){
  if(data.length)h+=`<div class=sh><h2>${esc(x.title)}</h2><a href="lista.html?tipo=${x.key==='novidades'?'busca':x.key}">Ver todos</a></div><div class=grid>${data.map(card).join('')}</div>`}
 if(!sec?.length)h+='<p>Nenhuma seção configurada.</p>';
 document.getElementById('m').innerHTML=h;decorHero();
+if(vok)try{V.shown([...seen])}catch(e){}
+// Explore: no celular o dedo já arrasta; no computador, arrastar com o mouse também funciona
+{const xg=document.getElementById('xg');if(xg){let d=null;
+ xg.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;d={x:e.clientX,l:xg.scrollLeft,m:false}});
+ addEventListener('pointermove',e=>{if(!d)return;const dx=e.clientX-d.x;if(!d.m&&Math.abs(dx)>6){d.m=true;xg.classList.add('dg')}if(d.m){xg.scrollLeft=d.l-dx;e.preventDefault()}});
+ addEventListener('pointerup',()=>{if(!d)return;const m=d.m;d=null;if(m)setTimeout(()=>xg.classList.remove('dg'),0)});
+ xg.addEventListener('dragstart',e=>e.preventDefault())}}
 {const pc=document.getElementById('pc');if(pc){const step=()=>{const c=pc.querySelector('.card');return c?c.getBoundingClientRect().width+10:300};
  const nxt=()=>{if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
  const a=document.getElementById('ppv'),b=document.getElementById('pnx');if(a){a.onclick=()=>pc.scrollBy({left:-step(),behavior:'smooth'});b.onclick=nxt}

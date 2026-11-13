@@ -14,6 +14,13 @@ const DEF={name:'Compras Rápidas',slogan:'Encontre boas escolhas.',c1:'#0b2a5b'
  about:'A Compras Rápidas reúne produtos selecionados de lojas parceiras para você encontrar boas escolhas com facilidade.',
  privacy:'Edite este texto no painel (Aparência da loja). Explique quais dados coleta (ex.: cliques anônimos em links de compra), como usa e como o visitante pode falar com você.',contact_text:'Fale com a gente pelos canais abaixo.'};
 export let S=DEF;
+// ---- instalador do aplicativo (PWA): guarda o convite de instalação do navegador e registra instalações concluídas.
+// Só nas páginas da loja (o painel /admin/ e o /gestor/ têm o próprio app e não são afetados).
+export const INST_KEY='cr_app_installed';
+export const PWA={evt:null,on:false};
+if(!/\/(admin|gestor)\//.test(location.pathname)){
+ addEventListener('beforeinstallprompt',e=>{PWA.evt=e;if(PWA.on)e.preventDefault();dispatchEvent(new Event('cr-bip'))}); // com o botão ligado, a instalação fica no botão
+ addEventListener('appinstalled',()=>{PWA.evt=null;try{localStorage.setItem(INST_KEY,String(Date.now()))}catch(_){}})}
 export const THEMES={
  natal:{n:'Natal',e:'🎄',c1:'#8b1a1a',c2:'#1f8a4c',btn:'#1f8a4c',t:'Especial de Natal: ofertas para presentear!',fx:['❄️'],deco:'hats'},
  carnaval:{n:'Carnaval',e:'🎭',c1:'#5b2a86',c2:'#e08a00',btn:'#d6246e',t:'Folia de ofertas de Carnaval!',fx:['🎊','✨']},
@@ -86,12 +93,12 @@ function themeUi(th){if(!th)return '';const x=th.cfg,txt=x.text||(th.e+' '+th.t)
 export async function boot(){
  if(!CONFIGURED){document.body.insertAdjacentHTML('afterbegin','<p style="background:#fde2e2;color:#7a1010;padding:12px;margin:0;text-align:center">Site ainda não configurado: preencha o arquivo config.js (veja o Guia, Parte 3).</p>')}
  const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();
- S={...DEF,...(data?.data||{})};const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';if(th&&th.cfg.colors!==false)S={...S,c1:th.c1,c2:th.c2,btn:th.btn};const r=document.documentElement.style;
+ S={...DEF,...(data?.data||{})};const inst=S.install_btn===true&&CONFIGURED;PWA.on=inst;const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';if(th&&th.cfg.colors!==false)S={...S,c1:th.c1,c2:th.c2,btn:th.btn};const r=document.documentElement.style;
  r.setProperty('--c1',S.c1);r.setProperty('--c2',S.c2);r.setProperty('--btn',S.btn);
- document.title=(document.title&&document.title!=='x'?document.title+' | ':'')+(S.seo_title||S.name);
+ document.title=(document.title&&document.title!=='x'&&!document.querySelector('title[data-auto]')?document.title+' | ':'')+(S.seo_title||S.name); // data-auto: título provisório gravado pelo gerar-previas.mjs; aqui vale o valor atual do painel
  if(S.seo_desc){let m=document.querySelector('meta[name=description]')||document.head.appendChild(Object.assign(document.createElement('meta'),{name:'description'}));m.content=S.seo_desc}
  if(S.favicon){let l=document.querySelector('link[rel=icon]')||document.head.appendChild(Object.assign(document.createElement('link'),{rel:'icon'}));l.href=S.favicon}
- $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>
+ $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>${inst?'<button type=button id=pwai hidden aria-label="Instalar para receber ofertas">📲 <span class=t>Instalar para receber ofertas</span></button>':''}
  <form action=lista.html><input type=hidden name=tipo value=busca><input name=q placeholder="O que você está procurando?" aria-label="Pesquisar"><button aria-label="Buscar">🔍</button></form></div>
  <nav><a href=index.html>Início</a><a href="lista.html?tipo=categorias">Categorias</a><a href="lista.html?tipo=ofertas">Ofertas</a><a href="lista.html?tipo=destaques">Destaques</a><a href=contato.html>Contato</a></nav></div></header>${stripHtml()}`;
  $('#ftr').innerHTML=`${AREA==='top'?'':stripHtml()}<footer><div class=w><p><b>${esc(S.name)}</b> — ${esc(S.slogan)}</p><p><button type=button id=tema class=temabtn></button></p><p>${DISCLAIMER}</p><p>${S.footer_text?esc(S.footer_text)+'<br>':''}
@@ -102,6 +109,7 @@ export async function boot(){
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
  if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e));visitTrack()}
+ if(inst)import('./instalador.js').then(m=>m.init()).catch(e=>{console.warn('instalador',e);document.getElementById('pwai')?.remove()});
  return S}
 // ---- monitoramento de visitantes (Estatísticas do painel): só um código anônimo de sessão, sem dados pessoais.
 // Entrada ao abrir o site; sinal de atividade a cada 30 s com a aba visível; saída ao fechar/sair.
@@ -221,7 +229,7 @@ export function swReg(){if(!('serviceWorker' in navigator))return Promise.resolv
  return _reg||(_reg=navigator.serviceWorker.register(SW_URL,{scope:new URL('../',import.meta.url).pathname}).then(()=>navigator.serviceWorker.ready).catch(e=>{console.warn('SW',e);_reg=null;return null}))}
 // chave VAPID em base64url -> Uint8Array (formato exigido pelo pushManager.subscribe)
 export function b64uToBytes(s){s=String(s).trim();const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
-async function saveSub(sub){const j=sub.toJSON();const {error}=await sb.rpc('cr_push_subscribe',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_user_agent:navigator.userAgent.slice(0,300)});if(error)throw error;return sub}
+async function saveSub(sub){const j=sub.toJSON();const {error}=await sb.rpc('cr_push_subscribe',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_user_agent:navigator.userAgent.slice(0,300),p_origin:location.origin});if(error)throw error;return sub}
 export async function currentSub(){if(!pushOk())return null;const r=await swReg();return r?r.pushManager.getSubscription():null}
 // só chame depois de um toque do visitante (o navegador exige)
 export async function pushSubscribe(){

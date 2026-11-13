@@ -25,10 +25,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Instalar conversor de imagens (fotos .webp viram JPG para o WhatsApp)
+        run: npm install --no-save --no-package-lock sharp@0.33.5
       - run: node scripts/gerar-previas.mjs
       - name: Salvar mudanças (se houver)
         run: |
-          git add -A p sitemap.xml robots.txt index.html
+          git add -A p og sitemap.xml robots.txt index.html
           if git diff --cached --quiet; then echo "Nada mudou."; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
