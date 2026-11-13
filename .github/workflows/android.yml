@@ -87,7 +87,12 @@ jobs:
           BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          # instala antes o que o Bubblewrap usa (assim ele não precisa chamar o sdkmanager)
+          "$SDKM" --install "build-tools;36.1.0" "platforms;android-36" > /dev/null
+          # o Bubblewrap só aceita a pasta do SDK se existir "tools" ou "bin" dentro dela
+          [ -e "$ANDROID_HOME/bin" ] || [ -e "$ANDROID_HOME/tools" ] || sudo mkdir -p "$ANDROID_HOME/bin"
           bubblewrap build --manifest=./twa-manifest.json
           mkdir -p ../saida
           cp app-release-bundle.aab "../saida/compras-rapidas-$VERSAO.aab"
