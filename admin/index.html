@@ -51,8 +51,18 @@ const cnt=(t,f)=>{let q=sb.from(t).select('*',{count:'exact',head:true});return(
 async function dash(el){const now=new Date().toISOString();
  const [a,b,c,d,e,f,g,ck]=await Promise.all([cnt('cr_products'),cnt('cr_products',q=>q.eq('status','active')),cnt('cr_products',q=>q.eq('status','archived')),cnt('cr_categories'),cnt('cr_products',q=>q.eq('featured',true).eq('status','active')),cnt('cr_products',q=>q.eq('offer',true).eq('status','active')),cnt('cr_click_events'),clicks(30)]);
  const top={};ck.forEach(x=>{const n=x.products?.name||'(removido)';top[n]=(top[n]||0)+1});
- el.innerHTML=await bkNote()+`<h2>Painel</h2><div class=kpi>${[['Produtos',a],['Ativos',b],['Arquivados',c],['Categorias',d],['Em destaque',e],['Em oferta',f],['Cliques (total)',g]].map(([k,v])=>`<div><b>${v}</b>${k}</div>`).join('')}</div>
- <div class=box><h3>Mais acessados (30 dias)</h3>${Object.entries(top).sort((x,y)=>y[1]-x[1]).slice(0,5).map(([n,v])=>`<p>${esc(n)} — <b>${v}</b></p>`).join('')||'<p>Sem cliques ainda.</p>'}<p class=note>Cliques não representam vendas. Confira vendas e comissões nos painéis oficiais dos programas de afiliados.</p></div>`}
+ el.innerHTML=await bkNote()+await instBox()+`<h2>Painel</h2><div class=kpi>${[['Produtos',a],['Ativos',b],['Arquivados',c],['Categorias',d],['Em destaque',e],['Em oferta',f],['Cliques (total)',g]].map(([k,v])=>`<div><b>${v}</b>${k}</div>`).join('')}</div>
+ <div class=box><h3>Mais acessados (30 dias)</h3>${Object.entries(top).sort((x,y)=>y[1]-x[1]).slice(0,5).map(([n,v])=>`<p>${esc(n)} — <b>${v}</b></p>`).join('')||'<p>Sem cliques ainda.</p>'}<p class=note>Cliques não representam vendas. Confira vendas e comissões nos painéis oficiais dos programas de afiliados.</p></div>`;instBind()}
+// ---------- Instalador do aplicativo (botão "📲 Instalar para receber ofertas" no cabeçalho da loja)
+// SIM/NÃO salvo automaticamente em cr_site_settings.data.install_btn (relê o registro antes de gravar para não apagar outras configurações)
+async function instBox(){const on=(await getSet()).install_btn===true;
+ return `<div class=box style="border-left:6px solid #1e6bff"><label style="margin:0"><b>INSTALADOR DO APLICATIVO</b><select id=ib style="margin-top:6px;max-width:220px;display:block"><option value=1${on?' selected':''}>SIM — mostrar o botão</option><option value=0${on?'':' selected'}>NÃO — ocultar o botão</option></select></label>
+ <p class=note style="margin:6px 0 0">Exibe o botão <b>📲 Instalar para receber ofertas</b> no cabeçalho da loja, ao lado do nome. Salva automaticamente. <span id=ibs role=status></span></p></div>`}
+function instBind(){const s=$('#ib');if(!s)return;
+ s.onchange=()=>run(async()=>{const st=$('#ibs'),v=s.value==='1';s.disabled=true;st.textContent='Salvando…';
+  try{const cur=await getSet();const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,install_btn:v}});if(error)throw error;
+   st.textContent=v?'✅ Salvo: botão visível na loja.':'✅ Salvo: botão oculto na loja.'}
+  catch(e){s.value=v?'0':'1';st.textContent='';throw e}finally{s.disabled=false}})}
 // ---------- Produtos
 // produtos no banner do topo ficam em cr_site_settings.data.banner_ids
 const BMAX=10;
