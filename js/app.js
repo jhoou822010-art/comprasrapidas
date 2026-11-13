@@ -234,7 +234,10 @@ export async function currentSub(){if(!pushOk())return null;const r=await swReg(
 // só chame depois de um toque do visitante (o navegador exige)
 export async function pushSubscribe(){
  if(!pushOk())throw new Error(isIOS()&&!isStandalone()?'No iPhone, adicione o site à Tela de Início e abra pelo ícone para ativar.':'Este navegador não aceita notificações.');
- const perm=await Notification.requestPermission();
+ // no app (APK) a resposta da janela do Android às vezes nunca chega à página: também confere a permissão de tempos em tempos
+ const perm=await new Promise(res=>{let done=false;const end=v=>{if(!done){done=true;clearInterval(t);res(v)}};
+  const t=setInterval(()=>{if(Notification.permission!=='default')end(Notification.permission)},500);
+  try{const p=Notification.requestPermission(end);if(p&&p.then)p.then(end,()=>end(Notification.permission))}catch(_){end(Notification.permission)}});
  if(perm!=='granted')throw new Error(perm==='denied'?'As notificações estão bloqueadas. Libere nas configurações do navegador para este site.':'Permissão não concedida.');
  const r=await swReg();if(!r)throw new Error('Não foi possível preparar as notificações neste aparelho.');
  let sub=await r.pushManager.getSubscription();
@@ -270,6 +273,12 @@ async function pushBar(){
  $('#pnok').onclick=async()=>{if(ios&&!inst)return iosHelp();const b=$('#pnok');b.disabled=true;b.textContent='Ativando…';
   try{await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
   catch(e){b.disabled=false;b.textContent='Receber ofertas no celular';alert(e.message||e);if(Notification.permission==='denied'){bar.remove();fitFx()}}};
+ // ao voltar para o app (depois da janela de permissão do Android), fecha a faixa se já estiver tudo certo
+ const chk=async()=>{if(document.hidden||!bar.isConnected||!pushOk())return;
+  if(Notification.permission==='denied'){bar.remove();fitFx();return}
+  if(Notification.permission!=='granted')return;
+  try{if(!await currentSub())await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}bar.remove();fitFx()}catch(e){console.warn('push',e)}};
+ document.addEventListener('visibilitychange',chk);addEventListener('focus',chk);addEventListener('pageshow',chk);
  fitFx()}
 // Chave do tema (no rodapé): "claro" (padrão) mantém a página clara mesmo com o celular no modo escuro; "auto" deixa o navegador seguir o tema do celular.
 function temaBtn(){const b=$('#tema');if(!b)return;const R=document.documentElement;let auto=R.dataset.tema==='auto';
