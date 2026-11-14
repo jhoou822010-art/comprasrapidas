@@ -14,7 +14,7 @@ Backup antes das mudanças: tag Git `backup-antes-auditoria-2026-11-14` (e a bra
 | 5 | Botões “Comprar” / “Comprar agora” sem indicar que levam a outro site | Alta | Alto | Médio | “Ver oferta na Shopee/Mercado Livre” + ícone de link externo + aviso logo abaixo |
 | 6 | Página intermediária `saindo.html` exigia um clique a mais antes da loja | Média | Baixo | Alto | Botão do produto leva direto ao link de afiliado (com aviso e contagem de clique); `saindo.html` continua para links antigos, com redirecionamento automático em 4 s |
 | 7 | Modelo de afiliado só aparecia no rodapé | Alta | Alto | Médio | Faixa no topo de todas as páginas, bloco “Como funciona esta vitrine”, sinais de confiança e página Sobre com transparência |
-| 8 | Cores do painel fora da identidade (botão quase preto, destaque cinza) | Média | Médio | Médio | Identidade fixa azul-marinho + azul (contraste AA); temas sazonais continuam podendo trocar as cores |
+| 8 | Cores do painel fora da identidade (botão quase preto, destaque cinza) | Média | Médio | Médio | As cores de Aparência continuam valendo; o padrão (sem cor no painel) é azul-marinho #0b2a5b + azul #1a5fd6. Recomendado configurar essas duas no painel |
 | 9 | Erros de digitação vindos do painel nos títulos do Início (“Destsque”, “Categoria ”) | Média | Médio | Baixo | Títulos das seções definidos no layout novo |
 | 10 | Páginas internas sem H1, sem descrição e sem URL canônica; títulos “x” ou genéricos | Alta (SEO) | Baixo | Médio | Title, description, canonical e Open Graph únicos por página; H1 em todas |
 | 11 | Sobre e Privacidade em `pagina.html?p=…` e só existiam via JavaScript | Média | Médio | Baixo | `sobre.html` e `privacidade.html` com texto gravado no HTML (o gerador atualiza de hora em hora); endereços antigos redirecionam |
@@ -51,7 +51,6 @@ Backup antes das mudanças: tag Git `backup-antes-auditoria-2026-11-14` (e a bra
 
 ## 3. Funcionalidades alteradas (e por quê)
 
-- **Cores do painel (Aparência):** deixaram de valer para o site, para manter a identidade azul-marinho/azul pedida. Os **temas sazonais** continuam trocando as cores.
 - **Ordem e títulos das seções do Início (painel › Início):** a ordem agora é fixa (a pedida na auditoria). “Visível” e “quantidade” continuam valendo.
 - **Carrossel de produtos (painel › Carrossel):** os produtos escolhidos aparecem primeiro em “Ofertas em destaque”, em grade (sem rolagem automática).
 - **“Explore a loja”:** virou “Mais produtos para explorar” em grade comum, com até 10 itens.
@@ -63,7 +62,8 @@ Backup antes das mudanças: tag Git `backup-antes-auditoria-2026-11-14` (e a bra
 1. **Ligar o formulário:** rodar `supabase/04-contato.sql` no SQL Editor do Supabase. Até lá, o formulário oferece enviar a mensagem pelo WhatsApp.
 2. **E-mail profissional:** criar `contato@comprasrapidasandrade.com.br` no provedor do domínio e mudar `emailAtivo` para `true` em `js/marca.js`.
 3. **Dados institucionais:** preencher em `js/marca.js` somente o que for verdadeiro (responsável, CNPJ se existir, cidade, horário, prazo de resposta).
-4. **Painel › Aparência:** corrigir o “Título para o Google” (hoje: “Compras  Rápidas Andrade | Ofertas, Variedades e economia”, com espaço duplo e “economia” minúsculo).
-5. **Redes sociais:** o Instagram cadastrado é um perfil com nome pessoal (`jonatha822010`); se houver um perfil da loja, atualize em painel › Contato.
-6. **Preço anterior:** muitos produtos estão marcados como oferta com preço antigo informado. O site só exibe o que está cadastrado e avisa que é “informado pela loja”; vale conferir os valores.
-7. **Google Search Console:** enviar o `sitemap.xml` após publicar.
+4. **Painel › Aparência — cores:** para a identidade azul-marinho/azul, use Cor principal `#0b2a5b`, Cor secundária `#1a5fd6` e Cor do botão `#1a5fd6` (hoje estão roxo `#3b40ce`, cinza `#3b424a` e quase preto `#282235`).
+5. **Painel › Aparência — título:** corrigir o “Título para o Google” (hoje: “Compras  Rápidas Andrade | Ofertas, Variedades e economia”, com espaço duplo e “economia” minúsculo).
+6. **Redes sociais:** o Instagram cadastrado é um perfil com nome pessoal (`jonatha822010`); se houver um perfil da loja, atualize em painel › Contato.
+7. **Preço anterior:** muitos produtos estão marcados como oferta com preço antigo informado. O site só exibe o que está cadastrado e avisa que é “informado pela loja”; vale conferir os valores.
+8. **Google Search Console:** enviar o `sitemap.xml` após publicar.

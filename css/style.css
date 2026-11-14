@@ -148,3 +148,6 @@ footer a{color:#fff;text-decoration:underline;text-underline-offset:2px;display:
 .hero>*,.pd>*,.two>*,.how>*,.fg>*{min-width:0}
 .sh>*{min-width:0}.sh a{flex:0 1 auto;text-align:right}@media(max-width:480px){.sh a{white-space:normal;max-width:45%}}
 @media(max-width:600px){.nv{display:none}.sl{aspect-ratio:4/3}}
+/* passar o mouse escurece um pouco o botão, qualquer que seja a cor escolhida no painel */
+.btn:not(.alt):not(.ghost):hover{filter:brightness(.9)}
+.seller .st{display:block}.seller .st i{display:inline-block;margin-right:6px;vertical-align:middle}

@@ -150,8 +150,10 @@ export async function boot(){
  if(error)console.warn('configurações: usando o padrão',error.message);
  S={...DEF,...(data?.data||{})};S.name=String(S.name||DEF.name).replace(/\s+/g,' ').trim();
  const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';
- // cores: a identidade fixa (azul-marinho + azul) vale sempre; só os temas sazonais (Natal, Black Friday…) trocam as cores
- if(th&&th.cfg.colors!==false){const r=document.documentElement.style;r.setProperty('--c1',th.c1);r.setProperty('--c2',th.c2);r.setProperty('--btn',th.btn)}
+ // cores: as do painel (Aparência) valem para o site; os temas sazonais (Natal, Black Friday…) podem trocá-las no período do tema.
+ // Cor inválida ou vazia no painel: fica a identidade padrão (azul-marinho #0b2a5b + azul #1a5fd6).
+ {const ok=c=>/^#[0-9a-f]{6}$/i.test(String(c||'').trim()),use=th&&th.cfg.colors!==false?th:S,r=document.documentElement.style;
+  if(ok(use.c1))r.setProperty('--c1',use.c1);if(ok(use.c2))r.setProperty('--c2',use.c2);if(ok(use.btn)){r.setProperty('--btn',use.btn);r.setProperty('--btn-h',use.btn)}}
  const t=document.querySelector('title[data-auto]');if(t&&S.seo_title)document.title=String(S.seo_title).replace(/\s+/g,' ').trim(); // só o Início usa o título do painel
  if(S.favicon&&/^https:\/\//.test(S.favicon)){let l=document.querySelector('link[rel=icon]');if(l)l.href=S.favicon}
  shell();
