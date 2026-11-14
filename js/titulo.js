@@ -28,8 +28,7 @@ export function cleanTitle(name, max = 80) {
   const letters = s.replace(/[^A-Za-zÀ-ÿ]/g, '');
   if (letters.length > 12 && letters === letters.toUpperCase())
     s = s.toLowerCase().replace(/(^|[\s(/-])([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());
-  // palavra repetida em seguida ("Topper topper") — remove só a repetição imediata, nunca nomes de marca
-  s = s.split(/\s+/).filter((w, i, a) => i === 0 || strip(w) !== strip(a[i - 1])).map(caseWord).join(' ');
+  s = s.split(/\s+/).map(caseWord).join(' ');
   s = s.replace(/\s+([,.;:!?])/g, '$1').replace(/[\s,;:–—-]+$/g, '').replace(/^[\s,;:–—-]+/, '').trim();
   if (s.length > max) {
     let cut = s.slice(0, max + 1).replace(/[\s,;:(–—-]+\S*$/, '');

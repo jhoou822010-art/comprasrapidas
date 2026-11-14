@@ -1,16 +1,23 @@
 // Funções compartilhadas do site público
-import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+// Sem bibliotecas externas: o acesso ao banco é feito por js/db.js (antes a página ficava em branco se o CDN falhasse).
+import {createLite} from './db.js';
 import {SUPABASE_URL as U, SUPABASE_KEY as K} from '../config.js';
+import {MARCA} from './marca.js';
+import {cleanTitle} from './titulo.js';
+export {MARCA,cleanTitle};
+window.__crOk=1; // avisa o "vigia" do HTML que os scripts carregaram (se não carregarem, ele mostra uma mensagem em vez de tela vazia)
 export const CONFIGURED=/^https?:\/\//.test(U)&&K&&!K.includes('COLE_AQUI');
-export const sb=createClient(CONFIGURED?U:'https://sem-config.supabase.co',CONFIGURED?K:'sem-config',{auth:{storageKey:'sb-compras-rapidas-auth'}});
+export const sb=createLite(CONFIGURED?U:'https://sem-config.supabase.co',CONFIGURED?K:'sem-config');
+export const SITE='https://comprasrapidasandrade.com.br/';
 export const $=(s,r=document)=>r.querySelector(s);
 export const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const money=v=>v==null?'':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 export const qs=k=>new URLSearchParams(location.search).get(k);
 export const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
 const PH='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#e8f1ff"/><text x="200" y="210" font-size="22" text-anchor="middle" fill="#1e6bff">Sem foto</text></svg>');
-export const DISCLAIMER='A Compras Rápidas é uma plataforma de divulgação e recomendação de produtos. Alguns links são links de afiliados e podem gerar uma comissão para a plataforma, sem custo adicional para o comprador. A compra, o pagamento, a entrega e as condições comerciais são de responsabilidade da loja parceira.';
-const DEF={name:'Compras Rápidas',slogan:'Encontre boas escolhas.',c1:'#0b2a5b',c2:'#1e6bff',btn:'#1e6bff',per_page:12,
+export const DISCLAIMER='A Compras Rápidas Andrade é uma vitrine de ofertas: reunimos produtos de lojas parceiras, como Shopee e Mercado Livre. Os links são links de afiliado e podem gerar uma comissão para nós, sem custo adicional para você. A compra, o pagamento, a entrega, as trocas e as devoluções são realizados diretamente pela loja parceira.';
+export const INTRO='Encontramos ofertas e produtos interessantes em lojas parceiras para ajudar você a comprar melhor. A compra, o pagamento, a entrega, as trocas e as devoluções são realizados diretamente pela loja parceira.';
+const DEF={name:'Compras Rápidas Andrade',slogan:'Praticidade para comprar, economia para aproveitar.',c1:'#0b2a5b',c2:'#1e6bff',btn:'#1e6bff',per_page:12,
  about:'A Compras Rápidas reúne produtos selecionados de lojas parceiras para você encontrar boas escolhas com facilidade.',
  privacy:'Edite este texto no painel (Aparência da loja). Explique quais dados coleta (ex.: cliques anônimos em links de compra), como usa e como o visitante pode falar com você.',contact_text:'Fale com a gente pelos canais abaixo.'};
 export let S=DEF;
@@ -83,22 +90,71 @@ function themeUi(th){if(!th)return '';const x=th.cfg,txt=x.text||(th.e+' '+th.t)
    else i.textContent=th.fx[k%th.fx.length];
    i.style.cssText='left:'+Math.random()*100+'%;font-size:'+(14+Math.random()*14)+'px;animation-duration:'+(AREA==='top'?5+Math.random()*5:9+Math.random()*9)+'s;animation-delay:-'+Math.random()*14+'s';f.appendChild(i)}document.body.appendChild(f)}
  return '<div class=tbar>'+(x.link&&TLINK.test(x.link)?'<a href="'+esc(x.link)+'">'+esc(txt)+'</a>':esc(txt))+'</div>'}
+// ---- loja parceira: nome, destino e botão transparente ("Ver oferta na Shopee")
+export const storeName=p=>String(p?.merchants?.name||'').trim().replace(/^mercado livre$/i,'Mercado Livre').replace(/^shopee$/i,'Shopee');
+export const storeCls=n=>/mercado/i.test(n)?'ml':'';
+export const affUrl=p=>/^https:\/\//i.test(p?.affiliate_url||'')?p.affiliate_url:'';
+export const outLabel=p=>{const n=storeName(p);return n?'Ver oferta na '+n:'Ver produto na loja parceira'};
+export const EXT='<svg class=ext aria-hidden=true width=16 height=16 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+// conta o clique (keepalive termina de gravar mesmo depois que a página troca para a loja)
+export function trackClick(p){try{fetch(U+'/rest/v1/cr_click_events',{method:'POST',keepalive:true,headers:{apikey:K,Authorization:'Bearer '+K,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({product_id:p.id})}).catch(()=>{})}catch(e){}}
+// ---- SEO: título, descrição, canônica e Open Graph da página atual
+export function setMeta({title,desc,canonical,image,type}={}){const H=document.head,m=(sel,make)=>H.querySelector(sel)||H.appendChild(make());
+ const meta=(attr,k,v)=>{if(v==null)return;const e=m(`meta[${attr}="${k}"]`,()=>{const x=document.createElement('meta');x.setAttribute(attr,k);return x});e.setAttribute('content',v)};
+ if(title){document.title=title;meta('property','og:title',title)}
+ if(desc){desc=String(desc).replace(/\s+/g,' ').trim().slice(0,200);meta('name','description',desc);meta('property','og:description',desc)}
+ if(canonical){const l=m('link[rel=canonical]',()=>Object.assign(document.createElement('link'),{rel:'canonical'}));l.href=canonical;meta('property','og:url',canonical)}
+ if(image)meta('property','og:image',image);if(type)meta('property','og:type',type)}
+export function jsonLd(obj){const e=document.createElement('script');e.type='application/ld+json';e.textContent=JSON.stringify(obj).replace(/</g,'\\u003c');document.head.appendChild(e)}
+// ---- carregamento e erro: o visitante nunca fica olhando para uma tela vazia
+export const loading=(txt='Carregando ofertas…',n=4)=>`<div class=ld role=status aria-live=polite><p class=ldm>${esc(txt)}</p><div class=grid aria-hidden=true>${'<div class=sk style="aspect-ratio:3/4"></div>'.repeat(n)}</div></div>`;
+export function fail(where,err){if(err)console.error(err);const m=document.getElementById('m');if(!m)return;
+ const net=!navigator.onLine||err?.network||/conex|Failed to fetch|NetworkError|Load failed|esgotado/i.test(err?.message||'');
+ m.innerHTML=`<div class="box oops" role=alert><h2>${net?'Sem conexão no momento':'Não foi possível carregar '+esc(where||'esta página')}</h2><p class=note>${net?'Parece que a internet está lenta ou instável. Confira a conexão e tente de novo.':'Tivemos um problema temporário. Tente novamente em instantes.'}</p><button class=btn type=button onclick="location.reload()">Tentar de novo</button><a class="btn alt" href="./">Ir para o início</a></div>`}
+// ---- categorias estratégicas do Início (agrupam as categorias do painel pelo nome; as demais ficam em "Todas as categorias")
+export const GROUPS=[
+ {k:'ofertas',n:'Ofertas do dia',d:'Produtos com preço promocional',href:'lista.html?tipo=ofertas',ic:'%'},
+ {k:'tecnologia',n:'Tecnologia',d:'Celulares, fones, eletrônicos',kw:['tecnolog','eletronic','informatic','celular','game']},
+ {k:'casa',n:'Casa e decoração',d:'Cozinha, organização, móveis',kw:['casa','decora','cozinha','move','utilidade','organiza']},
+ {k:'moda',n:'Moda',d:'Feminina, masculina, acessórios',kw:['moda','acessorios de moda','calcad','roupa']},
+ {k:'beleza',n:'Beleza',d:'Maquiagem e cuidados pessoais',kw:['beleza','maquiag','cuidados pessoais','perfum']},
+ {k:'destaques',n:'Destaques',d:'Escolhidos pela nossa equipe',href:'lista.html?tipo=destaques',ic:'★'}];
+export const groupCats=(g,cats)=>g.kw?(cats||[]).filter(c=>g.kw.some(k=>norm(c.name).includes(k))):[];
+export const groupHref=g=>g.href||'lista.html?tipo=grupo&g='+g.k;
+
+const ICO={check:'<svg width=22 height=22 viewBox="0 0 24 24" aria-hidden=true><circle cx=12 cy=12 r=11 fill="#e3f1ea"/><path d="m7 12.5 3.2 3.2L17.5 8.5" fill=none stroke="#0f7a4a" stroke-width=2.4 stroke-linecap=round stroke-linejoin=round/></svg>',
+ search:'<svg width=20 height=20 viewBox="0 0 24 24" aria-hidden=true fill=none stroke=currentColor stroke-width=2.4 stroke-linecap=round><circle cx=11 cy=11 r=7 /><path d="m20 20-4-4"/></svg>'};
+export {ICO};
+const NAV=[['./','Início'],['lista.html?tipo=ofertas','Ofertas'],['lista.html?tipo=categorias','Categorias'],['lista.html?tipo=destaques','Destaques'],['sobre.html','Sobre'],['contato.html','Contato']];
+function header(){const logo=S.logo&&/^https:\/\//.test(S.logo)?`<img src="${esc(S.logo)}" alt="" width=40 height=40>`:'';
+ return `<a class=skip href="#m">Pular para o conteúdo</a>${themeUi(TH)}<header><div class=w><div class=top><a class=logo href="./" aria-label="${esc(S.name)} — página inicial">${logoDeco()}${logo}<span>${esc(S.name)}<small>Vitrine de ofertas de lojas parceiras</small></span></a>
+ <form action=lista.html role=search><input type=hidden name=tipo value=busca><label class=sr for=q>Pesquisar produtos</label><input id=q name=q type=search enterkeyhint=search placeholder="O que você está procurando?" value="${esc(qs('tipo')==='busca'?qs('q')||'':'')}"><button type=submit aria-label="Buscar">${ICO.search}</button></form></div>
+ <nav class=mn aria-label="Menu principal">${NAV.map(([h,t])=>`<a href="${h}">${t}</a>`).join('')}</nav></div></header>
+ <div class=aff><div class=w><span>Vitrine com links de afiliado: a compra é finalizada na loja parceira.</span> <a href="sobre.html#como-funciona">Saiba mais</a></div></div>${stripHtml()}`}
+function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&&cHref(x));const wa=it.find(x=>x.type==='whatsapp'),soc=it.filter(x=>CTYPES[x.type]?.g==='rs');
+ const info=[MARCA.responsavel&&'Responsável: '+esc(MARCA.responsavel),MARCA.cnpj&&'CNPJ: '+esc(MARCA.cnpj),MARCA.cidade&&esc(MARCA.cidade)].filter(Boolean);
+ return `${AREA==='top'?'':stripHtml()}<footer><div class=w><div class=fg>
+ <div><h2>${esc(S.name)}</h2><p>${esc(S.slogan)}</p><p>Vitrine de ofertas e links de afiliado de lojas parceiras.</p>${info.length?`<p>${info.join('<br>')}</p>`:''}</div>
+ <div><h2>Navegação</h2><ul><li><a href="./">Início</a></li><li><a href="lista.html?tipo=ofertas">Ofertas</a></li><li><a href="lista.html?tipo=categorias">Todas as categorias</a></li><li><a href="lista.html?tipo=destaques">Destaques</a></li></ul></div>
+ <div><h2>Institucional</h2><ul><li><a href="sobre.html">Sobre nós</a></li><li><a href="sobre.html#como-funciona">Como funciona</a></li><li><a href="contato.html">Contato</a></li><li><a href="privacidade.html">Política de privacidade</a></li>
+ ${wa?`<li><a href="${esc(cHref(wa))}" target=_blank rel=noopener>WhatsApp</a></li>`:''}${MARCA.emailAtivo&&MARCA.email?`<li><a href="mailto:${esc(MARCA.email)}">${esc(MARCA.email)}</a></li>`:''}${soc.map(x=>`<li><a href="${esc(cHref(x))}" target=_blank rel=noopener>${esc(CTYPES[x.type].n)}</a></li>`).join('')}</ul></div></div>
+ <p class=fdis>${DISCLAIMER} Preços, estoques, fretes e condições podem mudar a qualquer momento na loja de destino.${S.footer_text?'':''}</p>
+ <p class=cpy>© ${new Date().getFullYear()} ${esc(S.name)}. Todos os direitos reservados.</p><button type=button id=tema class=temabtn></button></div></footer><div id=lb></div>`}
+function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();
+ const here=(location.pathname.split('/').pop()||'./')+location.search,hn=here==='index.html'?'./':here;
+ document.querySelectorAll('header nav a').forEach(a=>{const h=a.getAttribute('href');if(h===hn||(h.includes('?')&&hn.startsWith(h))){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
 export async function boot(){
- if(!CONFIGURED){document.body.insertAdjacentHTML('afterbegin','<p style="background:#fde2e2;color:#7a1010;padding:12px;margin:0;text-align:center">Site ainda não configurado: preencha o arquivo config.js (veja o Guia, Parte 3).</p>')}
- const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();
- S={...DEF,...(data?.data||{})};const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';if(th&&th.cfg.colors!==false)S={...S,c1:th.c1,c2:th.c2,btn:th.btn};const r=document.documentElement.style;
- r.setProperty('--c1',S.c1);r.setProperty('--c2',S.c2);r.setProperty('--btn',S.btn);
- document.title=(document.title&&document.title!=='x'&&!document.querySelector('title[data-auto]')?document.title+' | ':'')+(S.seo_title||S.name); // data-auto: título provisório gravado pelo gerar-previas.mjs; aqui vale o valor atual do painel
- if(S.seo_desc){let m=document.querySelector('meta[name=description]')||document.head.appendChild(Object.assign(document.createElement('meta'),{name:'description'}));m.content=S.seo_desc}
- if(S.favicon){let l=document.querySelector('link[rel=icon]')||document.head.appendChild(Object.assign(document.createElement('link'),{rel:'icon'}));l.href=S.favicon}
- $('#hdr').innerHTML=themeUi(th)+`<header><div class=w><div class=top><a class=logo href=index.html>${logoDeco()}${S.logo?`<img src="${esc(S.logo)}" alt="">`:''}<span>${esc(S.name)}<small>${esc(S.slogan)}</small></span></a>
- <form action=lista.html><input type=hidden name=tipo value=busca><input name=q placeholder="O que você está procurando?" aria-label="Pesquisar"><button aria-label="Buscar">🔍</button></form></div>
- <nav><a href=index.html>Início</a><a href="lista.html?tipo=categorias">Categorias</a><a href="lista.html?tipo=ofertas">Ofertas</a><a href="lista.html?tipo=destaques">Destaques</a><a href=contato.html>Contato</a></nav></div></header>${stripHtml()}`;
- $('#ftr').innerHTML=`${AREA==='top'?'':stripHtml()}<footer><div class=w><p><b>${esc(S.name)}</b> — ${esc(S.slogan)}</p><p><button type=button id=tema class=temabtn></button></p><p>${DISCLAIMER}</p><p>${S.footer_text?esc(S.footer_text)+'<br>':''}
- <a href="pagina.html?p=sobre">Sobre</a><a href=contato.html>Contato</a><a href="pagina.html?p=privacidade">Privacidade</a></p><p class=cpy>© ${new Date().getFullYear()} ${esc(S.name)}. Todos os direitos reservados.</p></div></footer>
- <div id=lb></div>`;
- temaBtn();
- {const here=(location.pathname.split('/').pop()||'index.html')+location.search;document.querySelectorAll('header nav a').forEach(a=>{if(a.getAttribute('href')===here){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
+ if(!CONFIGURED){document.body.insertAdjacentHTML('afterbegin','<p style="background:#fde2e2;color:#7a1010;padding:12px;margin:0;text-align:center">Site ainda não configurado: preencha o arquivo config.js.</p>')}
+ shell(); // topo e rodapé aparecem na hora, antes de qualquer consulta
+ const {data,error}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();
+ if(error)console.warn('configurações: usando o padrão',error.message);
+ S={...DEF,...(data?.data||{})};S.name=String(S.name||DEF.name).replace(/\s+/g,' ').trim();
+ const th=themeOn(S);TH=th;DK=th?makeDeco(th.deco):{};AREA=th&&th.cfg.area==='top'?'top':'all';
+ // cores: a identidade fixa (azul-marinho + azul) vale sempre; só os temas sazonais (Natal, Black Friday…) trocam as cores
+ if(th&&th.cfg.colors!==false){const r=document.documentElement.style;r.setProperty('--c1',th.c1);r.setProperty('--c2',th.c2);r.setProperty('--btn',th.btn)}
+ const t=document.querySelector('title[data-auto]');if(t&&S.seo_title)document.title=String(S.seo_title).replace(/\s+/g,' ').trim(); // só o Início usa o título do painel
+ if(S.favicon&&/^https:\/\//.test(S.favicon)){let l=document.querySelector('link[rel=icon]');if(l)l.href=S.favicon}
+ shell();
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
  if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e));visitTrack()}
@@ -138,7 +194,8 @@ let NOMAX=false;const sel=()=>NOMAX?SEL.replace('price_max,',''):SEL,miss=e=>!!e
 export const showOld=p=>p.old_price>p.price&&(!p.offer||isOffer(p));
 export const cover=p=>[...(p.product_images||[])].sort((a,b)=>a.sort-b.sort)[0]?.url||PH;
 // miniatura (320px) para os cards: fotos da Shopee aceitam o sufixo _tn e ficam ~10x mais leves; as demais ficam como estão
-export const thumb=p=>{const u=cover(p);return /^https:\/\/cf\.shopee\.com\.br\/file\/[\w-]+(?<!_tn)$/.test(u)?u+'_tn':u};
+// (sem "lookbehind" na expressão: iPhones com iOS anterior ao 16.4 não entendem e o site inteiro parava de funcionar)
+export const thumb=p=>{const u=cover(p);return /^https:\/\/cf\.shopee\.com\.br\/file\/[\w-]+$/.test(u)&&!/_tn$/.test(u)?u+'_tn':u};
 // ---- busca: ignora acentos, maiúsculas e espaços extras; exige TODAS as palavras (em qualquer ordem) e ordena por relevância
 export const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const STOP=new Set('a o e de da do das dos com sem para pra por em no na nos nas um uma ou'.split(' '));
@@ -157,10 +214,10 @@ export const sFilter=(toks,arr,get=x=>x.name)=>!toks.length?arr:arr.map(x=>[x,sM
 // candidatos no banco: cada palavra tem que aparecer no nome OU na descrição
 function sQuery(r,toks,desc=true){for(const t of toks)r=desc?r.or(`name.ilike.${sPat(t)},description.ilike.${sPat(t)}`):r.ilike('name',sPat(t));return r}
 export async function list(o={}){if(o.q&&sTokens(o.q).length)return search(o);let res=await list1(o);if(miss(res.error)){NOMAX=true;res=await list1(o)}return res}
-async function search({q,offer,featured,cat,page=1,per=12}){const toks=sTokens(q),now=new Date().toISOString();
+async function search({q,offer,featured,cat,cats,page=1,per=12}){const toks=sTokens(q),now=new Date().toISOString();
  const cand=async tk=>{let r=sb.from('cr_products').select('id,name,description,created_at').eq('status','active');
   if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
-  if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);
+  if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);if(cats?.length)r=r.in('category_id',cats);
   const {data,error}=await sQuery(r,tk).limit(2000);if(error)return {error,rows:[]};
   return {rows:(data||[]).map(p=>({id:p.id,c:p.created_at,s:sMatch(tk,p.name,p.description)})).filter(x=>x.s)}};
  let {rows,error}=await cand(toks),similar=false;
@@ -168,16 +225,16 @@ async function search({q,offer,featured,cat,page=1,per=12}){const toks=sTokens(q
  if(!rows.length&&!error&&toks.length>1){const m=new Map();for(const t of toks)for(const x of (await cand([t])).rows)if(x.s>=10){const o=m.get(x.id);if(o)o.s+=x.s;else m.set(x.id,x)}rows=[...m.values()];similar=rows.length>0}
  rows.sort((a,b)=>b.s-a.s||(a.c<b.c?1:-1));const ids=rows.slice((page-1)*per,page*per).map(x=>x.id);
  return {data:await byIds(ids),count:rows.length,error,similar}}
-async function list1({offer,featured,q,cat,page=1,per=12}={}){
+async function list1({offer,featured,q,cat,cats,page=1,per=12}={}){
  let r=sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active');const now=new Date().toISOString();
  if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
- if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);
+ if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);if(cats?.length)r=r.in('category_id',cats);
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
 export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
-export function card(p){const o=isOffer(p);
- return `<a class=card href="produto.html?id=${p.id}"><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async src="${esc(thumb(p))}" data-full="${esc(cover(p))}" onerror="this.onerror=null;this.src=this.dataset.full" alt="${esc(p.name)}">${cornerDeco()}</div>
- <div class=cb><h3>${esc(p.name)}</h3><div class=pr>${p.price!=null?`<b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b>`:''}${showOld(p)?`<s>${money(p.old_price)}</s>`:''}</div><small>${esc(p.merchants?.name||'')}</small><span class=btn>Ver produto</span></div></a>`}
+export function card(p){const o=isOffer(p),n=storeName(p),t=cleanTitle(p.name);
+ return `<article class=card><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async width=320 height=320 src="${esc(thumb(p))}" data-full="${esc(cover(p))}" onerror="this.onerror=null;this.src=this.dataset.full" alt="${esc(t)}">${cornerDeco()}</div>
+ <div class=cb><h3><a class=lk href="produto.html?id=${esc(p.id)}">${esc(t)}</a></h3><div class=pr>${p.price!=null?`<b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b>`:''}${showOld(p)?`<s><span class=sr>Preço anterior: </span>${money(p.old_price)}</s>`:''}</div>${n?`<span class=st><i class="${storeCls(n)}" aria-hidden=true></i>Vendido na ${esc(n)}</span>`:''}<span class="btn alt" aria-hidden=true>Ver detalhes</span></div></article>`}
 
 // ---- página de contato: ícones, links e configuração (guardada em cr_site_settings.data.contact)
 const _sk=(d,w=2)=>`<g fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</g>`;
@@ -259,7 +316,7 @@ async function pushBar(){
  document.head.insertAdjacentHTML('beforeend',`<style>#pnb{background:#fff;border-bottom:1px solid #cdd8e8;color:#12213a}#pnb .w{display:flex;align-items:center;gap:10px;padding:8px 12px;flex-wrap:wrap}#pnb p{margin:0;flex:1 1 180px;font-size:.92rem}#pnb .btn{padding:8px 14px;font-weight:700;font-size:.92rem}#pnb .x{background:none;border:0;font-size:1.4rem;line-height:1;color:#556;cursor:pointer;min-width:44px;min-height:44px}
 #pnh{position:fixed;inset:0;background:#000a;z-index:60;display:grid;place-items:center;padding:16px}#pnh>div{background:#fff;border-radius:14px;padding:18px;max-width:420px;width:100%}#pnh h3{margin:0 0 8px;color:var(--c1)}#pnh ol{padding-left:20px}#pnh li{margin:6px 0}</style>`);
  const bar=document.createElement('div');bar.id='pnb';
- bar.innerHTML=`<div class=w><p>🔔 <b>Receba as melhores ofertas no celular.</b> Avisamos quando surgir novidade.</p><button class=btn type=button id=pnok>Receber ofertas no celular</button><button class=x type=button id=pnx aria-label="Agora não">×</button></div>`;
+ bar.innerHTML=`<div class=w><p>🔔 <b>Receba novas ofertas no celular.</b> Avisamos quando entrar novidade na vitrine.</p><button class=btn type=button id=pnok>Receber ofertas no celular</button><button class=x type=button id=pnx aria-label="Agora não">×</button></div>`;
  const h=$('#hdr');(h?h:document.body).insertAdjacentElement(h?'afterend':'afterbegin',bar);
  $('#pnx').onclick=()=>{try{localStorage.setItem(PN_KEY,Date.now()+7*864e5)}catch(_){}bar.remove();fitFx()};
  $('#pnok').onclick=async()=>{if(ios&&!inst)return iosHelp();const b=$('#pnok');b.disabled=true;b.textContent='Ativando…';
@@ -274,5 +331,10 @@ async function pushBar(){
  fitFx()}
 // Chave do tema (no rodapé): "claro" (padrão) mantém a página clara mesmo com o celular no modo escuro; "auto" deixa o navegador seguir o tema do celular.
 function temaBtn(){const b=$('#tema');if(!b)return;const R=document.documentElement;let auto=R.dataset.tema==='auto';
- const draw=()=>{b.textContent=auto?'🌙 Seguindo o tema do celular — tocar para deixar sempre claro':'☀️ Tema sempre claro — tocar para seguir o tema do celular';b.setAttribute('aria-pressed',String(!auto))};
+ const draw=()=>{b.textContent=auto?'Tema: igual ao do celular (tocar para deixar claro)':'Tema: sempre claro (tocar para seguir o celular)';b.setAttribute('aria-pressed',String(!auto))};
  b.onclick=()=>{auto=!auto;if(auto)R.dataset.tema='auto';else delete R.dataset.tema;try{auto?localStorage.setItem('cr_tema','auto'):localStorage.removeItem('cr_tema')}catch(e){}draw()};draw()}
+// ---- rede de segurança: qualquer erro inesperado troca o "Carregando…" por uma mensagem amigável com "Tentar de novo"
+function rescue(e){setTimeout(()=>{const l=[...document.querySelectorAll('#m [data-ld]')];if(!l.length)return;console.error('falha ao carregar',e?.reason||e?.error||e);
+ const err=e?.reason||e?.error,net=!navigator.onLine||err?.network||/fetch|network|load failed|conex/i.test(err?.message||'');
+ l.forEach((x,i)=>{x.removeAttribute('data-ld');x.innerHTML=i?'':`<div class="box oops" role=alert><h2>${net?'Sem conexão no momento':'Não foi possível carregar o conteúdo'}</h2><p class=note>${net?'Confira a internet e tente de novo.':'Tivemos um problema temporário. Tente novamente em instantes.'}</p><button class=btn type=button onclick="location.reload()">Tentar de novo</button></div>`})},0)}
+addEventListener('unhandledrejection',rescue);addEventListener('error',e=>{if(e.error)rescue(e)});
