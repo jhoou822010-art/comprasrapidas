@@ -7,6 +7,7 @@ table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;bord
 .vis .kpi div{background:var(--bg);border:1px solid #e3e9f2}.vis .kpi span{font-size:.8rem;color:#556}.vis .kpi .on{background:#ecfdf3;border-color:#b7ebc9}.vis .kpi .on b{color:#11703a;display:flex;align-items:center;gap:8px}
 .dot{width:10px;height:10px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 0 #16a34a88;animation:vpl 1.8s infinite}@keyframes vpl{70%{box-shadow:0 0 0 8px #16a34a00}100%{box-shadow:0 0 0 0 #16a34a00}}@media(prefers-reduced-motion:reduce){.dot{animation:none}}
 .vt td{vertical-align:top;min-width:90px}.vt small{color:#778}.vt .bar{height:6px;margin-top:4px;max-width:160px}.vt .bar.vx{background:#f59e0b}@media(max-width:520px){.vk{grid-template-columns:1fr 1fr}.vt td,.vt th{padding:6px 4px;font-size:.82rem}.vt td{min-width:0}}
+.fold{display:flex;gap:6px;overflow-x:auto;margin:10px 0 4px;padding-bottom:4px}.fd{flex:0 0 auto;border:1px solid #c5d1e3;background:#fff;color:#0b2a5b;border-radius:10px 10px 4px 4px;padding:9px 14px;font-weight:700;cursor:pointer;white-space:nowrap}.fd small{display:inline-block;min-width:22px;margin-left:4px;padding:1px 7px;border-radius:99px;background:#e8eef7;font-weight:600}.fd.on{background:#0b2a5b;color:#fff;border-color:#0b2a5b}.fd.on small{background:#ffffff2e;color:#fff}
 .pgn{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:8px 0}.pgn span{font-size:.85rem;margin:0 6px}button:disabled{opacity:.45;cursor:default}
 .sm{padding:6px 10px;min-height:0;font-size:.85rem;margin:2px}
 .nfw{display:grid;gap:16px}@media(min-width:900px){.nfw{grid-template-columns:1fr 300px}}
@@ -65,14 +66,20 @@ async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_id
  const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:ids}});if(error)throw error}
 let PF={};const PP=50;
 async function prods(el,f=PF){
- f={term:'',st:'',cat:'',pg:0,...f};PF=f;const {term,st,cat}=f;
- const toks=sTokens(term),flt=q=>{if(st)q=q.eq('status',st);if(cat==='none')q=q.is('category_id',null);else if(cat)q=q.eq('category_id',cat);return q};
+ f={term:'',st:'',cat:'',loja:'',pg:0,...f};PF=f;const {term,st,cat,loja}=f;
+ // pastas por loja parceira: o nome é comparado sem acento/espaço/maiúscula ("Mercado livre" = "Mercado Livre")
+ const {data:mer}=await sb.from('cr_merchants').select('id,name');const nk=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const FOLD=[['','Todas'],['mercadolivre','Mercado Livre'],['shopee','Shopee'],['aliexpress','AliExpress'],['outras','Outras lojas']];
+ const midOf=k=>(mer||[]).filter(m=>nk(m.name)===k).map(m=>m.id),known=FOLD.slice(1,4).flatMap(([k])=>midOf(k)),NOID='00000000-0000-0000-0000-000000000000';
+ const byLoja=(q,k)=>!k?q:k==='outras'?(known.length?q.or(`merchant_id.is.null,merchant_id.not.in.(${known.join(',')})`):q):q.in('merchant_id',midOf(k).length?midOf(k):[NOID]);
+ const toks=sTokens(term),flt=q=>{if(st)q=q.eq('status',st);if(cat==='none')q=q.is('category_id',null);else if(cat)q=q.eq('category_id',cat);return byLoja(q,loja)};
  // com busca: acha os candidatos (todas as palavras, com ou sem acento), ordena por relevância e pagina aqui
  let hit=null;if(toks.length){let q=flt(sb.from('cr_products').select('id,name'));for(const t of toks)q=q.ilike('name',sPat(t));const {data,error}=await q.order('name').limit(5000);if(error)throw error;hit=sFilter(toks,data||[]).map(p=>p.id)}
  const mk=(c,pg)=>{const S=`id,name,price,${c?'price_max,':''}status,featured,offer,categories:cr_categories(name),merchants:cr_merchants(name)`;
  if(hit){const ids=hit.slice(pg*PP,pg*PP+PP);return sb.from('cr_products').select(S).in('id',ids.length?ids:['00000000-0000-0000-0000-000000000000']).then(r=>r.error?r:{...r,count:hit.length,data:ids.map(i=>r.data.find(p=>p.id===i)).filter(Boolean)})}
  return flt(sb.from('cr_products').select(S,{count:'exact'}).order('name',{ascending:true}).order('id',{ascending:true}).range(pg*PP,pg*PP+PP-1))};
- const [{data:cs},cfg]=await Promise.all([sb.from('cr_categories').select('id,name').order('name'),getSet()]);
+ const base=q=>{if(st)q=q.eq('status',st);if(cat==='none')q=q.is('category_id',null);else if(cat)q=q.eq('category_id',cat);return q};
+ const [{data:cs},cfg,...fc]=await Promise.all([sb.from('cr_categories').select('id,name').order('name'),getSet(),...FOLD.map(([k])=>byLoja(base(sb.from('cr_products').select('id',{count:'exact',head:true})),k).then(r=>r.count??'–'))]);
  const load=async pg=>{let r=await mk(1,pg);if(r.error&&/price_max/.test(r.error.message||''))r=await mk(0,pg);if(r.error)throw r.error;return r};
  let r=f.pg?await load(f.pg).catch(()=>null):await load(0);if(!r){r=await load(0);f.pg=1e9}
  let total=r.count||0,pages=Math.max(1,Math.ceil(total/PP));
@@ -80,11 +87,13 @@ async function prods(el,f=PF){
  const data=r.data||[],BI=new Set(cfg.banner_ids||[]),pg=f.pg,ini=total?pg*PP+1:0,fim=pg*PP+data.length;
  const nav=`<div class=pgn><button class="btn alt sm" data-p=0 ${pg?'':'disabled'}>«</button><button class="btn alt sm" data-p=${pg-1} ${pg?'':'disabled'}>‹ Anterior</button><span>Página ${pg+1} de ${pages} · ${ini}–${fim} de ${total}</span><button class="btn alt sm" data-p=${pg+1} ${pg<pages-1?'':'disabled'}>Próxima ›</button><button class="btn alt sm" data-p=${pages-1} ${pg<pages-1?'':'disabled'}>»</button></div>`;
  el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label><label>Categoria<select id=pc><option value="">Todas</option>${(cs||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value=none>Sem categoria</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn alt sm" id=px>Limpar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
- ${nav}<div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${data.length?data.map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)}<td>${esc(p.categories?.name||'')}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join(''):'<tr><td colspan=5>Nenhum produto encontrado.</tr>'}</table></div>${pages>1?nav:''}`;
+ <div class=fold role=tablist aria-label="Pastas por loja parceira">${FOLD.map(([k,n],i)=>`<button type=button role=tab class="fd${k===loja?' on':''}" aria-selected=${k===loja} data-l="${k}">📁 ${n} <small>${fc[i]}</small></button>`).join('')}</div>
+ ${nav}<div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${data.length?data.map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)}<td>${esc(p.categories?.name||'')}${loja?'':`<br><small class=note>${esc(p.merchants?.name||'')}</small>`}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join(''):'<tr><td colspan=5>Nenhum produto encontrado.</tr>'}</table></div>${pages>1?nav:''}`;
  $('#ps').value=st;$('#pc').value=cat;
- const go=()=>run(()=>prods(el,{term:$('#pt').value.trim(),st:$('#ps').value,cat:$('#pc').value,pg:0}));
+ const go=()=>run(()=>prods(el,{term:$('#pt').value.trim(),st:$('#ps').value,cat:$('#pc').value,loja,pg:0}));
+ el.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>run(()=>prods(el,{...f,loja:b.dataset.l,pg:0})));
  $('#pb').onclick=go;$('#pt').onkeydown=e=>{if(e.key==='Enter')go()};$('#ps').onchange=go;$('#pc').onchange=go;
- $('#px').onclick=()=>run(()=>prods(el,{}));$('#pn').onclick=()=>run(()=>pform(el));
+ $('#px').onclick=()=>run(()=>prods(el,{loja}));$('#pn').onclick=()=>run(()=>pform(el));
  el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>run(async()=>{await prods(el,{...f,pg:+b.dataset.p});el.scrollIntoView?.({block:'start'})}));
  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>run(()=>pform(el,b.dataset.e)));
  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>run(async()=>{await sb.from('cr_products').update({status:b.dataset.s==='archived'?'active':'archived'}).eq('id',b.dataset.a);await prods(el,f)}));
