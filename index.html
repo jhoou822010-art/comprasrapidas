@@ -35,11 +35,13 @@ if(slides.length){const el=$id('bn');el.hidden=false;
  el.innerHTML=`<div class=car aria-roledescription=carrossel aria-label="Banners em destaque"><div class=trk id=trk>${slides.join('')}</div>${slides.length>1?`<button class="nv pv" type=button aria-label="Banner anterior">‹</button><button class="nv nx" type=button aria-label="Próximo banner">›</button><div class=dots>${slides.map((_,i)=>`<button type=button aria-label="Ir para o banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
  decorHero()}
 // ---- 3/5. grades de produtos
-const grid=(key,arr,q)=>{const el=body(key);if(!el)return;const d=(arr||[]).filter(p=>!seen.has(p.id)).slice(0,q);d.forEach(p=>seen.add(p.id));
- if(d.length)el.innerHTML=`<div class=grid>${d.map(card).join('')}</div>`;else{el.innerHTML='';$id(key).hidden=true}};
+// rot=true: a seção vira uma fileira que passa sozinha (carrossel "Ofertas em destaque")
+const grid=(key,arr,q,rot)=>{const el=body(key);if(!el)return;const d=(arr||[]).filter(p=>!seen.has(p.id)).slice(0,q);d.forEach(p=>seen.add(p.id));
+ if(!d.length){el.innerHTML='';$id(key).hidden=true;return}
+ el.innerHTML=rot&&d.length>2?`<div class=pcw><div class=pc id=pc-${key} aria-roledescription=carrossel>${d.map(card).join('')}</div><button class="nv pv" type=button aria-label="Anterior">‹</button><button class="nv nx" type=button aria-label="Próximo">›</button></div>`:`<div class=grid>${d.map(card).join('')}</div>`};
 KEYS.forEach((k,n)=>{if(!vis(k)){body(k).innerHTML='';$id(k).hidden=true;return}const r=res[n];
  if(r.error&&!r.data?.length){oops(body(k),r.error.network?'Sem conexão para carregar esta seção.':undefined);return}
- grid(k,k==='ofertas'?[...cp,...r.data]:r.data,qty(k,10))});
+ grid(k,k==='ofertas'?[...cp,...r.data]:r.data,k==='ofertas'?qty(k,10)+cp.length:qty(k,10),k==='ofertas')});
 if(xp.data?.length){$id('explorar').hidden=false;grid('explorar',xp.data,10)}
 // ---- 4. categorias principais
 {const el=$id('gr');const tiles=GROUPS.map(g=>{const cs=groupCats(g,cats);if(g.kw&&!cs.length)return '';const im=cs.find(c=>c.image_url)?.image_url;
@@ -49,6 +51,16 @@ if(xp.data?.length){$id('explorar').hidden=false;grid('explorar',xp.data,10)}
 {const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&&cHref(x)&&['instagram','facebook','youtube','whatsapp'].includes(x.type));
  if(it.length){$id('redes').hidden=false;$id('rs').innerHTML=it.map(x=>`<a class=ci href="${esc(cHref(x))}" target=_blank rel=noopener>${cIcon(x,40)}<span><b>${esc(CTYPES[x.type].n)}</b><small>${esc(x.type==='whatsapp'?'Fale com a gente':'Siga a '+S.name)}</small></span><i aria-hidden=true>›</i></a>`).join('')}}
 if(vok)try{V.shown([...seen])}catch(e){}
+// ---- carrossel "Ofertas em destaque": passa um produto a cada 4 s; para enquanto o visitante mexe e volta depois
+document.querySelectorAll('.pcw').forEach(w=>{const pc=w.querySelector('.pc');if(!pc)return;
+ const step=()=>{const c=pc.querySelector('.card');return c?c.getBoundingClientRect().width+parseFloat(getComputedStyle(pc).columnGap||10):300};
+ const nxt=()=>{if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
+ const prv=()=>{if(pc.scrollLeft<=4)pc.scrollTo({left:pc.scrollWidth,behavior:'smooth'});else pc.scrollBy({left:-step(),behavior:'smooth'})};
+ let t;const red=matchMedia('(prefers-reduced-motion:reduce)').matches,st=()=>clearInterval(t),rs=()=>{st();if(!red&&!document.hidden)t=setInterval(nxt,4000)};
+ w.querySelector('.nv.pv').onclick=()=>{prv();rs()};w.querySelector('.nv.nx').onclick=()=>{nxt();rs()};
+ pc.addEventListener('touchstart',st,{passive:true});pc.addEventListener('touchend',()=>setTimeout(rs,2500),{passive:true});
+ ['mouseenter','focusin'].forEach(e=>w.addEventListener(e,st,{passive:true}));['mouseleave','focusout'].forEach(e=>w.addEventListener(e,rs,{passive:true}));
+ document.addEventListener('visibilitychange',rs);rs()});
 // ---- carrossel do topo: troca sozinho a cada 6 s; para quando o visitante interage (e respeita "reduzir movimento")
 if(slides.length>1){const trk=$id('trk'),dots=[...document.querySelectorAll('.dots button')];let i=0,t,stopped=matchMedia('(prefers-reduced-motion:reduce)').matches;
  const go=n=>{i=(n+slides.length)%slides.length;trk.scrollTo({left:i*trk.clientWidth,behavior:'smooth'})};

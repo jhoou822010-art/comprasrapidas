@@ -151,3 +151,7 @@ footer a{color:#fff;text-decoration:underline;text-underline-offset:2px;display:
 /* passar o mouse escurece um pouco o botão, qualquer que seja a cor escolhida no painel */
 .btn:not(.alt):not(.ghost):hover{filter:brightness(.9)}
 .seller .st{display:block}.seller .st i{display:inline-block;margin-right:6px;vertical-align:middle}
+/* carrossel "Ofertas em destaque": fileira que passa sozinha */
+.pcw{position:relative}.pc{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 8px;scroll-behavior:smooth}.pc::-webkit-scrollbar{display:none}
+.pc>.card{flex:0 0 calc(50% - 5px);scroll-snap-align:start}@media(min-width:640px){.pc{gap:14px}.pc>.card{flex-basis:calc(33.333% - 9.4px)}}@media(min-width:1000px){.pc{gap:16px}.pc>.card{flex-basis:calc(25% - 12px)}}
+.pcw .nv{top:38%}.pcw .nv.pv{left:-6px}.pcw .nv.nx{right:-6px}
