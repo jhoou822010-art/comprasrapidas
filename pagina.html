@@ -1,13 +1,1 @@
-<!doctype html><html lang=pt-BR><head><meta charset=utf-8><script>/* tema: claro por padrão; "auto" segue o tema do celular */try{if(localStorage.getItem("cr_tema")==="auto")document.documentElement.dataset.tema="auto"}catch(e){}</script><meta name=viewport content="width=device-width,initial-scale=1"><title>x</title><link rel=stylesheet href=css/style.css><link rel=manifest href=manifest.json><meta name=theme-color content="#0b2a5b"><link rel=icon href=icon-192.png><link rel=apple-touch-icon href=apple-touch-icon.png><meta name=mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-title content="Compras Rápidas"></head>
-<body><div id=hdr></div><main class=w id=m></main><div id=ftr></div>
-<script type=module>
-import {boot,esc,qs,DISCLAIMER,$} from './js/app.js';
-if(qs('p')==='contato'){location.replace('contato.html');throw 0}
-const S=await boot();const p=qs('p');
-const T={sobre:['Sobre a loja',S.about+'\n\n'+DISCLAIMER],privacidade:['Política de privacidade',S.privacy],contato:['Contato',[S.contact_text,S.email&&'E-mail: '+S.email,S.phone&&'Telefone/WhatsApp: '+S.phone].filter(Boolean).join('\n')]}[p]||['Página não encontrada',''];
-document.title=T[0];$('#m').innerHTML=`<div class=box style="white-space:pre-line"><h1>${esc(T[0])}</h1>${esc(T[1])}</div>`;
-// privacidade: direito de oposição (LGPD) à personalização da vitrine, quando o sistema estiver ligado e a opção ativa no painel
-if(p==='privacidade')import('./js/vitrine.js').then(V=>{const c=V.cfg(S);if(!c.on||!c.privacy_optout)return;const b=document.createElement('p');b.className='note';
- const draw=()=>{const off=V.optedOut();b.innerHTML=(off?'A personalização da vitrine está desativada neste aparelho. ':'A vitrine usa as suas buscas e produtos vistos, guardados apenas neste aparelho, para ordenar os produtos. ')+'<button type=button class="btn alt">'+(off?'Reativar':'Desativar neste aparelho')+'</button>';b.querySelector('button').onclick=()=>{V.setOptOut(!off);draw()}};
- draw();$('#m .box').appendChild(b)}).catch(()=>{});
-</script></body></html>
+<!doctype html><html lang=pt-BR><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Redirecionando… | Compras Rápidas Andrade</title><meta name=robots content=noindex><script>/* endereços antigos (pagina.html?p=sobre|privacidade|contato) agora têm páginas próprias */{var p=new URLSearchParams(location.search).get("p");location.replace(({privacidade:"privacidade.html",contato:"contato.html"})[p]||"sobre.html")}</script><link rel=stylesheet href=css/style.css></head><body><main class=w style="padding:40px 16px"><p>Redirecionando… <a href="sobre.html">Sobre</a> · <a href="privacidade.html">Política de privacidade</a> · <a href="contato.html">Contato</a></p></main></body></html>
