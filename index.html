@@ -25,12 +25,19 @@ const explorar=async q=>{try{if(V){V.start(S);const ids=V.explore(await V.poolWi
  return {data:[...(data||[])].sort((x,y)=>r(x.id)-r(y.id)).slice(0,q),error}};
 const KEYS=['ofertas','novidades','destaques'];let extra=useCar?cids.length:0;
 const jobs=KEYS.map(k=>{if(!vis(k))return Promise.resolve({data:[]});const q=qty(k,10),per=q+extra;extra+=q;return list({offer:k==='ofertas',featured:k==='destaques',per})});
+// banners de produto do painel (escolhidos à mão e automáticos): leem o produto na hora; se algo falhar, os demais banners seguem normais
+const BM=await import('./js/banners.js').catch(()=>null);
+const B2P=BM?BM.pickBanners(sb,S).catch(e=>{console.warn('banners de produto:',e);return null}):Promise.resolve(null);
 const [bp,cp,xp,...res]=await Promise.all([bids.length?byIds(bids).catch(()=>[]):[],useCar?byIds(cids).catch(()=>[]):[],vis('explorar')?explorar(Math.min(qty('explorar',10),10)).catch(()=>({data:[]})):{data:[]},...jobs]);
 // vitrine inteligente: escolhe e ordena Ofertas/Novidades para este visitante; em qualquer falha mantém as listas originais
 let vok=false;try{if(V&&V.start(S)){const ks=KEYS.filter(k=>(k==='ofertas'||k==='novidades')&&vis(k)&&V.area(k)).map(k=>({key:k,qty:qty(k,10)}));
  if(ks.length){const rows=await V.poolWithin();const sel=V.home(rows,ks,new Set(cids));const all=[...new Set(Object.values(sel).flat())];const full=all.length?await byIds(all):[];
   if(full.length){const m=Object.fromEntries(full.map(p=>[p.id,p]));KEYS.forEach((k,n)=>{const ids=sel[k];if(ids){const d=ids.map(i=>m[i]).filter(Boolean);if(d.length>=Math.min(qty(k,10),ids.length)/2)res[n]={data:d}}});vok=true}}}}catch(e){console.warn('vitrine: usando a original',e)}
-const slides=[...(bn||[]).map(slide),...bp.map(pslide)];
+const B2=await B2P,b2used=new Set([...(B2?.manual||[]),...(B2?.auto||[])].map(o=>o.p.id));
+// banners personalizados ("Ordem") e banners de produto ("Posição") seguem o mesmo número; depois os marcados no cadastro; por fim os automáticos
+const slides=[...[...(bn||[]).map((b,i)=>({k:+b.sort||0,o:0,i,h:slide(b)})),...(B2?.manual||[]).map((x,i)=>({k:+x.it.pos||0,o:1,i,h:BM.productSlide(x.p,x.it)}))].sort((a,b)=>a.k-b.k||a.o-b.o||a.i-b.i).map(x=>x.h),
+ ...bp.filter(p=>!b2used.has(p.id)).map(pslide),...(B2?.auto||[]).map(x=>BM.productSlide(x.p))];
+const SECS=(B2?.cfg?.secs||6)*1000;
 if(slides.length){const el=$id('bn');el.hidden=false;
  el.innerHTML=`<div class=car aria-roledescription=carrossel aria-label="Banners em destaque"><div class=trk id=trk>${slides.join('')}</div>${slides.length>1?`<button class="nv pv" type=button aria-label="Banner anterior">‹</button><button class="nv nx" type=button aria-label="Próximo banner">›</button><div class=dots>${slides.map((_,i)=>`<button type=button aria-label="Ir para o banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
  decorHero()}
@@ -61,11 +68,11 @@ document.querySelectorAll('.pcw').forEach(w=>{const pc=w.querySelector('.pc');if
  pc.addEventListener('touchstart',st,{passive:true});pc.addEventListener('touchend',()=>setTimeout(rs,2500),{passive:true});
  ['mouseenter','focusin'].forEach(e=>w.addEventListener(e,st,{passive:true}));['mouseleave','focusout'].forEach(e=>w.addEventListener(e,rs,{passive:true}));
  document.addEventListener('visibilitychange',rs);rs()});
-// ---- carrossel do topo: troca sozinho a cada 6 s; para quando o visitante interage (e respeita "reduzir movimento")
+// ---- carrossel do topo: troca sozinho (6 s ou o tempo escolhido em painel › Banners › Automático); para quando o visitante interage (e respeita "reduzir movimento")
 if(slides.length>1){const trk=$id('trk'),dots=[...document.querySelectorAll('.dots button')];let i=0,t,stopped=matchMedia('(prefers-reduced-motion:reduce)').matches;
  const go=n=>{i=(n+slides.length)%slides.length;trk.scrollTo({left:i*trk.clientWidth,behavior:'smooth'})};
  const mark=()=>{i=Math.round(trk.scrollLeft/trk.clientWidth);dots.forEach((d,k)=>{d.classList.toggle('on',k===i);d.setAttribute('aria-current',k===i?'true':'false')})};
- const st=()=>clearInterval(t),rs=()=>{st();if(!stopped&&!document.hidden)t=setInterval(()=>go(i+1),6000)},halt=()=>{stopped=true;st()};
+ const st=()=>clearInterval(t),rs=()=>{st();if(!stopped&&!document.hidden)t=setInterval(()=>go(i+1),SECS)},halt=()=>{stopped=true;st()};
  trk.addEventListener('scroll',mark,{passive:true});
  document.querySelector('.nv.pv').onclick=()=>{halt();go(i-1)};document.querySelector('.nv.nx').onclick=()=>{halt();go(i+1)};dots.forEach((d,k)=>d.onclick=()=>{halt();go(k)});
  ['touchstart','pointerdown'].forEach(e=>trk.addEventListener(e,halt,{passive:true}));['mouseenter','focusin'].forEach(e=>$id('bn').addEventListener(e,st,{passive:true}));['mouseleave','focusout'].forEach(e=>$id('bn').addEventListener(e,rs,{passive:true}));

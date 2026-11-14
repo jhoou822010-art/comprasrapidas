@@ -13,10 +13,72 @@ table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:8px;bord
 .nfw{display:grid;gap:16px}@media(min-width:900px){.nfw{grid-template-columns:1fr 300px}}
 .phone{width:270px;margin:auto;background:#111;border-radius:36px;padding:12px;box-shadow:0 6px 20px #0004}.pscr{background:linear-gradient(160deg,#1e3a8a,#6b21a8 60%,#be185d);border-radius:26px;min-height:440px;padding:14px 10px}.ptime{color:#fff;text-align:center;font-size:2.6rem;font-weight:300;margin:14px 0 18px}
 .pn{background:#ffffffe6;border-radius:16px;padding:10px 12px;color:#111;font-size:.85rem}.pnh{display:flex;align-items:center;gap:6px;font-size:.72rem;color:#555;margin-bottom:4px}.pnh img{width:18px;height:18px;border-radius:4px}.pnh small{margin-left:auto}.pn b{display:block;word-break:break-word}.pn p{margin:2px 0 0;white-space:pre-line;word-break:break-word}.pn #pvi{width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:8px}
+/* ===== layout do painel: menu lateral, cartões e listas compactas ===== */
+body.adb{background:#eef1f6}body.adb #app{max-width:none;padding:0}
+.adm{--sw:248px;--line:#e2e7ef;--ink:#1b2a44;--dng:#c62f3f;min-height:100vh;display:flex}
+.adm h2{margin:4px 0 14px;font-size:1.35rem}.adm h3{margin:0 0 10px;font-size:1.02rem}
+.adm .box{border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px #0b2a5b0a;padding:16px 18px;margin:0 0 14px}
+.adm .note{color:#5b6880}
+.sd{position:sticky;top:0;height:100vh;width:var(--sw);flex:0 0 var(--sw);background:var(--c1);color:#dfe7f5;display:flex;flex-direction:column;transition:width .18s,flex-basis .18s;z-index:40}
+.sdh{display:flex;align-items:center;gap:10px;padding:14px 12px 10px 16px;min-height:64px}.sdh img{width:34px;height:34px;border-radius:8px;background:#fff;flex:0 0 auto}.sdh b{flex:1;color:#fff;font-size:.98rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sdc,.sdx{background:transparent;border:0;color:#c7d3ea;width:36px;height:36px;border-radius:8px;cursor:pointer;display:grid;place-items:center;flex:0 0 auto}.sdc:hover,.sdx:hover{background:#ffffff1a;color:#fff}.sdx{display:none}
+.adm .ad{all:unset;display:block;flex:1;overflow-y:auto;padding:4px 10px 10px;scrollbar-width:thin}
+.sdg{margin:14px 8px 4px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#93a6c8;white-space:nowrap;overflow:hidden}
+.adm .ad button,.sdo{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;min-height:40px;padding:8px 10px;border-radius:9px;color:#dfe7f5;cursor:pointer;font-size:.93rem;line-height:1.2}
+.adm .ad button:hover,.sdo:hover{background:#ffffff14;color:#fff}.adm .ad button.on{background:#ffffff26;color:#fff;font-weight:600;box-shadow:inset 3px 0 0 #fff}
+.adm .ad button:focus-visible,.sdo:focus-visible,.sdc:focus-visible{outline:2px solid #ffb703;outline-offset:1px}
+.adm svg{flex:0 0 auto}.ad .lb,.sdo .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sdf{padding:8px 10px 14px;border-top:1px solid #ffffff1f}
+.adm.col{--sw:68px}.adm.col .sdh b,.adm.col .lb,.adm.col .sdg{display:none}.adm.col .sdh{flex-direction:column;padding:12px 8px;gap:8px}.adm.col .ad button,.adm.col .sdo{justify-content:center;padding:8px}.adm.col .sdg+button{margin-top:10px}.adm.col .sdc svg{transform:rotate(180deg)}
+.mw{flex:1;min-width:0;display:flex;flex-direction:column}
+.tb{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--line);padding:10px 24px;min-height:56px}.tb b{font-size:1rem;color:var(--ink)}.tb small{color:#6b7891;margin-left:auto;font-size:.82rem}
+.mb{display:none;background:#fff;border:1px solid var(--line);border-radius:10px;width:44px;height:44px;font-size:1.3rem;cursor:pointer;color:var(--c1)}
+#main{padding:20px 24px 60px;max-width:1180px;width:100%;box-sizing:border-box}
+.scrim{display:none}
+@media(max-width:899px){
+ .sd{position:fixed;left:0;top:0;bottom:0;height:auto;width:280px;flex:none;transform:translateX(-102%);transition:transform .22s;box-shadow:4px 0 24px #0b2a5b55}
+ .adm.open .sd{transform:none}.adm.open .scrim{display:block;position:fixed;inset:0;background:#0b1a3366;z-index:35}
+ .adm.col .sdh b,.adm.col .lb,.adm.col .sdg{display:revert}.adm.col .ad button,.adm.col .sdo{justify-content:flex-start;padding:8px 10px}.adm.col .sdh{flex-direction:row}
+ .sdc{display:none}.sdx{display:grid}.adm .ad button,.sdo{min-height:46px}
+ .mb{display:grid;place-items:center}.tb{padding:6px 12px}#main{padding:14px 12px 60px}
+ .adm .btn{min-height:44px}.adm .btn.sm{min-height:44px;padding:8px 14px}
+ .adm input,.adm select{min-height:44px;font-size:16px}.adm textarea{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.sd{transition:none}}
+/* botões: azul só no principal, vermelho só para excluir */
+.adm .btn{border-radius:9px}.adm .btn.sm{padding:6px 12px;font-size:.88rem;margin:2px}@media(min-width:900px){.adm .btn.sm{min-height:36px}}
+.adm .btn.dng,.dmi.dng{color:var(--dng)}.adm .btn.dng{background:#fff;border-color:#efc3c8}.adm .btn.dng:hover{background:#fdf0f1}
+/* menu ⋯ */
+.dm{position:relative;display:inline-block;vertical-align:middle}.dm>summary{list-style:none;display:grid;place-items:center;width:40px;height:36px;border:1px solid #c5d1e3;border-radius:9px;background:#fff;color:var(--c1);cursor:pointer;font-weight:700;font-size:1.15rem;margin:2px;user-select:none}.dm>summary::-webkit-details-marker{display:none}.dm>summary:hover{background:#eaf1fc}
+@media(max-width:899px){.dm>summary{width:44px;height:44px}}
+.dmp{position:fixed;z-index:60;min-width:190px;background:#fff;border:1px solid var(--line,#e2e7ef);border-radius:10px;box-shadow:0 8px 28px #0b2a5b2e;padding:6px}
+.dmi{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;min-height:44px;border-radius:7px;cursor:pointer;font-size:.92rem;color:#1b2a44}.dmi:hover,.dmi:focus-visible{background:#f0f4fa}.dmi.dng:hover{background:#fdf0f1}.dmi:disabled{opacity:.45;cursor:default}
+/* cartões de números */
+.adm .kpi{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:0 0 14px}.adm .kpi>div{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;font-size:.86rem;color:#5b6880}.adm .kpi b{font-size:1.7rem;line-height:1.15;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi .ki{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#eaf1fc;color:var(--c2);margin-bottom:6px}
+.bkn{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid #f6d6a8;background:#fff8ee;color:#7a4a0c;border-radius:10px;padding:8px 12px;margin:0 0 14px;font-size:.9rem}.bkn.ok{border-color:#cfe9da;background:#f3fbf6;color:#1f5e3b}.bkn .btn{margin-left:auto}
+/* listas compactas (viram cartões no celular) */
+.lt{width:100%;border-collapse:collapse;background:#fff}.lt th{font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;color:#6b7891;font-weight:600;background:#f7f9fc}.lt td,.lt th{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}.lt tr:last-child td{border-bottom:0}.lt .ac{text-align:right;white-space:nowrap;width:1%}
+.lt .pn1{font-weight:600;color:var(--ink)}.lt small{color:#6b7891}
+.tbx{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;margin:0 0 14px}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.76rem;font-weight:600;background:#eef1f6;color:#44516a;white-space:nowrap}.chip.ok{background:#e6f6ec;color:#16653a}.chip.arc{background:#f1f1f1;color:#666}.chip.off{background:#fff1e0;color:#8a4b00}.chip.blue{background:#eaf1fc;color:#1a4fb0}
+@media(max-width:699px){.lt thead,.lt tr.hd{display:none}.lt,.lt tbody,.lt tr,.lt td{display:block;width:auto}.lt tr{padding:10px 12px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:2px 10px}.lt td{border:0;padding:0}.lt td.ac{grid-column:2;grid-row:1/span 4;align-self:center}.lt td:not(.ac){grid-column:1}}
+.li{padding:0!important;overflow:visible}.lih{display:flex;align-items:center;gap:12px;padding:10px 14px}.lih .tt{flex:1;min-width:0}.lih .tt b{display:block;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lih .tt small{color:#6b7891}.lih img,.lih .ph0{width:52px;height:52px;border-radius:8px;object-fit:cover;background:#eef1f6;flex:0 0 auto}.lif{border-top:1px solid var(--line);padding:12px 14px 14px;background:#fbfcfe;border-radius:0 0 12px 12px}
+.lst>.box.li{margin:0;border-radius:0;border-width:0 0 1px;box-shadow:none}.lst{border:1px solid var(--line);border-radius:12px;background:#fff;margin:0 0 14px;overflow:visible}.lst>.box.li:last-child{border-bottom:0}
+.hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}.hrow h2{margin:0;flex:1}
+/* banners */
+.seg{display:flex;gap:4px;background:#e4e9f1;padding:4px;border-radius:11px;margin:0 0 14px;overflow-x:auto}.seg button{all:unset;box-sizing:border-box;flex:1 0 auto;text-align:center;padding:10px 14px;min-height:44px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.92rem;color:#44516a;white-space:nowrap}.seg button.on{background:#fff;color:var(--c1);box-shadow:0 1px 3px #0b2a5b22}.seg button:focus-visible{outline:2px solid var(--c2)}
+.pr{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}.pr:first-child{border-top:0}.pr img{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#eef1f6;flex:0 0 auto}.pr .tt{flex:1;min-width:0}.pr .tt b{display:block;color:var(--ink);font-weight:600;font-size:.95rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pr .tt small{color:#6b7891}
+.bgrid{display:grid;gap:14px}@media(min-width:1000px){.bgrid{grid-template-columns:1fr 380px;align-items:start}}
+.ro{display:grid;grid-template-columns:88px 1fr;gap:12px;background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px}.ro img{width:88px;height:88px;border-radius:8px;object-fit:cover;background:#fff}.ro dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:.86rem}.ro dt{color:#6b7891}.ro dd{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.bpv .car{background:#0b2a5b;min-height:0}.bpv .sl{aspect-ratio:16/10}
+.lock{font-size:.8rem;color:#6b7891}
+.adm .pf{grid-template-columns:1fr 1fr;gap:0 10px}.adm .pf label:first-child{grid-column:1/-1}@media(min-width:700px){.adm .pf{grid-template-columns:2fr 1fr 1fr}.adm .pf label:first-child{grid-column:auto}}
+@media(max-width:599px){.tb small{display:none}.adm h2{font-size:1.2rem}}
 </style></head>
 <body><div id=app class=w></div>
 <script type=module>
-import {$,esc,money,priceTxt,sTokens,sPat,sMatch,sFilter,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref,pushSubscribe,currentSub} from '../js/app.js';
+import {$,esc,money,priceTxt,isOffer,cover,cleanTitle,sTokens,sPat,sMatch,sFilter,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref,pushSubscribe,currentSub} from '../js/app.js';
 // o site público usa um cliente leve (js/db.js); o painel precisa da biblioteca completa para login, gravação e envio de fotos
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import {SUPABASE_URL,SUPABASE_KEY} from '../config.js';
@@ -45,19 +107,53 @@ async function init(){if(!CONFIGURED){A.innerHTML='<div class=box><h2>Não confi
  if(!data?.length){const {data:ok}=await sb.rpc('cr_claim_admin');if(ok)return init()}
  if(!data?.length){A.innerHTML='<div class=box><h2>Sem permissão</h2><p>Este usuário não está na lista de administradores (veja o Guia, passo do administrador).</p>'+out()+'</div>';return}
  const T={Painel:dash,Produtos:prods,Categorias:cats,Banners:bans,Início:home,Carrossel:carr,Temas:temas,Contato:contato,Mensagens:msgs,Aparência:look,Estatísticas:stats,Notificações:notif,Importar:imp,Backup:backup,'Sistema Inteligente da Vitrine':async el=>(await import('../js/vitrine-admin.js')).panel(el,{sb,$,esc,run})};
- A.innerHTML=`<div class=ad>${Object.keys(T).map(k=>`<button data-t="${k}">${k}</button>`).join('')}<button onclick="lo()">Sair</button></div><div id=main></div>`;
- A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{A.querySelectorAll('.ad button').forEach(x=>x.classList.remove('on'));b.classList.add('on');run(()=>T[b.dataset.t]($('#main')))});
+ // menu lateral agrupado (os nomes e as funções das abas continuam os mesmos)
+ const GR=[['Visão geral',['Painel','Estatísticas']],['Catálogo',['Produtos','Categorias']],['Vitrine',['Início','Banners','Carrossel','Temas','Aparência']],['Comunicação',['Contato','Mensagens','Notificações']],['Operações',['Importar','Backup','Sistema Inteligente da Vitrine']]];
+ Object.keys(T).forEach(k=>{if(!GR.some(g=>g[1].includes(k)))GR[GR.length-1][1].push(k)});
+ const btn=k=>`<button type=button data-t="${esc(k)}" title="${esc(k)}">${ico(IC[k]||'dot')}<span class=lb>${esc(k)}</span></button>`;
+ let col=false;try{col=localStorage.getItem('cr_adm_col')==='1'}catch(e){}
+ document.body.classList.add('adb');A.className='';
+ A.innerHTML=`<div class="adm${col?' col':''}" id=adm><aside class=sd id=sd aria-label="Menu do painel"><div class=sdh><img src=icon-192.png alt=""><b class=lb>Compras Rápidas</b><button type=button class=sdc id=sdc aria-label="Recolher menu" aria-expanded=${!col} title="Recolher/expandir menu">${ico('chev')}</button><button type=button class=sdx id=sdx aria-label="Fechar menu">${ico('x')}</button></div>
+ <nav class=ad>${GR.map(([g,ks])=>`<p class=sdg>${g}</p>${ks.map(btn).join('')}`).join('')}</nav>
+ <div class=sdf><button type=button class=sdo onclick="lo()" title=Sair>${ico('out')}<span class=lb>Sair</span></button></div></aside>
+ <div class=scrim id=scrim></div><div class=mw><header class=tb><button type=button class=mb id=mb aria-label="Abrir menu" aria-controls=sd aria-expanded=false>☰</button><b id=tt>Painel</b><small id=tu></small></header><main id=main></main></div></div>`;
+ const adm=$('#adm'),mb=$('#mb'),drawer=o=>{adm.classList.toggle('open',o);mb.setAttribute('aria-expanded',o);if(o)A.querySelector('.ad button.on,.ad button')?.focus();else if(matchMedia('(max-width:899px)').matches)mb.focus()};
+ mb.onclick=()=>drawer(true);$('#sdx').onclick=$('#scrim').onclick=()=>drawer(false);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&adm.classList.contains('open'))drawer(false)});
+ $('#sdc').onclick=()=>{const c=adm.classList.toggle('col');$('#sdc').setAttribute('aria-expanded',!c);try{localStorage.setItem('cr_adm_col',c?'1':'0')}catch(e){}};
+ $('#tu').textContent=session.user.email||'';
+ A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{A.querySelectorAll('.ad button').forEach(x=>{x.classList.remove('on');x.removeAttribute('aria-current')});b.classList.add('on');b.setAttribute('aria-current','page');$('#tt').textContent=b.dataset.t;adm.classList.remove('open');mb.setAttribute('aria-expanded',false);scrollTo(0,0);run(()=>T[b.dataset.t]($('#main')))});
+ // respeita as cores de Aparência: só usa as cores personalizadas quando a chave estiver ligada (igual ao site)
+ getSet().then(s=>{if(s.cores_proprias===true){const r=document.documentElement.style;['c1','c2','btn'].forEach(k=>{if(/^#[0-9a-f]{3,8}$/i.test(s[k]||''))r.setProperty('--'+k,s[k])})}}).catch(()=>{});
  A.querySelector('[data-t]').click()}
-function login(){A.innerHTML=`<div class=box style="max-width:380px;margin:40px auto"><h2>Painel Compras Rápidas</h2><label>E-mail<input id=e type=email autocomplete=username></label><label>Senha<input id=s type=password autocomplete=current-password></label><button class="btn big" id=ok>Entrar</button></div>`;
+// ícones do menu (traço simples, herdam a cor do texto)
+const IP={home:'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',box:'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8',tag:'M20 12l-8 8-9-9V3h8zM7.5 7.5h.01',layout:'M3 4h18v16H3zM3 10h18M9 10v10',img:'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M15.5 9.5h.01',film:'M4 5h16v14H4zM8 5v14M16 5v14M4 12h16',sparkle:'M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z',palette:'M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5S14 15 15 15h2a4 4 0 0 0 4-4c0-4.5-4-8-9-8zM7.5 11h.01M10 7h.01M15 7.5h.01',phone:'M5 4h4l2 5-3 2a11 11 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2z',mail:'M3 6h18v12H3zM3 7l9 6 9-6',bell:'M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4',upload:'M12 16V4M7 9l5-5 5 5M4 20h16',save:'M5 3h11l5 5v13H3V3zM7 3v6h9V3M7 21v-7h10v7',brain:'M12 4a3 3 0 0 0-6 1 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1zM12 4a3 3 0 0 1 6 1 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1zM12 4v16',out:'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',chev:'M15 6l-6 6 6 6',x:'M6 6l12 12M18 6L6 18',dot:'M12 12h.01',star:'M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.4l-5.5 2.9 1-6.2L3 9.7l6.2-.9z',pct:'M19 5L5 19M7 7h.01M17 17h.01',click:'M9 9l11 4-5 2-2 5zM4 4l2 2M4 10h2M10 4v2',arch:'M3 4h18v4H3zM5 8v12h14V8M10 12h4',pin:'M9 3h6l-1 6 4 4H6l4-4zM12 13v8',eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',clock:'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z'};
+const ico=(n,s=20)=>`<svg width=${s} height=${s} viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.8 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="${IP[n]||IP.dot}"/></svg>`;
+const IC={Painel:'home','Estatísticas':'chart',Produtos:'box',Categorias:'tag','Início':'layout',Banners:'img',Carrossel:'film',Temas:'sparkle','Aparência':'palette',Contato:'phone',Mensagens:'mail','Notificações':'bell',Importar:'upload',Backup:'save','Sistema Inteligente da Vitrine':'brain'};
+// menu "⋯": ações secundárias (arquivar, excluir…) ficam escondidas; abre por cima de tabelas sem ser cortado
+const dots=(items,lbl='Mais ações')=>`<details class=dm><summary aria-label="${lbl}" title="${lbl}">⋯</summary><div class=dmp role=menu>${items.filter(Boolean).join('')}</div></details>`;
+const mi=(attrs,txt,dng)=>`<button type=button role=menuitem class="dmi${dng?' dng':''}" ${attrs}>${txt}</button>`;
+const dmClose=x=>document.querySelectorAll('details.dm[open]').forEach(d=>{if(d!==x)d.open=false});
+document.addEventListener('toggle',e=>{const d=e.target;if(!d.matches?.('details.dm')||!d.open)return;dmClose(d);const p=d.querySelector('.dmp'),r=d.querySelector('summary').getBoundingClientRect();
+ p.style.visibility='hidden';p.style.left='0';p.style.top='0';requestAnimationFrame(()=>{const w=p.offsetWidth,h=p.offsetHeight;p.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px';p.style.top=(r.bottom+h+8>innerHeight&&r.top-h-6>0?r.top-h-6:r.bottom+6)+'px';p.style.visibility='';p.querySelector('button')?.focus()})},true);
+document.addEventListener('click',e=>{const d=e.target.closest?.('details.dm');if(!d){dmClose();return}if(e.target.closest('.dmi'))setTimeout(()=>{d.open=false},0)});
+addEventListener('scroll',()=>dmClose(),{passive:true});addEventListener('resize',()=>dmClose());
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const d=document.querySelector('details.dm[open]');if(d){d.open=false;d.querySelector('summary').focus()}}});
+function login(){document.body.classList.remove('adb');A.className='w';A.innerHTML=`<div class=box style="max-width:380px;margin:40px auto"><h2>Painel Compras Rápidas</h2><label>E-mail<input id=e type=email autocomplete=username></label><label>Senha<input id=s type=password autocomplete=current-password></label><button class="btn big" id=ok>Entrar</button></div>`;
  $('#ok').onclick=()=>run(async()=>{const {error}=await sb.auth.signInWithPassword({email:$('#e').value,password:$('#s').value});if(error)throw new Error('E-mail ou senha incorretos.');init()})}
 // ---------- Painel
 async function clicks(d){const {data}=await sb.from('cr_click_events').select('product_id,created_at,products:cr_products(name),categories:cr_categories(name),merchants:cr_merchants(name)').gte('created_at',new Date(Date.now()-d*864e5).toISOString()).limit(10000);return data||[]}
 const cnt=(t,f)=>{let q=sb.from(t).select('*',{count:'exact',head:true});return(f?f(q):q).then(r=>r.count??0)};
-async function dash(el){const now=new Date().toISOString();
+async function dash(el){
  const [a,b,c,d,e,f,g,ck]=await Promise.all([cnt('cr_products'),cnt('cr_products',q=>q.eq('status','active')),cnt('cr_products',q=>q.eq('status','archived')),cnt('cr_categories'),cnt('cr_products',q=>q.eq('featured',true).eq('status','active')),cnt('cr_products',q=>q.eq('offer',true).eq('status','active')),cnt('cr_click_events'),clicks(30)]);
- const top={};ck.forEach(x=>{const n=x.products?.name||'(removido)';top[n]=(top[n]||0)+1});
- el.innerHTML=await bkNote()+`<h2>Painel</h2><div class=kpi>${[['Produtos',a],['Ativos',b],['Arquivados',c],['Categorias',d],['Em destaque',e],['Em oferta',f],['Cliques (total)',g]].map(([k,v])=>`<div><b>${v}</b>${k}</div>`).join('')}</div>
- <div class=box><h3>Mais acessados (30 dias)</h3>${Object.entries(top).sort((x,y)=>y[1]-x[1]).slice(0,5).map(([n,v])=>`<p>${esc(n)} — <b>${v}</b></p>`).join('')||'<p>Sem cliques ainda.</p>'}<p class=note>Cliques não representam vendas. Confira vendas e comissões nos painéis oficiais dos programas de afiliados.</p></div>`}
+ const top={};ck.forEach(x=>{const n=x.products?.name||'(removido)';top[n]=(top[n]||0)+1});const T5=Object.entries(top).sort((x,y)=>y[1]-x[1]).slice(0,8),mx=T5[0]?.[1]||1;
+ const K=[['Produtos',a,'box'],['Ativos',b,'eye'],['Arquivados',c,'arch'],['Categorias',d,'tag'],['Em destaque',e,'star'],['Em oferta',f,'pct'],['Cliques totais',g,'click']];
+ el.innerHTML=await bkNote()+`<h2>Visão geral</h2><div class=kpi>${K.map(([k,v,i])=>`<div class=box><span class=ki>${ico(i,18)}</span><b>${Number(v).toLocaleString('pt-BR')}</b>${k}</div>`).join('')}</div>
+ <div class=box><div class=hrow><h3 style="margin:0;flex:1">Mais acessados · últimos 30 dias</h3><button class="btn alt sm" onclick="document.querySelector('[data-t=Estatísticas]').click()">Ver estatísticas</button></div>
+ ${T5.length?`<table class=lt style="margin-top:6px"><tbody>${T5.map(([n,v],i)=>`<tr><td style="width:28px;color:#6b7891">${i+1}<td><span class=pn1>${esc(n)}</span><div class=bar style="height:5px;margin-top:5px;width:${Math.max(4,v/mx*100)}%"></div><td class=ac><b>${v}</b> <small>cliques</small></tr>`).join('')}</tbody></table>`:'<p class=note>Sem cliques ainda.</p>'}
+ <p class=note style="margin:10px 0 0">ⓘ Cliques não são vendas. Confira vendas e comissões nos painéis oficiais dos programas de afiliados.</p></div>`;
+ // mantém atualizada a lista "mais acessados (7 dias)" usada pelos banners automáticos
+ topSnap(ck).catch(e=>console.warn('banners: lista de mais acessados',e))}
 // ---------- Produtos
 // produtos no banner do topo ficam em cr_site_settings.data.banner_ids
 const BMAX=10;
@@ -90,12 +186,12 @@ async function prods(el,f=PF){
  if(f.pg>=pages){f.pg=pages-1;if(f.pg)r=await load(f.pg)}
  const data=r.data||[],BI=new Set(cfg.banner_ids||[]),pg=f.pg,ini=total?pg*PP+1:0,fim=pg*PP+data.length;
  const nav=`<div class=pgn><button class="btn alt sm" data-p=0 ${pg?'':'disabled'}>«</button><button class="btn alt sm" data-p=${pg-1} ${pg?'':'disabled'}>‹ Anterior</button><span>Página ${pg+1} de ${pages} · ${ini}–${fim} de ${total}</span><button class="btn alt sm" data-p=${pg+1} ${pg<pages-1?'':'disabled'}>Próxima ›</button><button class="btn alt sm" data-p=${pages-1} ${pg<pages-1?'':'disabled'}>»</button></div>`;
- el.innerHTML=`<h2>Produtos</h2><div class=box><div class=row><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label><label>Categoria<select id=pc><option value="">Todas</option>${(cs||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value=none>Sem categoria</option></select></label></div><button class="btn sm" id=pb>Filtrar</button> <button class="btn alt sm" id=px>Limpar</button> <button class="btn sm" id=pn>+ Novo produto</button><p class=note>⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
+ el.innerHTML=`<div class=hrow><h2>Produtos</h2><button class="btn" id=pn>+ Novo produto</button></div><div class=box><div class="row pf"><label>Buscar<input id=pt value="${esc(term)}"></label><label>Status<select id=ps><option value="">Todos</option><option value=active>Ativos</option><option value=inactive>Inativos</option><option value=archived>Arquivados</option></select></label><label>Categoria<select id=pc><option value="">Todas</option>${(cs||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}<option value=none>Sem categoria</option></select></label></div><button class="btn alt sm" id=pb>Filtrar</button> <button class="btn alt sm" id=px>Limpar</button> <p class=note style="margin:8px 0 0">⭐ destaque · 🏷️ oferta · 🖼️ no banner do topo</p></div>
  <div class=fold role=tablist aria-label="Pastas por loja parceira">${FOLD.map(([k,n],i)=>k==='outras'&&!fc[i]&&loja!=='outras'?'':`<button type=button role=tab class="fd${k===loja?' on':''}" aria-selected=${k===loja} data-l="${k}">📁 ${n} <small>${fc[i]}</small></button>`).join('')}<button type=button class="fd ren" id=frn title="Renomear pastas">✏️ Renomear</button></div>
  <div class=box id=fbox hidden><h3>Renomear pastas</h3><p class=note>Em cada pasta, escreva o nome que aparece na aba e a loja parceira dos produtos que ficam nela (igual ao campo “Loja parceira” do produto). Produtos de lojas que não estão em nenhuma pasta aparecem em “Outras lojas”.</p>
  ${PFD.map((d,i)=>`<div class=row><label>Nome da pasta ${i+1}<input data-fn=${i} maxlength=30 value="${esc(d.n)}"></label><label>Loja parceira<input data-fm=${i} list=fml maxlength=60 value="${esc(d.m)}" placeholder="Ex.: Amazon"></label></div>`).join('')}
  <datalist id=fml>${(mer||[]).map(m=>`<option>${esc(m.name)}`).join('')}</datalist><button class="btn sm" id=fsv>Salvar pastas</button> <button class="btn alt sm" id=frs>Voltar ao padrão</button></div>
- ${nav}<div class=tw><table><tr><th>Produto<th>Preço<th>Categoria<th>Status<th></tr>${data.length?data.map(p=>`<tr><td>${esc(p.name)} ${p.featured?'⭐':''}${p.offer?'🏷️':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)}<td>${esc(p.categories?.name||'')}${loja?'':`<br><small class=note>${esc(p.merchants?.name||'')}</small>`}<td>${p.status}<td><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn alt sm" data-a="${p.id}" data-s="${p.status}">${p.status==='archived'?'Reativar':'Arquivar'}</button><button class="btn alt sm" data-d="${p.id}">Excluir</button></tr>`).join(''):'<tr><td colspan=5>Nenhum produto encontrado.</tr>'}</table></div>${pages>1?nav:''}`;
+ ${pages>1?nav:`<p class=note style="margin:6px 0">${total} produto(s)</p>`}<div class=tbx><table class=lt><thead><tr><th>Produto<th>Preço<th>Categoria<th>Status<th class=ac><span class=sr>Ações</span></tr></thead><tbody>${data.length?data.map(p=>`<tr><td><span class=pn1>${esc(p.name)}</span> ${p.featured?'<span title="Em destaque">⭐</span>':''}${p.offer?'<span title="Em oferta">🏷️</span>':''}${BI.has(p.id)?'<span title="No banner do topo">🖼️</span>':''}<td>${priceTxt(p)||'<small>sem preço</small>'}<td>${esc(p.categories?.name||'')}${loja?'':`<br><small>${esc(p.merchants?.name||'')}</small>`}<td>${({active:'<span class="chip ok">Ativo</span>',inactive:'<span class=chip>Inativo</span>',archived:'<span class="chip arc">Arquivado</span>'})[p.status]||esc(p.status)}<td class=ac><button class="btn sm" data-e="${p.id}">Editar</button>${dots([mi(`data-a="${p.id}" data-s="${p.status}"`,p.status==='archived'?'↩︎ Reativar':'🗄️ Arquivar'),mi(`data-d="${p.id}"`,'🗑️ Excluir',1)])}</tr>`).join(''):'<tr><td colspan=5>Nenhum produto encontrado.</tr>'}</tbody></table></div>${pages>1?nav:''}`;
  $('#ps').value=st;$('#pc').value=cat;
  const go=()=>run(()=>prods(el,{term:$('#pt').value.trim(),st:$('#ps').value,cat:$('#pc').value,loja,pg:0}));
  el.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>run(()=>prods(el,{...f,loja:b.dataset.l,pg:0})));
@@ -130,7 +226,7 @@ async function pform(el,id){
  $('#st').value=p.status;
  const draw=()=>{$('#im').innerHTML=imgs.map((x,i)=>`<div><img class=thumb src="${esc(x.url)}"><br><button class="btn alt sm" data-m="${i}:-1">◀</button><button class="btn alt sm" data-m="${i}:1">▶</button><button class="btn alt sm" data-m="${i}:c">★</button><button class="btn alt sm" data-m="${i}:x">✕</button></div>`).join('')||'<p class=note>Nenhuma foto.</p>';
   el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const [i,a]=b.dataset.m.split(':');const k=+i;
-   if(a==='x')imgs.splice(k,1);else if(a==='c')imgs.unshift(...imgs.splice(k,1));else{const j=k+ +a;if(j>=0&&j<imgs.length)[imgs[k],imgs[j]]=[imgs[j],imgs[k]]}draw()})};draw();
+   if(a==='x'){if(!confirm('Remover esta foto do produto? (só vale depois de Salvar produto)'))return;imgs.splice(k,1)}else if(a==='c')imgs.unshift(...imgs.splice(k,1));else{const j=k+ +a;if(j>=0&&j<imgs.length)[imgs[k],imgs[j]]=[imgs[j],imgs[k]]}draw()})};draw();
  $('#fi').onchange=e=>{[...e.target.files].forEach(f=>{if(imgs.length<10)imgs.push({url:URL.createObjectURL(f),file:f})});e.target.value='';draw()};
  el.querySelectorAll('[data-vf]').forEach(i=>i.onchange=()=>run(async()=>{const f=i.files[0];if(f)el.querySelector(`[data-v="${i.dataset.vf}"]`).value=await up(f)}));
  $('#cn').onclick=()=>prods(el);
@@ -155,23 +251,118 @@ async function pform(el,id){
 // ---------- Editor genérico (categorias, banners, seções)
 async function editor(el,table,fields,o={}){const pk=o.pk||'id';const {data:rows}=await sb.from(table).select('*').order(o.order||'sort');
  const fld=(k,l,t,v)=>t==='bool'?`<label><input type=checkbox data-k=${k} ${v?'checked':''}> ${l}</label>`:t==='img'?`<label>${l}<img class=thumb src="${esc(v||'')}" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'"><input type=file accept="image/*" data-f=${k}></label><input type=hidden data-k=${k} value="${esc(v||'')}">`:`<label>${l}<input data-k=${k} data-t=${t} ${t==='num'?'type=number':''} value="${esc(v??'')}"></label>`;
- const rowH=r=>`<div class=box data-id="${r?r[pk]:''}"><div class=row>${fields.map(([k,l,t])=>fld(k,l,t,r?.[k])).join('')}</div><button class="btn sm" data-save>Salvar</button>${o.noDel?'':'<button class="btn alt sm" data-del>Excluir</button>'}</div>`;
- el.innerHTML=(o.head||'')+(rows||[]).map(rowH).join('')+(o.noNew?'':`<h3>Novo</h3>${rowH(null)}`);
+ // lista compacta: cada linha mostra o resumo e o botão Editar; o formulário abre só ao editar
+ const tf=fields.find(f=>f[2]==='text'),imf=fields.find(f=>f[2]==='img');
+ const meta=r=>fields.filter(f=>f!==tf&&f[2]!=='img').map(([k,l,t])=>t==='bool'?(r[k]?`<span class="chip ok">${l}</span>`:`<span class=chip>${l==='Ativa'?'Inativa':l==='Visível'?'Oculta':'Inativo'}</span>`):r[k]!=null&&r[k]!==''?`<small>${esc(l)}: ${esc(String(r[k]).slice(0,60))}</small>`:'').filter(Boolean).join(' · ');
+ const rowH=r=>`<div class="box li" data-id="${r?esc(r[pk]):''}"${r?'':' data-new hidden'}>${r?`<div class=lih>${imf?(r[imf[0]]?`<img src="${esc(r[imf[0]])}" alt="" loading=lazy>`:'<span class=ph0></span>'):''}<div class=tt><b>${esc((tf&&r[tf[0]])||r.subtitle||r[pk]||'(sem título)')}</b>${meta(r)}</div><button class="btn sm" data-ed>Editar</button>${o.noDel?'':dots([mi('data-del','🗑️ Excluir',1)])}</div>`:''}
+  <div class=lif ${r?'hidden':''}>${r?'':'<h3>Novo</h3>'}<div class=row>${fields.map(([k,l,t])=>fld(k,l,t,r?.[k])).join('')}</div><button class="btn sm" data-save>Salvar</button> <button class="btn alt sm" data-cancel>Cancelar</button></div></div>`;
+ el.innerHTML=(o.head||'')+(o.noNew?'':`<p><button class="btn" data-newbtn>${o.newLabel||'+ Novo'}</button></p>`)+`<div class=lst>${(rows||[]).map(rowH).join('')||(o.noNew?'':'<p class=note style="padding:12px 14px;margin:0">Nada cadastrado ainda.</p>')}</div>`+(o.noNew?'':rowH(null));
+ el.querySelector('[data-newbtn]')?.addEventListener('click',()=>{const n=el.querySelector('[data-new]');n.hidden=false;n.querySelector('input:not([type=hidden]):not([type=file])')?.focus()});
+ el.querySelectorAll('.box[data-id]').forEach(b=>{const f=b.querySelector('.lif');b.querySelector('[data-ed]')?.addEventListener('click',()=>{f.hidden=!f.hidden;if(!f.hidden)f.querySelector('input:not([type=hidden]):not([type=file])')?.focus()});
+  b.querySelector('[data-cancel]').onclick=()=>{if(b.dataset.id)f.hidden=true;else b.hidden=true}});
  el.querySelectorAll('[data-f]').forEach(i=>i.onchange=()=>run(async()=>{const u=await up(i.files[0]);const h=i.closest('label').nextElementSibling;h.value=u;i.closest('label').querySelector('img').src=u}));
  el.querySelectorAll('.box[data-id]').forEach(b=>{const id=b.dataset.id;
   b.querySelector('[data-save]').onclick=()=>run(async()=>{const row={};b.querySelectorAll('[data-k]').forEach(i=>{const k=i.dataset.k;row[k]=i.type==='checkbox'?i.checked:i.dataset.t==='num'||i.type==='number'?num(i.value)||0:(i.value||null)});
    if(o.req&&!row[o.req])throw new Error('Preencha o campo obrigatório.');let r;if(id)r=await sb.from(table).update(row).eq(pk,id);else{if(o.pre)o.pre(row);r=await sb.from(table).insert(row)}if(r.error)throw r.error;editor(el,table,fields,o)});
-  const d=b.querySelector('[data-del]');if(d)d.onclick=()=>run(async()=>{if(!id){return}if(!confirm('Excluir?'))return;const r=await sb.from(table).delete().eq(pk,id);if(r.error)throw new Error(r.error.code==='23503'?'Existem produtos nesta categoria. Mova ou remova-os antes.':r.error.message);editor(el,table,fields,o)})});o.after?.()}
-const cats=el=>editor(el,'cr_categories',[['name','Nome','text'],['image_url','Imagem','img'],['sort','Ordem','num'],['active','Ativa','bool']],{req:'name',head:'<h2>Categorias</h2>',pre:r=>r.slug=slug(r.name)});
-async function bans(el){const cfg=await getSet(),ids=cfg.banner_ids||[];let P={};
- if(ids.length){const {data}=await sb.from('cr_products').select('id,name,price,status').in('id',ids);P=Object.fromEntries((data||[]).map(p=>[p.id,p]))}
- const L=ids.filter(i=>P[i]);
- const top=`<h2>Banners</h2><div class=box><h3>🖼️ Produtos no banner do topo</h3><p class=note>Para colocar um produto aqui, abra o cadastro dele (aba Produtos) e marque “Mostrar no banner do topo”. Eles aparecem depois dos banners comuns, nesta ordem.</p>${L.map((i,k)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #e3e9f2;padding:6px 0"><span>${esc(P[i].name)} <small class=note>${P[i].price!=null?money(P[i].price):''}${P[i].status!=='active'?' · não aparece (produto '+P[i].status+')':''}</small></span><span><button class="btn alt sm" data-bu="${k}">▲</button><button class="btn alt sm" data-bd="${k}">▼</button><button class="btn alt sm" data-bx="${k}">Tirar</button></span></div>`).join('')||'<p>Nenhum produto no banner.</p>'}</div><h3>Banners comuns</h3>`;
- const wire=()=>el.querySelectorAll('[data-bu],[data-bd],[data-bx]').forEach(b=>b.onclick=()=>run(async()=>{const d=b.dataset,a=[...L];
-  if(d.bx!==undefined)a.splice(+d.bx,1);else{const k=+(d.bu??d.bd),j=d.bu!==undefined?k-1:k+1;if(j<0||j>=a.length)return;[a[k],a[j]]=[a[j],a[k]]}
-  const cur=await getSet();const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:a}});if(error)throw error;bans(el)}));
- await bansEd(el,top,wire)}
-const bansEd=(el,top,wire)=>editor(el,'cr_banners',[['title','Título','text'],['subtitle','Subtítulo','text'],['image_url','Imagem','img'],['button_text','Texto do botão','text'],['button_url','Link do botão','text'],['sort','Ordem','num'],['active','Ativo','bool']],{after:wire,head:top+'<p class=note>Os banners ativos passam no topo da página inicial, do menor para o maior número de “Ordem”.</p>'});
+  const d=b.querySelector('[data-del]');if(d)d.onclick=()=>run(async()=>{if(!id){return}if(!confirm('Excluir este item definitivamente? Esta ação não pode ser desfeita.'))return;const r=await sb.from(table).delete().eq(pk,id);if(r.error)throw new Error(r.error.code==='23503'?'Existem produtos nesta categoria. Mova ou remova-os antes.':r.error.message);editor(el,table,fields,o)})});o.after?.()}
+const cats=el=>editor(el,'cr_categories',[['name','Nome','text'],['image_url','Imagem','img'],['sort','Ordem','num'],['active','Ativa','bool']],{req:'name',head:'<h2>Categorias</h2>',newLabel:'+ Nova categoria',pre:r=>r.slug=slug(r.name)});
+// ---------- Banners
+// Três modos: Escolher produto (ligação com um produto já cadastrado), Automático e Personalizados (cr_banners, digitados à mão).
+// Os banners de produto ficam em cr_site_settings.data.banners_v2 (só ids e configurações; o produto não é copiado nem alterado).
+// Os produtos marcados no cadastro (“Mostrar no banner do topo”, cr_site_settings.data.banner_ids) continuam funcionando.
+let BM='pick';
+const B2MAX=10;
+const BJ=()=>import('../js/banners.js');
+async function saveB2(fn){const {b2cfg}=await BJ(),cur=await getSet(),b=b2cfg(cur);fn(b);
+ const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banners_v2:{...b,saved_at:new Date().toISOString()}}});if(error)throw error;return b}
+// "mais acessados (7 dias)": o site não pode ler os cliques, então o painel guarda a lista (só os ids) ao abrir o Painel ou a aba Banners
+async function topSnap(ck,force){const {b2cfg}=await BJ(),b=b2cfg(await getSet());if(!force&&!(b.auto.on&&b.auto.src==='top7'))return b.auto.top_ids;
+ const lim=Date.now()-7*864e5,c={};(ck||await clicks(7)).forEach(x=>{if(x.product_id&&new Date(x.created_at).getTime()>=lim)c[x.product_id]=(c[x.product_id]||0)+1});
+ const ids=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,20).map(x=>x[0]);
+ if(force||JSON.stringify(ids)!==JSON.stringify(b.auto.top_ids))await saveB2(x=>{x.auto.top_ids=ids;x.auto.top_at=new Date().toISOString()});return ids}
+const pimg=p=>[...(p.product_images||[])].sort((a,b)=>a.sort-b.sort)[0]?.url||'';
+const prow=(p,right,extra='')=>`<div class=pr>${pimg(p)?`<img src="${esc(pimg(p))}" alt="" loading=lazy>`:'<img alt="">'}<div class=tt><b>${esc(p.name)}</b><small>${p.price!=null?esc(priceTxt(p)):'sem preço'} · ${esc(p.merchants?.name||'loja não informada')}</small>${extra?`<div>${extra}</div>`:''}</div><div class=ac style="white-space:nowrap">${right}</div></div>`;
+async function bans(el,mode=BM){BM=mode;const cfg=await getSet();
+ el.innerHTML=`<div class=hrow><h2>Banners</h2><a class="btn alt sm" href="../index.html" target=_blank rel=noopener>Ver no site ↗</a></div>
+ <p class=note style="margin-top:-6px">Banner de produto usa o cadastro que já existe: foto, nome, preço e link são lidos do produto na hora de exibir e acompanham qualquer edição. O produto nunca é copiado nem alterado.</p>
+ <div class=seg role=tablist aria-label="Modo">${[['pick','Escolher produto'],['auto','Automático'],['custom','Personalizados']].map(([k,n])=>`<button type=button role=tab aria-selected=${k===mode} class="${k===mode?'on':''}" data-bmo=${k}>${n}</button>`).join('')}</div><div id=bz></div>`;
+ el.querySelectorAll('[data-bmo]').forEach(x=>x.onclick=()=>run(()=>bans(el,x.dataset.bmo)));
+ const z=$('#bz');if(mode==='auto')return bAuto(z,cfg,el);if(mode==='custom')return bCustom(z);return bPick(z,cfg,el)}
+// ----- a) Escolher produto
+async function bPick(z,cfg,el,edit){const B=await BJ(),b=B.b2cfg(cfg),legacy=(cfg.banner_ids||[]).filter(i=>typeof i==='string');
+ const ids=[...new Set([...b.items.map(x=>x.pid),...legacy]),'00000000-0000-0000-0000-000000000000'],SQ=c=>sb.from('cr_products').select(`id,name,price,${c?'price_max,':''}old_price,status,offer,offer_start,offer_end,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)`).in('id',ids);
+ let {data:all,error:ae}=await SQ(1);if(ae&&/price_max/.test(ae.message||''))({data:all,error:ae}=await SQ(0));if(ae)throw ae;
+ const P=Object.fromEntries((all||[]).map(p=>[p.id,p])),ST={inactive:'inativo',archived:'arquivado'};
+ const why=(p,it)=>!p?'produto excluído':p.status!=='active'?'produto '+(ST[p.status]||p.status):it?.offer_only&&!isOffer(p)?'saiu da oferta':'';
+ const items=[...b.items].sort((x,y)=>(+x.pos||0)-(+y.pos||0));
+ const chips=(p,it)=>{const w=why(p,it);return w?`<span class="chip off">Não aparece: ${w}</span>`:it&&it.on===false?'<span class=chip>Inativo</span>':'<span class="chip ok">No ar</span>'};
+ z.innerHTML=`<div id=bcf></div>
+ <div class=box><div class=hrow><h3 style="margin:0;flex:1">Buscar produto</h3></div>
+  <label>Buscar produto pelo nome<input id=bq type=search placeholder="Ex.: fone bluetooth" autocomplete=off></label><div id=brs><p class=note>Digite parte do nome para ver os produtos ativos.</p></div></div>
+ <div class=box><h3>Banners de produto (${items.length}/${B2MAX})</h3>${items.map((it,k)=>{const p=P[it.pid];return p?prow(p,`<button class="btn sm" data-bed="${esc(it.pid)}">Editar</button>${dots([mi(`data-brm="${esc(it.pid)}"`,'🗑️ Tirar do banner',1)])}`,`${chips(p,it)} <small>Posição ${+it.pos||0}${it.text?' · “'+esc(it.text.slice(0,40))+'”':''}</small>`):`<div class=pr><img alt=""><div class=tt><b>Produto removido</b><small>Este banner não aparece mais no site.</small></div>${dots([mi(`data-brm="${esc(it.pid)}"`,'🗑️ Tirar do banner',1)])}</div>`}).join('')||'<p class=note>Nenhum banner de produto ainda. Busque um produto acima e toque em “Selecionar”.</p>'}
+ ${legacy.length?`<h3 style="margin-top:18px">Marcados no cadastro do produto</h3><p class=note>Produtos com “Mostrar no banner do topo” marcado na aba Produtos. Aparecem depois dos banners acima, nesta ordem.</p>${legacy.map((i,k)=>P[i]?prow(P[i],dots([mi(`data-lu="${k}" ${k?'':'disabled'}`,'▲ Subir'),mi(`data-ld="${k}" ${k<legacy.length-1?'':'disabled'}`,'▼ Descer'),mi(`data-lx="${k}"`,'🗑️ Tirar do banner',1)]),chips(P[i])):'').join('')}`:''}</div>`;
+ // busca
+ let tm;const srch=async()=>{const t=$('#bq').value.trim(),toks=sTokens(t),box=$('#brs');if(!toks.length){box.innerHTML='<p class=note>Digite parte do nome para ver os produtos ativos.</p>';return}
+  const rows=await B.bSearch(sb,r=>{for(const x of toks)r=r.ilike('name',sPat(x));return r.order('name').limit(200)});const R=sFilter(toks,rows).slice(0,20),used=new Set(b.items.map(x=>x.pid));
+  box.innerHTML=R.map(p=>prow(p,used.has(p.id)?`<button class="btn alt sm" data-bsel="${p.id}">Editar banner</button>`:`<button class="btn sm" data-bsel="${p.id}">Selecionar</button>`,p.offer&&isOffer(p)?'<span class="chip blue">Em oferta</span>':'')).join('')||'<p class=note>Nenhum produto ativo encontrado com esse nome.</p>';
+  box.querySelectorAll('[data-bsel]').forEach(x=>x.onclick=()=>{const p=R.find(y=>y.id===x.dataset.bsel);cfgForm(p,b.items.find(y=>y.pid===p.id))})};
+ $('#bq').oninput=()=>{clearTimeout(tm);tm=setTimeout(()=>run(srch),300)};
+ // configurar / editar
+ const cfgForm=(p,it)=>{const nx=Math.max(0,...b.items.map(x=>+x.pos||0))+1;
+  const v={pid:p.id,text:'',btn:B.BTN_PADRAO,pos:nx,on:true,offer_only:isOffer(p),...(it||{})};
+  const purl=new URL('../produto.html?id='+encodeURIComponent(p.id),location.href).href;let host='';try{host=new URL(p.affiliate_url).hostname.replace(/^www\./,'')}catch(e){}
+  const c=$('#bcf');c.innerHTML=`<div class=box style="border-color:#bcd0f0"><div class=hrow><h3 style="margin:0;flex:1">${it?'Editar banner':'Novo banner'}</h3><button class="btn alt sm" id=bcx>Cancelar</button></div><div class=bgrid><div>
+   <div class=ro>${pimg(p)?`<img src="${esc(pimg(p))}" alt="">`:'<img alt="">'}<dl><dt>Nome</dt><dd>${esc(p.name)}</dd><dt>Preço</dt><dd>${p.price!=null?esc(priceTxt(p)):'sem preço'}</dd><dt>Loja</dt><dd>${esc(p.merchants?.name||'—')}</dd><dt>Descrição</dt><dd>${esc(String(p.description||'—').slice(0,160))}</dd><dt>Link</dt><dd><a href="${esc(purl)}" target=_blank rel=noopener>página do produto ↗</a>${host?` <small>(leva a ${esc(host)})</small>`:''}</dd></dl></div>
+   <p class=lock>🔒 Estes dados vêm do cadastro do produto e não são editados aqui. Para mudar, edite o produto na aba Produtos.</p>
+   <label>Texto curto (opcional)<input id=b1 maxlength=90 value="${esc(v.text)}" placeholder="Em branco = começo da descrição do produto"></label>
+   <div class=row><label>Texto do botão<input id=b2 maxlength=30 value="${esc(v.btn)}"></label><label>Posição<input id=b3 type=number min=0 max=999 value="${+v.pos||0}"><small class=note>Menor número aparece primeiro, junto com a “Ordem” dos banners personalizados.</small></label></div>
+   <label><input type=checkbox id=b4 ${v.on!==false?'checked':''}> Ativo (aparece no site)</label>
+   ${p.offer?`<label><input type=checkbox id=b5 ${v.offer_only?'checked':''}> Esconder sozinho quando o produto sair da oferta</label>`:''}
+   <button class="btn big" id=bpub>Publicar banner</button></div>
+   <div><p class=note style="margin:0 0 6px">Prévia</p><div class=bpv><div class=car><div class=trk id=bpvw></div></div></div><p class=note>O site sempre mostra o preço e a foto atuais do produto.</p></div></div></div>`;
+  const val=()=>({pid:p.id,text:$('#b1').value.trim(),btn:$('#b2').value.trim()||B.BTN_PADRAO,pos:Math.max(0,Math.min(999,Math.round(+$('#b3').value)||0)),on:$('#b4').checked,offer_only:!!$('#b5')?.checked});
+  const pv=()=>{$('#bpvw').innerHTML=B.productSlide(p,val(),'#');$('#bpvw a').onclick=e=>e.preventDefault()};c.querySelectorAll('input').forEach(i=>i.oninput=i.onchange=pv);pv();
+  $('#bcx').onclick=()=>{c.innerHTML=''};
+  $('#bpub').onclick=()=>run(async()=>{const r=val();if(!it&&b.items.length>=B2MAX)throw new Error('Já existem '+B2MAX+' banners de produto. Tire algum antes de publicar outro.');
+   $('#bpub').disabled=true;$('#bpub').textContent='Publicando…';
+   try{await saveB2(x=>{const i=x.items.findIndex(y=>y.pid===r.pid);r.at=x.items[i]?.at||new Date().toISOString();if(i>=0)x.items[i]=r;else x.items.push(r)})}finally{$('#bpub').disabled=false;$('#bpub').textContent='Publicar banner'}
+   alert(r.on?'Banner publicado! Já aparece na página inicial.':'Banner salvo como inativo (não aparece no site).');bans(el,'pick')});
+  c.scrollIntoView({behavior:'smooth',block:'start'});$('#b1').focus({preventScroll:true})};
+ z.querySelectorAll('[data-bed]').forEach(x=>x.onclick=()=>run(async()=>{const it=b.items.find(y=>y.pid===x.dataset.bed),[p]=await B.bProducts(sb,[it.pid]);
+  if(!p)throw new Error('Este produto não está ativo (arquivado, inativo ou excluído), por isso o banner não aparece. Reative o produto na aba Produtos ou tire o banner.');cfgForm(p,it)}));
+ z.querySelectorAll('[data-brm]').forEach(x=>x.onclick=()=>run(async()=>{if(!confirm('Tirar este banner do topo? O produto continua cadastrado normalmente.'))return;await saveB2(y=>{y.items=y.items.filter(i=>i.pid!==x.dataset.brm)});bans(el,'pick')}));
+ // lista antiga (banner_ids): mesmas ações de antes
+ z.querySelectorAll('[data-lu],[data-ld],[data-lx]').forEach(x=>x.onclick=()=>run(async()=>{const d=x.dataset,a=[...legacy];
+  if(d.lx!==undefined){if(!confirm('Tirar este produto do banner do topo? O produto continua cadastrado normalmente.'))return;a.splice(+d.lx,1)}else{const k=+(d.lu??d.ld),j=d.lu!==undefined?k-1:k+1;if(j<0||j>=a.length)return;[a[k],a[j]]=[a[j],a[k]]}
+  const cur=await getSet();const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:a}});if(error)throw error;bans(el,'pick')}))}
+// ----- b) Automático
+async function bAuto(z,cfg,el){const B=await BJ(),b=B.b2cfg(cfg),A={...b.auto};let secs=b.secs;
+ if(A.src==='top7')try{A.top_ids=await topSnap()}catch(e){console.warn(e)}
+ const draw=async()=>{const S={...cfg,banners_v2:{...b,auto:A,secs}},r=await B.pickBanners(sb,S,{extra:6}),hid=A.hidden.length?await B.bProducts(sb,A.hidden):[];
+  z.innerHTML=`<div class=bgrid><div class=box><h3>Configuração</h3>
+   <label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type=checkbox id=a0 ${A.on?'checked':''} style="width:22px;height:22px"> Banners automáticos ligados</label>
+   <label>Origem dos produtos<select id=a1>${Object.entries(B.BSRC).map(([k,n])=>`<option value=${k} ${k===A.src?'selected':''}>${n}</option>`).join('')}</select></label>
+   ${A.src==='top7'?`<p class=note>Lista atualizada ${A.top_at||b.auto.top_at?'em '+new Date(A.top_at||b.auto.top_at).toLocaleString('pt-BR'):'ainda não'} · atualiza ao abrir o Painel ou esta aba. <button class="btn alt sm" id=a9>Atualizar agora</button></p>`:''}
+   <div class=row><label>Quantidade de banners<input id=a2 type=number min=1 max=10 value="${A.qty}"></label><label>Tempo de troca<select id=a3>${[4,5,6,8,10,15,20].map(n=>`<option value=${n} ${n===secs?'selected':''}>${n} segundos</option>`).join('')}</select><small class=note>Vale para todos os banners do topo.</small></label></div>
+   <p class=note>Produtos já escolhidos à mão não se repetem aqui. Produto arquivado, excluído ou fora da origem escolhida sai sozinho.</p>
+   <button class="btn big" id=asv>Salvar automático</button></div>
+   <div class=box><h3>${A.on?'No ar agora':'Prévia (desligado)'}</h3>${r.queue.slice(0,A.qty).map(o=>prow(o.p,dots([o.pin?mi(`data-apu="${o.p.id}"`,'📌 Desafixar'):mi(`data-apn="${o.p.id}"`,'📌 Fixar no topo'),mi(`data-ahd="${o.p.id}"`,'🚫 Não mostrar',1)]),o.pin?'<span class="chip blue">📌 Fixado</span>':'')).join('')||'<p class=note>Nenhum produto disponível nesta origem.</p>'}
+   ${r.queue.length>A.qty?`<h3 style="margin-top:16px">Próximos da fila</h3>${r.queue.slice(A.qty).map(o=>prow(o.p,dots([mi(`data-apn="${o.p.id}"`,'📌 Fixar no topo'),mi(`data-ahd="${o.p.id}"`,'🚫 Não mostrar',1)]))).join('')}`:''}
+   ${hid.length?`<h3 style="margin-top:16px">Ocultos</h3>${hid.map(p=>prow(p,`<button class="btn alt sm" data-ash="${p.id}">Mostrar de novo</button>`)).join('')}`:''}</div></div>`;
+  $('#a0').onchange=e=>{A.on=e.target.checked};$('#a1').onchange=e=>run(async()=>{A.src=e.target.value;if(A.src==='top7'&&!A.top_ids.length)A.top_ids=await topSnap(null,true).catch(()=>[]);await draw()});
+  $('#a2').onchange=e=>{A.qty=Math.min(10,Math.max(1,Math.round(+e.target.value)||3));run(draw)};$('#a3').onchange=e=>{secs=+e.target.value};
+  $('#a9')&&($('#a9').onclick=()=>run(async()=>{A.top_ids=await topSnap(null,true);A.top_at=new Date().toISOString();await draw()}));
+  $('#asv').onclick=()=>run(async()=>{await saveB2(x=>{x.auto={...x.auto,on:A.on,src:A.src,qty:A.qty};x.secs=secs});
+   if(A.on&&A.src==='top7')await topSnap();alert(A.on?'Banners automáticos salvos e no ar.':'Configuração salva. Os banners automáticos estão desligados.');bans(el,'auto')});
+  // fixar / não mostrar: gravam na hora (só a lista de fixados/ocultos)
+  const upd=(f,msg)=>run(async()=>{if(msg&&!confirm(msg))return;const s=await saveB2(x=>f(x.auto));A.pinned=s.auto.pinned;A.hidden=s.auto.hidden;await draw()});
+  z.querySelectorAll('[data-apn]').forEach(x=>x.onclick=()=>upd(a=>{const id=x.dataset.apn;a.pinned=[id,...a.pinned.filter(i=>i!==id)].slice(0,10)}));
+  z.querySelectorAll('[data-apu]').forEach(x=>x.onclick=()=>upd(a=>{a.pinned=a.pinned.filter(i=>i!==x.dataset.apu)}));
+  z.querySelectorAll('[data-ahd]').forEach(x=>x.onclick=()=>upd(a=>{const id=x.dataset.ahd;a.hidden=[...new Set([...a.hidden,id])];a.pinned=a.pinned.filter(i=>i!==id)},'Não mostrar este produto nos banners automáticos? O produto continua no site normalmente, e você pode mostrar de novo depois.'));
+  z.querySelectorAll('[data-ash]').forEach(x=>x.onclick=()=>upd(a=>{a.hidden=a.hidden.filter(i=>i!==x.dataset.ash)}))};
+ await draw()}
+// ----- c) Personalizados (título, imagem, link e botão digitados à mão) — tabela cr_banners, como antes
+const bCustom=z=>editor(z,'cr_banners',[['title','Título','text'],['subtitle','Subtítulo','text'],['image_url','Imagem','img'],['button_text','Texto do botão','text'],['button_url','Link do botão','text'],['sort','Ordem','num'],['active','Ativo','bool']],{newLabel:'+ Criar banner personalizado',head:'<p class=note>Banners com título, imagem, link e botão digitados à mão. Os ativos passam no topo da página inicial, do menor para o maior número de “Ordem”.</p>'});
 const home=el=>editor(el,'cr_homepage_sections',[['title','Título da seção','text'],['qty','Quantidade exibida','num'],['sort','Ordem','num'],['visible','Visível','bool']],{pk:'key',noNew:true,noDel:true,head:'<h2>Página inicial</h2><p class=note>Seções: ofertas, destaques, novidades e categorias. A oferta/destaque de cada produto é definida no cadastro do produto.</p>'});
 // ---------- Aparência / configurações
 async function look(el){const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).single();const s=data?.data||{};
@@ -206,7 +397,7 @@ async function contato(el){
   <div class=box><h3>Contatos, redes sociais e links</h3>${C.items.map((it,i)=>`<div style="border-top:1px solid #e3e9f2;padding:10px 0;${it.on===false?'opacity:.55':''}"><div style="display:flex;gap:10px;align-items:flex-start"><span data-ip=${i}>${cIcon(it,40)}</span><div style="flex:1;min-width:0"><div class=row><label>Tipo e ícone<select data-it=${i}>${opts(it.type)}</select></label><label>Nome exibido<input data-il=${i} value="${esc(it.label||'')}" placeholder="${esc((CTYPES[it.type]||CTYPES.site).n)}"></label></div>
    <label>Número, e-mail, @usuário ou endereço (link)<input data-iv=${i} value="${esc(it.value||'')}" placeholder="${esc((CTYPES[it.type]||CTYPES.site).ph)}"></label><div data-ih=${i}>${link(it)}</div>
    ${it.type==='whatsapp'?`<label>Mensagem inicial (opcional)<input data-im=${i} value="${esc(it.msg||'')}" placeholder="Olá! Vim pelo site."></label>`:''}
-   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label style="margin:0"><input type=checkbox data-io=${i} ${it.on!==false?'checked':''}> Ativo</label><button class="btn alt sm" data-mv="${i}:-1">▲</button><button class="btn alt sm" data-mv="${i}:1">▼</button><button class="btn alt sm" data-rm=${i}>✕ Remover</button>
+   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label style="margin:0"><input type=checkbox data-io=${i} ${it.on!==false?'checked':''}> Ativo</label><button class="btn alt sm" data-mv="${i}:-1">▲</button><button class="btn alt sm" data-mv="${i}:1">▼</button><button class="btn dng sm" data-rm=${i}>✕ Remover</button>
    <label class="btn alt sm" style="margin:2px;display:inline-block">Ícone próprio…<input type=file accept="image/*" data-iu=${i} style="display:none"></label>${it.icon?`<button class="btn alt sm" data-ix=${i}>Usar ícone padrão</button>`:''}</div></div></div></div>`).join('')||'<p class=note>Nenhum item ainda.</p>'}
    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><select id=nt style="width:auto;flex:1;min-width:200px">${opts('whatsapp')}</select><button class="btn sm" id=na>+ Adicionar</button></div></div>
   <button class=btn id=csv>Salvar</button> <button class="btn alt" id=cvw>Salvar e ver a página</button>`;
@@ -216,7 +407,7 @@ async function contato(el){
   el.querySelectorAll('[data-bt]').forEach(i=>i.oninput=()=>C.blocks[+i.dataset.bt].t=i.value.trim());
   el.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.bm.split(':');if(mv(C.blocks,+i,+d))draw()});
   el.querySelectorAll('[data-cf]').forEach(i=>i.onchange=()=>run(async()=>{const k=i.dataset.cf;C[k]=await up(i.files[0]);draw()}));
-  el.querySelectorAll('[data-cr]').forEach(b=>b.onclick=()=>{C[b.dataset.cr]='';draw()});
+  el.querySelectorAll('[data-cr]').forEach(b=>b.onclick=()=>{if(confirm('Remover esta imagem? (só vale depois de Salvar)')){C[b.dataset.cr]='';draw()}});
   el.querySelectorAll('[data-it]').forEach(i=>i.onchange=()=>{C.items[+i.dataset.it].type=i.value;draw()});
   el.querySelectorAll('[data-il]').forEach(i=>i.oninput=()=>C.items[+i.dataset.il].label=i.value);
   el.querySelectorAll('[data-iv]').forEach(i=>i.oninput=()=>{const n=+i.dataset.iv;C.items[n].value=i.value;el.querySelector(`[data-ih="${n}"]`).innerHTML=link(C.items[n])});
@@ -238,9 +429,9 @@ async function msgs(el){const ST={nova:'Nova',lida:'Lida',respondida:'Respondida
  const {data,error}=await sb.from('cr_contact_messages').select('*').order('created_at',{ascending:false}).limit(200);
  if(error){el.innerHTML=`<div class=box><h2>Mensagens</h2><p class=note>${/cr_contact_messages|does not exist|schema cache/i.test(error.message||'')?'O formulário de contato ainda não está ligado: rode o arquivo <b>supabase/04-contato.sql</b> no SQL Editor do Supabase (uma vez). Enquanto isso, o site oferece o envio pelo WhatsApp.':esc(error.message)}</p></div>`;return}
  const nv=data.filter(m=>m.status==='nova').length;
- el.innerHTML=`<h2>Mensagens do site</h2><p class=note>${data.length?`${data.length} mensagem(ns), ${nv} nova(s). Responda pelo e-mail do visitante.`:'Nenhuma mensagem recebida ainda.'}</p>`+data.map(m=>`<div class=box style="border-left:4px solid ${m.status==='nova'?'var(--c2)':'#cdd8e8'}"><p style="margin:0 0 4px"><b>${esc(m.subject)}</b> — ${esc(m.name)} · <small>${new Date(m.created_at).toLocaleString('pt-BR')}</small> · <small>${ST[m.status]||esc(m.status)}</small></p>
+ el.innerHTML=`<h2>Mensagens do site</h2><p class=note>${data.length?`${data.length} mensagem(ns), ${nv} nova(s). Responda pelo e-mail do visitante.`:'Nenhuma mensagem recebida ainda.'}</p>`+data.map(m=>`<div class=box style="border-left:4px solid ${m.status==='nova'?'var(--c2)':'#cdd8e8'}">${m.status==='nova'?'<span class="chip blue" style="float:right">Nova</span>':''}<p style="margin:0 0 4px"><b>${esc(m.subject)}</b> — ${esc(m.name)} · <small>${new Date(m.created_at).toLocaleString('pt-BR')}</small> · <small>${ST[m.status]||esc(m.status)}</small></p>
  <p style="margin:0 0 6px"><a href="mailto:${esc(m.email)}?subject=${encodeURIComponent('Re: '+m.subject)}">${esc(m.email)}</a>${m.phone?` · ${esc(m.phone)}`:''}</p><p style="white-space:pre-line;margin:0 0 8px">${esc(m.message)}</p>
- ${m.status!=='lida'?`<button class="btn alt sm" data-ms="${m.id}:lida">Marcar como lida</button>`:''}${m.status!=='respondida'?`<button class="btn alt sm" data-ms="${m.id}:respondida">Marcar como respondida</button>`:''}<button class="btn alt sm" data-mx="${m.id}">Excluir</button></div>`).join('');
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><a class="btn sm" href="mailto:${esc(m.email)}?subject=${encodeURIComponent('Re: '+m.subject)}">Responder</a>${dots([m.status!=='lida'?mi(`data-ms="${m.id}:lida"`,'✓ Marcar como lida'):'',m.status!=='respondida'?mi(`data-ms="${m.id}:respondida"`,'✓ Marcar como respondida'):'',mi(`data-mx="${m.id}"`,'🗑️ Excluir',1)])}</div></div>`).join('');
  el.querySelectorAll('[data-ms]').forEach(b=>b.onclick=()=>run(async()=>{const [id,st]=b.dataset.ms.split(':');const {error}=await sb.from('cr_contact_messages').update({status:st}).eq('id',id);if(error)throw error;msgs(el)}));
  el.querySelectorAll('[data-mx]').forEach(b=>b.onclick=()=>run(async()=>{if(!confirm('Excluir esta mensagem?'))return;const {error}=await sb.from('cr_contact_messages').delete().eq('id',b.dataset.mx);if(error)throw error;msgs(el)}))}
 // ---------- Estatísticas
@@ -306,12 +497,12 @@ async function carr(el){
  const [{data:st},{data:ps}]=await Promise.all([sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle(),sb.from('cr_products').select('id,name,price').eq('status','active').order('created_at',{ascending:false}).limit(300)]);
  const s0=st?.data||{},P=Object.fromEntries((ps||[]).map(p=>[p.id,p]));let ids=(s0.carousel_ids||[]).filter(i=>P[i]),term='';
  const row=(p,b)=>`<div class=box style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span>${esc(p.name)}<br><small class=note>${p.price!=null?money(p.price):'sem preço'}</small></span><span>${b}</span></div>`;
- const draw=()=>{$('#cs').innerHTML=ids.map((id,i)=>row(P[id],`<button class="btn alt sm" data-cu="${i}">▲</button><button class="btn alt sm" data-cd="${i}">▼</button><button class="btn alt sm" data-cx="${i}">✕</button>`)).join('')||'<p class=note>Nenhum produto escolhido. O carrossel só aparece no site quando houver pelo menos 1.</p>';
+ const draw=()=>{$('#cs').innerHTML=ids.map((id,i)=>row(P[id],`<button class="btn alt sm" data-cu="${i}">▲</button><button class="btn alt sm" data-cd="${i}">▼</button>${dots([mi(`data-cx="${i}"`,'🗑️ Tirar do carrossel',1)])}`)).join('')||'<p class=note>Nenhum produto escolhido. O carrossel só aparece no site quando houver pelo menos 1.</p>';
   $('#ca').innerHTML=sFilter(sTokens(term),(ps||[]).filter(p=>!ids.includes(p.id))).slice(0,40).map(p=>row(p,`<button class="btn sm" data-cadd="${p.id}">+ Adicionar</button>`)).join('')||'<p class=note>Nenhum produto encontrado.</p>'};
  el.innerHTML=`<h2>Carrossel da página inicial</h2><p class=note>Escolha quais produtos passam no carrossel (até 12) e a ordem. Só produtos ativos aparecem aqui.</p><div class=box><label>Título do carrossel<input id=ct value="${esc(s0.carousel_title||'')}" placeholder="Em destaque na vitrine"></label><label><input type=checkbox id=co ${s0.carousel_on===false?'':'checked'}> Mostrar o carrossel no site</label></div>
  <h3>No carrossel (nesta ordem)</h3><div id=cs></div><h3>Adicionar produtos</h3><label>Buscar<input id=cq></label><div id=ca></div><button class=btn id=csv>Salvar carrossel</button>`;
  $('#cs').onclick=e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
-  if(d.cx!==undefined)ids.splice(+d.cx,1);else if(d.cu!==undefined&&+d.cu>0){const i=+d.cu;[ids[i-1],ids[i]]=[ids[i],ids[i-1]]}else if(d.cd!==undefined&&+d.cd<ids.length-1){const i=+d.cd;[ids[i+1],ids[i]]=[ids[i],ids[i+1]]}else return;draw()};
+  if(d.cx!==undefined){if(!confirm('Tirar este produto do carrossel? (só vale depois de “Salvar carrossel”)'))return;ids.splice(+d.cx,1)}else if(d.cu!==undefined&&+d.cu>0){const i=+d.cu;[ids[i-1],ids[i]]=[ids[i],ids[i-1]]}else if(d.cd!==undefined&&+d.cd<ids.length-1){const i=+d.cd;[ids[i+1],ids[i]]=[ids[i],ids[i+1]]}else return;draw()};
  $('#ca').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.cadd===undefined)return;if(ids.length>=12)return alert('Máximo de 12 produtos no carrossel.');ids.push(b.dataset.cadd);draw()};
  $('#cq').oninput=e=>{term=e.target.value;draw()};draw();
  $('#csv').onclick=()=>run(async()=>{const {data:cur}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();
@@ -319,7 +510,7 @@ async function carr(el){
 // ---------- Lembrete de backup
 async function bkNote(inb){const {data}=await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle();const d=data?.data?.last_backup||null;
  const days=d?Math.floor((Date.now()-new Date(d))/864e5):null,old=days==null||days>=7;
- return `<div class=box style="border-left:6px solid ${old?'#e5384f':'#1e9e5a'}"><b>Backup:</b> ${d?(days<1?'feito hoje':'último há '+days+' dia(s), em '+new Date(d).toLocaleDateString('pt-BR')):'nenhum backup feito ainda'}${old?'. <b>Recomendado fazer agora.</b>':'.'} ${inb?'':'<button class="btn sm" onclick="goBk()">Ir para Backup</button>'}</div>`}
+ return `<div class="bkn${old?'':' ok'}" role=status>${ico(old?'clock':'save',18)}<span><b>Backup:</b> ${d?(days<1?'feito hoje':'último há '+days+' dia(s), em '+new Date(d).toLocaleDateString('pt-BR')):'nenhum backup feito ainda'}${old?' · recomendado fazer agora.':'.'}</span>${inb||!old?'':'<button class="btn alt sm" onclick="goBk()">Ir para Backup</button>'}</div>`}
 W.goBk=()=>document.querySelector('[data-t=Backup]').click();
 // ---------- Backup e restauração
 const TB=['cr_merchants','cr_categories','cr_products','cr_product_images','cr_product_videos','cr_banners','cr_site_settings','cr_homepage_sections','cr_click_events'];
@@ -404,8 +595,8 @@ async function notif(el,editId=null){
   <div class=row><label>Avisar “acabando” quantas horas antes do fim<input type=number min=1 max=168 id=seh value="${N.ending_hours??24}"></label><label>Limite de envios automáticos por dia<input type=number min=0 max=50 id=sdl value="${N.daily_limit??2}"></label>
   <label>Silêncio começa às<select id=sqs>${hrs(N.quiet_start??22)}</select></label><label>Silêncio termina às<select id=sqe>${hrs(N.quiet_end??8)}</select></label></div>
   <button class="btn sm" id=ssv>Salvar configurações</button></div>
- <h3>Histórico</h3><div class=tw><table><tr><th>Data<th>Título<th>Origem<th>Status<th>Enviados<th>Falhas<th>Cliques<th></tr>${H.map(x=>`<tr><td>${brDate(x.sent_at||x.scheduled_at||x.created_at)}<td>${esc(x.title)}<td>${NSRC[x.source]||esc(x.source)}<td${x.error?` title="${esc(x.error)}"`:''}>${NST[x.status]||esc(x.status)}${x.error?' <span class=note>ⓘ</span>':''}<td>${x.sent_count||0}<td>${x.failed_count||0}<td>${x.clicks||0}<td>${
-  x.status==='scheduled'?`<button class="btn alt sm" data-nc="${x.id}">Cancelar</button>`:x.status==='draft'?`<button class="btn alt sm" data-ne="${x.id}">Editar</button><button class="btn alt sm" data-nd="${x.id}">Excluir</button>`:x.status==='failed'?`<button class="btn alt sm" data-nr="${x.id}">Tentar de novo</button>`:''}</tr>`).join('')||'<tr><td colspan=8>Nenhuma notificação ainda.</td></tr>'}</table></div>
+ <h3>Histórico</h3><div class="tw tbx"><table class=lt><tr class=hd><th>Data<th>Título<th>Origem<th>Status<th>Enviados<th>Falhas<th>Cliques<th></tr>${H.map(x=>`<tr><td>${brDate(x.sent_at||x.scheduled_at||x.created_at)}<td>${esc(x.title)}<td>${NSRC[x.source]||esc(x.source)}<td${x.error?` title="${esc(x.error)}"`:''}>${NST[x.status]||esc(x.status)}${x.error?' <span class=note>ⓘ</span>':''}<td>${x.sent_count||0}<td>${x.failed_count||0}<td>${x.clicks||0}<td class=ac>${
+  x.status==='scheduled'?dots([mi(`data-nc="${x.id}"`,'🚫 Cancelar envio',1)]):x.status==='draft'?`<button class="btn sm" data-ne="${x.id}">Editar</button>${dots([mi(`data-nd="${x.id}"`,'🗑️ Excluir',1)])}`:x.status==='failed'?`<button class="btn alt sm" data-nr="${x.id}">Tentar de novo</button>`:''}</tr>`).join('')||'<tr><td colspan=8>Nenhuma notificação ainda.</td></tr>'}</table></div>
  <p class=note>Datas no horário de Brasília. Passe o dedo/mouse em “Falhou” para ver o motivo.</p>`;
  const t=$('#nft'),b=$('#nfb'),im=$('#nfi'),u=$('#nfu'),ps=$('#nfp'),msg=m=>$('#nfmsg').textContent=m;
  const pv=()=>{$('#pvt').textContent=t.value||'Título da notificação';$('#pvb').textContent=b.value||'Sua mensagem aparece aqui.';const i=$('#pvi');i.style.display=im.value?'block':'none';if(im.value)i.src=im.value;
