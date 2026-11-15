@@ -49,3 +49,24 @@ ao abrir o Painel ou a aba Banners (ou em “Atualizar agora”).
 ```sql
 update cr_site_settings set data = data - 'banners_v2' where id = 1;
 ```
+
+# Oferta do dia (Notificações) — novembro de 2026
+
+Em **Notificações › Oferta do dia (automática)**: nos horários escolhidos (até 2 por dia, horário de Brasília),
+o sistema escolhe sozinho um produto ativo, em oferta válida, com foto e acima do preço mínimo, que não foi
+notificado nos últimos X dias, e envia a notificação com a foto e o link do próprio produto.
+
+- **Critério:** mais barato · maior desconto (%) · melhor oferta por categoria (alterna entre as categorias marcadas).
+  Dá para trocar a qualquer momento no painel, sem mexer no código.
+- Respeita o horário de silêncio e o limite diário de envios automáticos. Se não puder enviar em até 2 h, o horário é pulado.
+- Uma notificação por horário por dia (o horário exato fica em `scheduled_at` e evita repetição). Aparece no histórico como “Auto · oferta”.
+
+| Arquivo | O quê |
+|---|---|
+| `supabase/functions/send-push/oferta-dia.js` (novo) | Regras de escolha e texto (usadas pela função e pela prévia do painel) |
+| `supabase/functions/send-push/index.ts` | O agendador cria a Oferta do dia antes de enviar as agendadas; uma falha nela não afeta os outros envios |
+| `admin/index.html` | Cartão “Oferta do dia” com prévia |
+
+**Banco:** nada novo. Configuração na chave `push_oferta_dia` de `cr_site_settings.data`.
+**Publicação:** a função precisa ser publicada no Supabase (com os dois arquivos da pasta `send-push`).
+**Desligar:** desmarcar “Oferta do dia ligada” e salvar. **Desfazer:** reverter o commit e publicar de novo a versão anterior da função.

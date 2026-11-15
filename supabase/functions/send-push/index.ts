@@ -4,6 +4,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { odCfg, odDue, odPick, odRow, spDayStart } from "./oferta-dia.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -146,6 +147,40 @@ async function sendNotificationRow(id: string, settings: any) {
   }
 }
 
+// Oferta do dia: no horário configurado, escolhe o produto e cria a notificação (enviada logo abaixo, pelo caminho normal).
+// Uma notificação por horário por dia: o horário exato fica em scheduled_at e serve de marca para não repetir.
+// Só cria se puder enviar agora (fora do silêncio e dentro do limite diário); depois de 2 h sem poder, o horário é pulado.
+// deno-lint-ignore no-explicit-any
+async function ofertaDoDia(settings: any, autoToday: number, quiet: boolean) {
+  const { data: st } = await db.from("cr_site_settings").select("data").eq("id", 1).maybeSingle();
+  const c = odCfg(st?.data);
+  if (!c.on) return { off: true };
+  const due = odDue(c);
+  if (!due.length) return { idle: true };
+  if (quiet) return { waiting: "horário de silêncio" };
+  if (autoToday >= (settings?.daily_limit ?? 2)) return { waiting: "limite diário atingido" };
+  const { data: made, error: me } = await db.from("cr_notifications").select("scheduled_at")
+    .eq("source", "auto_offer").in("scheduled_at", due.map((s) => s.at));
+  if (me) throw me;
+  const done = new Set((made ?? []).map((x) => new Date(x.scheduled_at).toISOString()));
+  const slot = due.find((s) => !done.has(s.at));
+  if (!slot) return { done: true };
+  // não repete produto: nem hoje, nem nos últimos X dias
+  const since = new Date(Math.min(spDayStart(), Date.now() - c.norep * 864e5)).toISOString();
+  const { data: rec, error: re } = await db.from("cr_notifications").select("product_id")
+    .not("product_id", "is", null).in("status", ["scheduled", "sending", "sent"]).gte("created_at", since).limit(5000);
+  if (re) throw re;
+  const { data: prods, error: pe } = await db.from("cr_products")
+    .select("id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,product_images:cr_product_images(url)")
+    .eq("status", "active").eq("offer", true).gte("price", c.min).limit(5000);
+  if (pe) throw pe;
+  const p = odPick(prods ?? [], c, { skip: new Set((rec ?? []).map((x) => x.product_id)), slot: slot.i });
+  if (!p) return { slot: slot.t, nothing: "nenhuma oferta disponível" };
+  const { error } = await db.from("cr_notifications").insert(odRow(p, c, slot, settings));
+  if (error) throw error;
+  return { slot: slot.t, product: p.id };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
@@ -156,12 +191,15 @@ Deno.serve(async (req) => {
 
     // Agendador (pg_cron)
     if (safeEqual(req.headers.get("x-cron-token") ?? "", config.cr_push_cron_token)) {
-      const { data: due } = await db.from("cr_notifications").select("id,source")
-        .eq("status", "scheduled").lte("scheduled_at", new Date().toISOString()).order("scheduled_at").limit(10);
       const quiet = settings ? inQuiet(spHour(), settings.quiet_start, settings.quiet_end) : false;
       const { count } = await db.from("cr_notifications").select("id", { count: "exact", head: true })
         .neq("source", "manual").eq("status", "sent").gte("sent_at", spDayStartISO());
       let autoToday = count ?? 0;
+      // falha na Oferta do dia nunca impede os outros envios
+      let oferta: unknown = null;
+      try { oferta = await ofertaDoDia(settings, autoToday, quiet); } catch (e) { oferta = { error: String((e as Error).message ?? e) }; }
+      const { data: due } = await db.from("cr_notifications").select("id,source")
+        .eq("status", "scheduled").lte("scheduled_at", new Date().toISOString()).order("scheduled_at").limit(10);
       const results = [];
       for (const n of due ?? []) {
         if (n.source !== "manual") {
@@ -171,7 +209,7 @@ Deno.serve(async (req) => {
         }
         results.push(await sendNotificationRow(n.id, settings));
       }
-      return json({ mode: "cron", results });
+      return json({ mode: "cron", oferta, results });
     }
 
     // Painel admin

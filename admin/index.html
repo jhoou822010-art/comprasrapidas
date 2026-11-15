@@ -42,7 +42,8 @@ body.adb{background:#eef1f6}body.adb #app{max-width:none;padding:0}
  .sdc{display:none}.sdx{display:grid}.adm .ad button,.sdo{min-height:46px}
  .mb{display:grid;place-items:center}.tb{padding:6px 12px}#main{padding:14px 12px 60px}
  .adm .btn{min-height:44px}.adm .btn.sm{min-height:44px;padding:8px 14px}
- .adm input,.adm select{min-height:44px;font-size:16px}.adm textarea{font-size:16px}
+ .adm input:not([type=checkbox]):not([type=radio]):not([type=file]),.adm select{min-height:44px;font-size:16px}
+ .adm label:has(>input[type=checkbox]){display:flex;align-items:center;gap:10px;min-height:44px;margin:2px 0}.adm input[type=checkbox]{width:20px;height:20px;flex:0 0 auto}.adm textarea{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){.sd{transition:none}}
 /* botões: azul só no principal, vermelho só para excluir */
@@ -556,6 +557,35 @@ function backup(el){el.innerHTML=`<div id=bn></div><h2>Backup e restauração</h
     const {error}=t==='cr_click_events'?await sb.from(t).insert(ch):await sb.from(t).upsert(ch,{onConflict:PK[t]||'id'});if(error)throw new Error(t.slice(3)+': '+error.message)}}
   log('<b>Concluído.</b>'+(mg?' Arquivos copiados: '+copied+(fail?' · não foi possível copiar: '+fail+' (continuam apontando para o endereço antigo)':''):''))})}
 
+// ---------- Notificações › Oferta do dia (automática). Regras em supabase/functions/send-push/oferta-dia.js (as mesmas da função de envio)
+async function odCard(box,N){const O=await import('../supabase/functions/send-push/oferta-dia.js');
+ const [s0,{data:cs},{data:pr,error:pe},{data:rec}]=await Promise.all([getSet(),sb.from('cr_categories').select('id,name').order('name'),
+  sb.from('cr_products').select('id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,product_images:cr_product_images(url)').eq('status','active').eq('offer',true).limit(5000),
+  sb.from('cr_notifications').select('product_id,created_at,status').not('product_id','is',null).in('status',['scheduled','sending','sent']).gte('created_at',new Date(Date.now()-61*864e5).toISOString()).limit(5000)]);
+ if(pe)throw pe;const saved=!!s0.push_oferta_dia;let c=O.odCfg(s0);
+ const read=()=>O.odCfg({push_oferta_dia:{on:$('#od0').checked,times:[$('#odt1').value,$('#odt2').value].filter(Boolean),min:num($('#odm').value),norep:$('#odr').value,crit:$('#odc').value,
+  cats:[...box.querySelectorAll('[data-odc]:checked')].map(x=>x.value),title:$('#odti').value,body:$('#odb').value}});
+ const prev=()=>{c=read();const since=Math.min(O.spDayStart(),Date.now()-c.norep*864e5),skip=new Set((rec||[]).filter(x=>Date.parse(x.created_at)>=since).map(x=>x.product_id));
+  const out=c.times.map((t,i)=>{const p=O.odPick(pr||[],c,{skip,slot:i});if(p)skip.add(p.id);return {t,p}});
+  $('#odcats').hidden=c.crit!=='category';
+  $('#odw').innerHTML=(N.daily_limit??2)<c.times.length?`<p class=bkn>⚠ O limite diário de envios automáticos está em ${N.daily_limit??2}. Aumente em “Envios automáticos” para sair ${c.times.length} por dia.</p>`:'';
+  $('#odp').innerHTML=out.map(({t,p})=>p?`<div class=pr>${pimg(p)?`<img src="${esc(pimg(p))}" alt="">`:'<img alt="">'}<div class=tt><small><b>${t}</b> · se enviasse agora:</small><b>${esc(O.odText(c.title,p))}</b><small>${esc(O.odText(c.body,p))}</small></div></div>`:`<div class=pr><div class=tt><small><b>${t}</b></small><b>Nenhum produto serviria agora</b><small>Nada é enviado neste horário. Confira o preço mínimo, o critério e as categorias.</small></div></div>`).join('')||'<p class=note>Escolha pelo menos um horário.</p>'};
+ box.innerHTML=`<h3>🔥 Oferta do dia (automática)</h3><p class=note>Nos horários escolhidos, o sistema escolhe sozinho uma oferta e envia a notificação, com a foto e o link do próprio produto. No máximo ${O.OD_MAX} por dia. Respeita o horário de silêncio e o limite diário acima; se não puder enviar em até 2 horas, aquele horário é pulado.</p>
+ ${saved?'':'<p class=note style="color:#b45309"><b>Ainda não salvo.</b></p>'}
+ <label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type=checkbox id=od0 ${c.on?'checked':''} style="width:22px;height:22px"> Oferta do dia ligada</label>
+ <div class=row><label>1º horário (Brasília)<input type=time id=odt1 value="${c.times[0]||''}"></label><label>2º horário (opcional)<input type=time id=odt2 value="${c.times[1]||''}"></label></div>
+ <label>Como escolher o produto<select id=odc>${Object.entries(O.OD_CRIT).map(([k,n])=>`<option value=${k} ${k===c.crit?'selected':''}>${n}</option>`).join('')}</select></label>
+ <div id=odcats class=box style="background:var(--lt)"><b>Categorias</b> <span class=note>(nenhuma marcada = todas). Em cada envio pega a maior oferta (desconto %) de uma categoria, alternando entre as marcadas.</span><div class=row>${(cs||[]).map(x=>`<label><input type=checkbox data-odc value="${x.id}" ${c.cats.includes(x.id)?'checked':''}> ${esc(x.name)}</label>`).join('')}</div></div>
+ <div class=row><label>Preço mínimo (R$)<input id=odm inputmode=decimal value="${String(c.min).replace('.',',')}"></label><label>Não repetir o mesmo produto por (dias)<input id=odr type=number min=0 max=60 value="${c.norep}"></label></div>
+ <label>Título<input id=odti maxlength=80 value="${esc(c.title)}"></label><label>Mensagem<input id=odb maxlength=200 value="${esc(c.body)}"></label>
+ <p class=note>Use {nome}, {preco} e {desconto} no título ou na mensagem. “Maior desconto” só considera produtos com preço anterior maior que o atual.</p>
+ <div id=odw></div><h4 style="margin:12px 0 4px">Prévia de hoje</h4><div id=odp></div>
+ <button class="btn" id=odsv style="margin-top:10px">Salvar Oferta do dia</button>`;
+ box.querySelectorAll('input,select').forEach(i=>{i.addEventListener('input',prev);i.addEventListener('change',prev)});prev();
+ $('#odsv').onclick=()=>run(async()=>{const v=read();if(isNaN(num($('#odm').value)??0))throw new Error('Preço mínimo inválido. Use só números, por exemplo 10,00.');
+  if(v.on&&!v.times.length)throw new Error('Escolha pelo menos um horário.');if($('#odt1').value&&$('#odt1').value===$('#odt2').value)throw new Error('Os dois horários são iguais.');
+  const cur=await getSet();const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,push_oferta_dia:{...v,saved_at:new Date().toISOString()}}});if(error)throw error;
+  alert(v.on?'Oferta do dia salva e ligada. Horários: '+v.times.join(' e ')+'.':'Oferta do dia salva (desligada).');odCard(box,N)})}
 // ---------- Notificações (push)
 const BR='America/Sao_Paulo',brDate=d=>d?new Date(d).toLocaleString('pt-BR',{timeZone:BR,day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
 const brInput=(ms=Date.now())=>new Date(ms-3*36e5).toISOString().slice(0,16); // "agora" no horário de Brasília para o campo data/hora
@@ -595,9 +625,11 @@ async function notif(el,editId=null){
   <div class=row><label>Avisar “acabando” quantas horas antes do fim<input type=number min=1 max=168 id=seh value="${N.ending_hours??24}"></label><label>Limite de envios automáticos por dia<input type=number min=0 max=50 id=sdl value="${N.daily_limit??2}"></label>
   <label>Silêncio começa às<select id=sqs>${hrs(N.quiet_start??22)}</select></label><label>Silêncio termina às<select id=sqe>${hrs(N.quiet_end??8)}</select></label></div>
   <button class="btn sm" id=ssv>Salvar configurações</button></div>
+ <div class=box id=odbox><h3>🔥 Oferta do dia (automática)</h3><p class=note>Carregando…</p></div>
  <h3>Histórico</h3><div class="tw tbx"><table class=lt><tr class=hd><th>Data<th>Título<th>Origem<th>Status<th>Enviados<th>Falhas<th>Cliques<th></tr>${H.map(x=>`<tr><td>${brDate(x.sent_at||x.scheduled_at||x.created_at)}<td>${esc(x.title)}<td>${NSRC[x.source]||esc(x.source)}<td${x.error?` title="${esc(x.error)}"`:''}>${NST[x.status]||esc(x.status)}${x.error?' <span class=note>ⓘ</span>':''}<td>${x.sent_count||0}<td>${x.failed_count||0}<td>${x.clicks||0}<td class=ac>${
   x.status==='scheduled'?dots([mi(`data-nc="${x.id}"`,'🚫 Cancelar envio',1)]):x.status==='draft'?`<button class="btn sm" data-ne="${x.id}">Editar</button>${dots([mi(`data-nd="${x.id}"`,'🗑️ Excluir',1)])}`:x.status==='failed'?`<button class="btn alt sm" data-nr="${x.id}">Tentar de novo</button>`:''}</tr>`).join('')||'<tr><td colspan=8>Nenhuma notificação ainda.</td></tr>'}</table></div>
  <p class=note>Datas no horário de Brasília. Passe o dedo/mouse em “Falhou” para ver o motivo.</p>`;
+ odCard($('#odbox'),N).catch(e=>{$('#odbox').innerHTML='<h3>🔥 Oferta do dia</h3><p class=note>Não foi possível carregar: '+esc(e.message||e)+'</p>'});
  const t=$('#nft'),b=$('#nfb'),im=$('#nfi'),u=$('#nfu'),ps=$('#nfp'),msg=m=>$('#nfmsg').textContent=m;
  const pv=()=>{$('#pvt').textContent=t.value||'Título da notificação';$('#pvb').textContent=b.value||'Sua mensagem aparece aqui.';const i=$('#pvi');i.style.display=im.value?'block':'none';if(im.value)i.src=im.value;
   $('#nftc').textContent=t.value.length+'/80';$('#nfbc').textContent=b.value.length+'/200';$('#nfclock').textContent=new Date().toLocaleTimeString('pt-BR',{timeZone:BR,hour:'2-digit',minute:'2-digit'})};
