@@ -5,19 +5,38 @@ const SB_URL = P.get('u') || '', SB_KEY = P.get('k') || '';
 const BASE = new URL('./', self.location.href).href; // pasta do site (ex.: .../comprasrapidas/)
 
 // Página mostrada quando o app/site abre sem internet (exigência de qualidade do app na Play Store).
-const OFFLINE_CACHE = 'cr-offline-v1';
+// Ao mudar a lista abaixo, troque o número da versão: o cache antigo é apagado na ativação.
+const OFFLINE_CACHE = 'cr-offline-v2';
 const OFFLINE_URL = BASE + 'offline.html';
+// Página dos jogos (/jogos/) e os arquivos de que ela precisa: ficam guardados para abrir mesmo sem internet.
+const JOGOS = ['jogos.html', 'jogos/', 'js/jogos.js', 'js/app.js', 'js/db.js', 'js/marca.js', 'js/titulo.js', 'config.js', 'css/style.css'].map(u => BASE + u);
+const semBusca = u => u.split('#')[0].split('?')[0];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(caches.open(OFFLINE_CACHE).then(c => c.addAll([OFFLINE_URL, BASE + 'icon-192.png'])).catch(() => {}));
+  e.waitUntil(caches.open(OFFLINE_CACHE).then(async c => {
+    await c.addAll([OFFLINE_URL, BASE + 'icon-192.png']);
+    await Promise.allSettled(JOGOS.map(u => c.add(u))); // se um arquivo falhar, os demais (e a página offline) continuam guardados
+  }).catch(() => {}));
 });
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('activate', e => e.waitUntil((async () => {
+  for (const k of await caches.keys()) if (k.startsWith('cr-offline-') && k !== OFFLINE_CACHE) await caches.delete(k);
+  await self.clients.claim();
+})()));
 
-// Só intercepta a abertura de páginas: tenta a rede normalmente e, se falhar, mostra a página offline.
+// Abertura de páginas: tenta a rede normalmente e, se falhar, mostra a página offline (ou a dos jogos, se for ela).
+// Arquivos dos jogos: sempre a rede primeiro (guardando a versão nova); a cópia guardada só é usada sem internet.
 self.addEventListener('fetch', e => {
-  if (e.request.mode !== 'navigate') return;
-  e.respondWith(fetch(e.request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
+  const q = e.request, jogo = q.method === 'GET' && JOGOS.includes(semBusca(q.url));
+  if (jogo) {
+    e.respondWith(fetch(q).then(r => {
+      if (r.ok) { const copia = r.clone(); e.waitUntil(caches.open(OFFLINE_CACHE).then(c => c.put(semBusca(q.url), copia)).catch(() => {})); }
+      return r;
+    }).catch(async () => (await caches.match(semBusca(q.url))) || (q.mode === 'navigate' && await caches.match(OFFLINE_URL)) || Response.error()));
+    return;
+  }
+  if (q.mode !== 'navigate') return;
+  e.respondWith(fetch(q).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
 });
 
 self.addEventListener('push', e => {

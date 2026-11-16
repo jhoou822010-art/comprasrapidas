@@ -126,16 +126,18 @@ const ICO={check:'<svg width=22 height=22 viewBox="0 0 24 24" aria-hidden=true><
  search:'<svg width=20 height=20 viewBox="0 0 24 24" aria-hidden=true fill=none stroke=currentColor stroke-width=2.4 stroke-linecap=round><circle cx=11 cy=11 r=7 /><path d="m20 20-4-4"/></svg>'};
 export {ICO};
 const NAV=[['./','Início'],['lista.html?tipo=ofertas','Ofertas'],['lista.html?tipo=categorias','Categorias'],['lista.html?tipo=destaques','Destaques'],['sobre.html','Sobre'],['contato.html','Contato']];
+// jogos (raspadinha/roleta): o botão do menu só aparece com pelo menos um jogo ligado em painel › Jogos
+export const jogosOn=()=>S.jogos?.raspadinha===true||S.jogos?.roleta===true;
 function header(){const logo=S.logo&&/^https:\/\//.test(S.logo)?`<img src="${esc(S.logo)}" alt="" width=40 height=40>`:'';
  return `<a class=skip href="#m">Pular para o conteúdo</a>${themeUi(TH)}<header><div class=w><div class=top><a class=logo href="./" aria-label="${esc(S.name)} — página inicial">${logoDeco()}${logo}<span>${esc(S.name)}<small>Vitrine de ofertas de lojas parceiras</small></span></a>
  <form action=lista.html role=search><input type=hidden name=tipo value=busca><label class=sr for=q>Pesquisar produtos</label><input id=q name=q type=search enterkeyhint=search placeholder="O que você está procurando?" value="${esc(qs('tipo')==='busca'?qs('q')||'':'')}"><button type=submit aria-label="Buscar">${ICO.search}</button></form></div>
- <nav class=mn aria-label="Menu principal">${NAV.map(([h,t])=>`<a href="${h}">${t}</a>`).join('')}</nav></div></header>
+ <nav class=mn aria-label="Menu principal">${[...NAV,...(jogosOn()?[['jogos.html','Jogos 🎮']]:[])].map(([h,t])=>`<a href="${h}">${t}</a>`).join('')}</nav></div></header>
  <div class=aff><div class=w><span>Vitrine com links de afiliado: a compra é finalizada na loja parceira.</span> <a href="sobre.html#como-funciona">Saiba mais</a></div></div>${stripHtml()}`}
 function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&&cHref(x));const wa=it.find(x=>x.type==='whatsapp'),soc=it.filter(x=>CTYPES[x.type]?.g==='rs');
  const info=[MARCA.responsavel&&'Responsável: '+esc(MARCA.responsavel),MARCA.cnpj&&'CNPJ: '+esc(MARCA.cnpj),MARCA.cidade&&esc(MARCA.cidade)].filter(Boolean);
  return `${AREA==='top'?'':stripHtml()}<footer><div class=w><div class=fg>
  <div><h2>${esc(S.name)}</h2><p>${esc(S.slogan)}</p><p>Vitrine de ofertas e links de afiliado de lojas parceiras.</p>${info.length?`<p>${info.join('<br>')}</p>`:''}</div>
- <div><h2>Navegação</h2><ul><li><a href="./">Início</a></li><li><a href="lista.html?tipo=ofertas">Ofertas</a></li><li><a href="lista.html?tipo=categorias">Todas as categorias</a></li><li><a href="lista.html?tipo=destaques">Destaques</a></li></ul></div>
+ <div><h2>Navegação</h2><ul><li><a href="./">Início</a></li><li><a href="lista.html?tipo=ofertas">Ofertas</a></li><li><a href="lista.html?tipo=categorias">Todas as categorias</a></li><li><a href="lista.html?tipo=destaques">Destaques</a></li>${jogosOn()?'<li><a href="jogos.html">Jogos</a></li>':''}</ul></div>
  <div><h2>Institucional</h2><ul><li><a href="sobre.html">Sobre nós</a></li><li><a href="sobre.html#como-funciona">Como funciona</a></li><li><a href="contato.html">Contato</a></li><li><a href="privacidade.html">Política de privacidade</a></li>
  ${wa?`<li><a href="${esc(cHref(wa))}" target=_blank rel=noopener>WhatsApp</a></li>`:''}${MARCA.emailAtivo&&MARCA.email?`<li><a href="mailto:${esc(MARCA.email)}">${esc(MARCA.email)}</a></li>`:''}${soc.map(x=>`<li><a href="${esc(cHref(x))}" target=_blank rel=noopener>${esc(CTYPES[x.type].n)}</a></li>`).join('')}</ul></div></div>
  <p class=fdis>${DISCLAIMER} Preços, estoques, fretes e condições podem mudar a qualquer momento na loja de destino.${S.footer_text?'':''}</p>
@@ -227,10 +229,12 @@ async function search({q,offer,featured,cat,cats,page=1,per=12}){const toks=sTok
  if(!rows.length&&!error&&toks.length>1){const m=new Map();for(const t of toks)for(const x of (await cand([t])).rows)if(x.s>=10){const o=m.get(x.id);if(o)o.s+=x.s;else m.set(x.id,x)}rows=[...m.values()];similar=rows.length>0}
  rows.sort((a,b)=>b.s-a.s||(a.c<b.c?1:-1));const ids=rows.slice((page-1)*per,page*per).map(x=>x.id);
  return {data:await byIds(ids),count:rows.length,error,similar}}
-async function list1({offer,featured,q,cat,cats,page=1,per=12}={}){
+// maxPrice: só produtos com preço até esse valor, do mais barato para o mais caro (página dos achadinhos)
+async function list1({offer,featured,q,cat,cats,maxPrice,page=1,per=12}={}){
  let r=sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active');const now=new Date().toISOString();
  if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
  if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);if(cats?.length)r=r.in('category_id',cats);
+ if(maxPrice!=null)r=r.lte('price',maxPrice).order('price',{ascending:true});
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
 export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}

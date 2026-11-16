@@ -155,3 +155,20 @@ footer a{color:#fff;text-decoration:underline;text-underline-offset:2px;display:
 .pcw{position:relative}.pc{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 8px;scroll-behavior:smooth}.pc::-webkit-scrollbar{display:none}
 .pc>.card{flex:0 0 calc(50% - 5px);scroll-snap-align:start}@media(min-width:640px){.pc{gap:14px}.pc>.card{flex-basis:calc(33.333% - 9.4px)}}@media(min-width:1000px){.pc{gap:16px}.pc>.card{flex-basis:calc(25% - 12px)}}
 .pcw .nv{top:38%}.pcw .nv.pv{left:-6px}.pcw .nv.nx{right:-6px}
+
+/* ---- jogos (raspadinha e roleta): usam as cores do tema ativo (--c1, --c2, --btn) */
+.jgb{display:flex;align-items:center;gap:12px;margin:18px 0 0;padding:12px 16px;background:var(--lt);border:1px solid var(--ln);border-left:5px solid var(--c2);border-radius:var(--r);color:var(--c1);min-height:56px}.jgb:hover{border-color:var(--c2)}
+.jgb>span:first-child{font-size:1.7rem;line-height:1}.jgb>span+span{flex:1;min-width:0}.jgb b{display:block}.jgb small{display:block;color:var(--mu);font-size:.85rem;line-height:1.3}.jgb i{font-style:normal;font-weight:700;color:var(--c2);white-space:nowrap}
+.jgs{display:grid;gap:16px;margin:14px 0}@media(min-width:860px){.jgs{grid-template-columns:repeat(auto-fit,minmax(0,1fr));align-items:start}}
+.jg{margin:0;text-align:center;min-width:0}.jg h2{margin:0 0 12px}.jg .btn.big{max-width:420px;margin:12px auto 0;display:flex}.jg .lnk{min-height:44px}.jg [hidden]{display:none!important}
+.rsp{position:relative;max-width:420px;margin:0 auto;aspect-ratio:16/10;border-radius:16px;overflow:hidden;border:2px dashed var(--c2);background:var(--lt);-webkit-user-select:none;user-select:none}
+.rsu{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px;color:var(--c1);font-size:1.15rem;line-height:1.25}
+.rsp canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;transition:opacity .45s,transform .45s}.rsp canvas:active{cursor:grabbing}.rsp canvas.fim{opacity:0;transform:scale(1.08);pointer-events:none}
+.rsp.on .rsu{animation:jpop .5s both}@keyframes jpop{0%{transform:scale(.8)}60%{transform:scale(1.08)}100%{transform:none}}
+.jem{font-size:2.6rem;line-height:1.1;margin:0}
+.rlt{position:relative;width:min(100%,340px);margin:6px auto 0;aspect-ratio:1}.rlt canvas{width:100%;height:100%;display:block;border-radius:50%;box-shadow:0 4px 16px #0b2a5b33;transition:transform 4.8s cubic-bezier(.12,.72,.16,1);will-change:transform}
+.rpt{position:absolute;left:50%;top:-8px;z-index:2;transform:translateX(-50%);border:14px solid transparent;border-top:26px solid var(--btn);border-bottom:0;filter:drop-shadow(0 2px 2px #0006)}
+.jout:empty{display:none}.jres{display:flex;flex-direction:column;align-items:center;gap:10px;margin:14px auto 0;max-width:420px;animation:jin .4s both}@keyframes jin{from{opacity:0;transform:translateY(8px)}}
+.jres .btn{width:100%;margin:0!important}.jres img{width:120px;height:120px;object-fit:contain;background:#fff;border:1px solid var(--ln);border-radius:var(--r)}
+.jtt{font-size:1.15rem;font-weight:700;color:var(--c1);margin:0}.jres .note{margin:0}.jlim{margin:0;font-weight:600;color:var(--mu)}.jrod{text-align:center;margin:18px 0 0}
+@media(prefers-reduced-motion:reduce){.rsp canvas,.rlt canvas{transition:none}.rsp.on .rsu,.jres{animation:none}}

@@ -15,6 +15,7 @@ class Query {
   }
   select(cols = '*', opt = {}) { this.p.set('select', cols.replace(/\s+/g, '')); if (opt.count) this.h.Prefer = 'count=' + opt.count; return this; }
   eq(c, v) { this.p.append(c, 'eq.' + enc(v)); return this; }
+  lte(c, v) { this.p.append(c, 'lte.' + enc(v)); return this; }
   ilike(c, v) { this.p.append(c, 'ilike.' + enc(v)); return this; }
   contains(c, v) { this.p.append(c, 'cs.' + (Array.isArray(v) ? '{' + v.map(quote).join(',') + '}' : JSON.stringify(v))); return this; }
   in(c, arr) { this.p.append(c, 'in.(' + arr.map(quote).join(',') + ')'); return this; }
