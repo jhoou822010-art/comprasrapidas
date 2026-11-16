@@ -43,7 +43,9 @@ export async function panel(el,{sb,$,esc,run}){
   <div id=jr></div><button class="btn alt" type=button id=jadd>+ Adicionar resultado</button></div>
  <p><button class=btn type=button id=jsave>Salvar</button></p>
  <div class=box><h3>Resumo</h3><div id=jsum><p class=note>Carregando…</p></div>
-  <p class=note>“Jogadas” = vezes que alguém raspou ou girou. “Cliques” = toques no botão do resultado. Cliques não são vendas.</p></div>`;
+  <p class=note>“Jogadas” = vezes que alguém raspou ou girou. “Cliques” = toques no botão do resultado. Cliques não são vendas.</p><div id=jsc></div></div>
+ <div class=box><h3>Ranking da Cobrinha</h3><div id=jrk><p class=note>Carregando…</p></div>
+  <p class=note>Os pontos são calculados pelo servidor, que refaz cada partida. Se um apelido for ofensivo, use “Remover”: some do ranking tudo o que foi jogado com esse apelido.</p></div>`;
  linhas();
  // os campos gravam direto na lista em memória; só é salvo no banco ao clicar em Salvar
  root.addEventListener('input',e=>{const t=e.target,i=t.dataset?.i,f=t.dataset?.f;if(i==null||!f||!R[i])return;R[i][f]=t.value;
@@ -78,4 +80,17 @@ export async function panel(el,{sb,$,esc,run}){
  const cnt=async(jogo,tipo,d)=>{const {count,error}=await sb.from('cr_jogos_eventos').select('id',{count:'exact',head:true}).eq('jogo',jogo).eq('tipo',tipo).gte('created_at',desde(d));if(error)throw error;return count||0};
  try{const JG=[['raspadinha','Raspadinha'],['roleta','Roleta']],v=await Promise.all(JG.flatMap(([j])=>[cnt(j,'jogou',7),cnt(j,'clicou',7),cnt(j,'jogou',30),cnt(j,'clicou',30)]));
   const box=$('#jsum');if(box)box.innerHTML=`<div class=tw><table><thead><tr><th>Jogo</th><th>Jogadas (7 dias)</th><th>Cliques (7 dias)</th><th>Jogadas (30 dias)</th><th>Cliques (30 dias)</th></tr></thead><tbody>${JG.map(([,n],k)=>`<tr><td><b>${n}</b></td>${v.slice(k*4,k*4+4).map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
- catch(e){console.warn('jogos: resumo',e);const box=$('#jsum');if(box)box.innerHTML='<p class=note>Ainda sem contagem. Para começar a contar as jogadas, rode uma vez o arquivo <b>supabase/05-jogos.sql</b> no Supabase (SQL Editor).</p>'}}
+ catch(e){console.warn('jogos: resumo',e);const box=$('#jsum');if(box)box.innerHTML='<p class=note>Ainda sem contagem. Para começar a contar as jogadas, rode uma vez o arquivo <b>supabase/05-jogos.sql</b> no Supabase (SQL Editor).</p>'}
+ // cobrinha: partidas registradas (tabela cr_jogos_ranking, supabase/07-cobrinha-ranking.sql) e ranking com moderação
+ const SEM07='<p class=note>Ranking ainda não instalado. Rode uma vez o arquivo <b>supabase/07-cobrinha-ranking.sql</b> no Supabase (SQL Editor).</p>';
+ const pc=async d=>{const {count,error}=await sb.from('cr_jogos_ranking').select('id',{count:'exact',head:true}).gte('finalizada_em',desde(d));if(error)throw error;return count||0};
+ try{const [a,b]=await Promise.all([pc(7),pc(30)]);const x=$('#jsc');if(x)x.innerHTML=`<p><b>Cobrinha:</b> ${a} ${a===1?'partida':'partidas'} nos últimos 7 dias e ${b} nos últimos 30 dias.</p>`}catch(e){const x=$('#jsc');if(x)x.innerHTML=SEM07}
+ const rk=async()=>{const box=$('#jrk');if(!box)return;const {data,error}=await sb.rpc('cr_cobrinha_ranking',{p_aparelho:null,p_limite:20});
+  if(error){box.innerHTML=SEM07;return}
+  const top=data?.top||[];box.innerHTML=top.length?`<div class=tw><table><thead><tr><th>Posição</th><th>Apelido</th><th>Pontos</th><th></th></tr></thead><tbody>${top.map(x=>`<tr><td>${x.pos}º</td><td>${esc(x.apelido)}</td><td><b>${x.pontos}</b></td><td><button class="btn sm dng" type=button data-rk="${esc(x.apelido)}">Remover</button></td></tr>`).join('')}</tbody></table></div><p class=note>${data.total} ${data.total===1?'jogador':'jogadores'} no ranking.</p>`:'<p class=note>Ninguém no ranking ainda.</p>';
+  box.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>run(async()=>{const ap=b.dataset.rk;
+   if(!confirm(`Remover “${ap}” do ranking? Todas as partidas dos aparelhos que usaram esse apelido serão apagadas (não dá para desfazer).`))return;
+   const {data:rows,error:e1}=await sb.from('cr_jogos_ranking').select('aparelho').eq('apelido',ap).limit(1000);if(e1)throw e1;
+   const ids=[...new Set((rows||[]).map(r=>r.aparelho))];if(!ids.length)return alert('Nada encontrado com esse apelido.');
+   const {error:e2}=await sb.from('cr_jogos_ranking').delete().in('aparelho',ids);if(e2)throw e2;alert('Removido do ranking.');rk()}))};
+ try{await rk()}catch(e){const box=$('#jrk');if(box)box.innerHTML=SEM07}}
