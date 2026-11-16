@@ -1,7 +1,7 @@
 // Painel > JOGOS (Raspadinha e Roleta). Carregado somente quando o administrador abre esta aba.
 // Salva apenas a chave "jogos" dentro de cr_site_settings.data (as demais configurações da loja são preservadas).
 // O resumo lê a tabela cr_jogos_eventos (criada por supabase/05-jogos.sql). Nada aqui altera produtos ou categorias.
-import {cfg,TIPOS,MAXR,linkOk} from './jogos.js';
+import {cfg,ligado,TIPOS,MAXR,linkOk} from './jogos.js';
 
 export async function panel(el,{sb,$,esc,run}){
  const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle()).data?.data||{};
@@ -27,17 +27,18 @@ export async function panel(el,{sb,$,esc,run}){
  // tudo fica dentro de um bloco próprio: os eventos somem junto quando a aba é redesenhada
  el.innerHTML='<div id=jgp></div>';const root=$('#jgp');
  root.innerHTML=`<h2>Jogos</h2>
- <p class=note>Raspadinha e Roleta só por diversão, <b>sem prêmios, descontos ou cupons</b>. O resultado é sempre um lugar do próprio site (ofertas, achadinhos, uma categoria, um produto).</p>
+ <p class=note>Raspadinha e Roleta só por diversão, <b>sem prêmios, descontos ou cupons</b>. O resultado da Raspadinha e da Roleta é sempre um lugar do próprio site (ofertas, achadinhos, uma categoria, um produto).</p>
  <div class=box><h3>Ligar os jogos</h3>
   <label><input type=checkbox id=jr1 ${C.raspadinha?'checked':''}> <b>Raspadinha</b> ligada</label>
   <label><input type=checkbox id=jr2 ${C.roleta?'checked':''}> <b>Roleta</b> ligada</label>
+  <label><input type=checkbox id=jr3 ${C.cobrinha?'checked':''}> <b>Jogo da Cobrinha</b> ligado <small>(página própria, com pontos e recorde pessoal no aparelho)</small></label>
   <label><input type=checkbox id=jbn ${C.banner?'checked':''}> Mostrar um banner pequeno na página inicial chamando para os jogos</label>
-  <p class=note>${C.raspadinha||C.roleta?'✅ O botão “Jogos 🎮” está no menu do site.':'⏸️ Jogos desligados: o botão “Jogos 🎮” não aparece no menu.'} ${saved?'':'Configuração ainda não salva (usando o padrão).'}</p>
+  <p class=note>${ligado(C)?'✅ O botão “Jogos 🎮” está no menu do site.':'⏸️ Jogos desligados: o botão “Jogos 🎮” não aparece no menu.'} ${saved?'':'Configuração ainda não salva (usando o padrão).'}</p>
   <p><a class="btn alt" target=_blank rel=noopener href="../jogos.html">Abrir a página dos jogos</a> <a class="btn alt" target=_blank rel=noopener href="../lista.html?tipo=achadinhos">Ver os achadinhos</a></p></div>
  <div class=box><h3>Regras</h3><div class=row>
   <label>Preço máximo dos achadinhos (R$)<input id=jmax inputmode=decimal value="${String(C.achadinhos_max).replace('.',',')}"></label>
   <label>Limite de jogadas por dia, por aparelho (0 = sem limite)<input id=jlim type=number min=0 max=99 step=1 value="${C.limite}"></label></div>
-  <p class=note>O limite vale para os dois jogos juntos e fica guardado só no aparelho do visitante. Ao atingir, aparece “Volte amanhã para jogar de novo” e o botão “Ver ofertas”.</p></div>
+  <p class=note>O limite vale para a Raspadinha e a Roleta juntas (a Cobrinha não tem limite) e fica guardado só no aparelho do visitante. Ao atingir, aparece “Volte amanhã para jogar de novo” e o botão “Ver ofertas”.</p></div>
  <div class=box><h3>Resultados possíveis</h3><p class=note>O que pode cair nos jogos (até ${MAXR}). Depois do resultado aparece “Olha o que separamos pra você!” e um botão grande com o texto abaixo.</p>
   <div id=jr></div><button class="btn alt" type=button id=jadd>+ Adicionar resultado</button></div>
  <p><button class=btn type=button id=jsave>Salvar</button></p>
@@ -57,7 +58,7 @@ export async function panel(el,{sb,$,esc,run}){
    if(!data?.length)return alert('Nenhum produto ativo encontrado com esse nome.');
    data.forEach(p=>nomes.set(p.id,p.name));R[i].valor=data[0].id;linhas();root.querySelector(`select[data-i="${i}"][data-f=valor]`)?.focus()})});
  const ler=()=>{const s=String($('#jmax').value).trim(),mx=Number(s.includes(',')?s.replace(/\./g,'').replace(',','.'):s); // aceita 30, 29.90 ou 29,90
-  return {raspadinha:$('#jr1').checked,roleta:$('#jr2').checked,banner:$('#jbn').checked,achadinhos_max:mx,limite:Math.round(+$('#jlim').value||0),
+  return {raspadinha:$('#jr1').checked,roleta:$('#jr2').checked,cobrinha:$('#jr3').checked,banner:$('#jbn').checked,achadinhos_max:mx,limite:Math.round(+$('#jlim').value||0),
    resultados:R.map(r=>({txt:String(r.txt||'').trim(),emoji:String(r.emoji||'').trim(),tipo:r.tipo,valor:String(r.valor||'').trim(),peso:Number(r.peso)}))}};
  $('#jsave').onclick=()=>run(async()=>{const c=ler();
   if(!(c.achadinhos_max>=1))return alert('Informe o preço máximo dos achadinhos (ex.: 30).');
@@ -71,7 +72,7 @@ export async function panel(el,{sb,$,esc,run}){
   if((c.raspadinha||c.roleta)&&!c.resultados.some(r=>r.peso>0))return alert('Para ligar um jogo, cadastre pelo menos um resultado com peso maior que zero.');
   const now=await getSet();   // lê de novo para não apagar mudanças feitas em outras abas do painel
   const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...now,jogos:{...cfg({jogos:c}),saved_at:new Date().toISOString()}}});if(error)throw error;
-  alert('Salvo. '+(c.raspadinha||c.roleta?'Jogos ligados: '+[c.raspadinha&&'Raspadinha',c.roleta&&'Roleta'].filter(Boolean).join(' e ')+'.':'Os jogos estão desligados.'));panel(el,{sb,$,esc,run})});
+  alert('Salvo. '+(ligado(c)?'Jogos ligados: '+[c.raspadinha&&'Raspadinha',c.roleta&&'Roleta',c.cobrinha&&'Cobrinha'].filter(Boolean).join(', ')+'.':'Os jogos estão desligados.'));panel(el,{sb,$,esc,run})});
  // resumo: jogadas e cliques no resultado, últimos 7 e 30 dias
  const desde=d=>new Date(Date.now()-d*864e5).toISOString();
  const cnt=async(jogo,tipo,d)=>{const {count,error}=await sb.from('cr_jogos_eventos').select('id',{count:'exact',head:true}).eq('jogo',jogo).eq('tipo',tipo).gte('created_at',desde(d));if(error)throw error;return count||0};
