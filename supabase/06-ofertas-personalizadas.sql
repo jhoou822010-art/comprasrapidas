@@ -1,6 +1,6 @@
 -- Ofertas personalizadas por notificação (Painel › Notificações › Ofertas automáticas, modo "Personalizado").
 -- Reaproveita cr_push_subscriptions, cr_notifications, a função send-push e o agendador (pg_cron) que já existem.
--- Só ACRESCENTA: 3 colunas, 1 tabela, 1 função; ajusta cr_push_click e cr_push_dispatch. Nada é apagado.
+-- Só ACRESCENTA: 3 colunas, 1 tabela, 1 função, 1 limpeza diária; ajusta cr_push_click e cr_push_dispatch. Nada é apagado.
 -- Desfazer: ver o bloco "DESFAZER" no fim deste arquivo.
 
 -- 1) Resumo de interesses do aparelho (só de quem aceitou notificações; sem nome, e-mail, telefone ou buscas digitadas)
@@ -79,6 +79,10 @@ begin
   return v_req;
 end $$;
 
+-- 6) Limpeza automática: todo dia às 03:17 (Brasília) apaga entregas com mais de 90 dias (a escolha usa só os últimos 30)
+select cron.unschedule(jobid) from cron.job where jobname = 'cr-push-entregas-limpeza';
+select cron.schedule('cr-push-entregas-limpeza', '17 6 * * *', $$delete from public.cr_push_entregas where enviada_em < now() - interval '90 days'$$);
+
 /* ===================== DESFAZER (rodar no SQL Editor, se precisar voltar) =====================
 create or replace function public.cr_push_dispatch() returns bigint
 language plpgsql security definer set search_path to 'public','vault','net' as $$
@@ -103,6 +107,7 @@ language sql security definer set search_path to 'public' as $$
   update cr_notifications set clicks = clicks + 1 where id = p_notification_id and status = 'sent';
 $$;
 grant execute on function public.cr_push_click(uuid) to anon, authenticated;
+select cron.unschedule(jobid) from cron.job where jobname = 'cr-push-entregas-limpeza';
 drop function if exists public.cr_push_perfil(text, jsonb, boolean);
 drop table if exists public.cr_push_entregas;
 alter table public.cr_push_subscriptions drop column if exists interesses, drop column if exists interesses_em, drop column if exists personalizar;
