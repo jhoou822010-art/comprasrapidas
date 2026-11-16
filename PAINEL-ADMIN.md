@@ -70,3 +70,15 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
 **Banco:** nada novo. Configuração na chave `push_oferta_dia` de `cr_site_settings.data`.
 **Publicação:** a função precisa ser publicada no Supabase (com os dois arquivos da pasta `send-push`).
 **Desligar:** desmarcar “Oferta do dia ligada” e salvar. **Desfazer:** reverter o commit e publicar de novo a versão anterior da função.
+
+# AliExpress (Catálogo › AliExpress) — novembro de 2026
+
+Busca produtos pela API de Afiliados do AliExpress (por palavra, “em alta”, faixa de preço, ordenação) ou por links colados,
+mostra preço em R$ e a categoria do AliExpress, sugere a categoria do site (e lembra a escolha para as próximas vezes),
+e importa os marcados já com fotos e **link de afiliado** (loja “AliExpress”). Produtos já importados aparecem como “Já importado”.
+O botão **Atualizar preços agora** confere os importados e atualiza preço, preço anterior, oferta e link (opcional: arquivar os que sumiram).
+
+**Configurar (uma vez):** Supabase › Edge Functions › Secrets: `ALI_APP_KEY`, `ALI_APP_SECRET`, `ALI_TRACKING_ID`.
+As chaves ficam só no servidor (função `supabase/functions/aliexpress`).
+
+**Banco:** colunas `ext_source` e `ext_id` em `cr_products` (`supabase/06-aliexpress.sql`) e a chave `ali_cat_map` em `cr_site_settings.data`.
