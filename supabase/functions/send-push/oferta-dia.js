@@ -127,11 +127,10 @@ export function odEscolher(sub, prods, c, ctx = {}) {
   return best;
 }
 
-// texto natural e variado (a variação muda por cliente e por dia); preço e desconto só quando reais
-const TIT = ['✨ Separamos isto pra você', '💡 Pode te interessar', '🛍️ Achamos algo do seu gosto', '🔎 Escolhido pelo seu interesse'];
+// título "Oferta para você"; o texto traz o produto, o preço e o desconto (só quando real)
 export function odMsg(p, sub, now = Date.now(), cat = '') {
-  const k = h32(String(sub?.id || '') + '|' + spDay(now)), d = desconto(p);
-  const titulo = (k % 5 === 4 && cat ? '🛍️ Novidade em ' + cat : TIT[k % TIT.length]).slice(0, 80);
+  const d = desconto(p);
+  const titulo = '🎁 Oferta para você'; // título fixo escolhido pela loja; o texto abaixo varia com o produto
   const preco = p.price != null ? brl(p.price) : '';
   const corpo = (String(p.name || '').trim().slice(0, 120) + (preco ? ' por ' + preco : '') + (d >= 0.05 ? ` (${Math.round(d * 100)}% off)` : '')).slice(0, 200);
   return { titulo, corpo };
