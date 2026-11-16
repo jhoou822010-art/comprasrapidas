@@ -141,8 +141,8 @@ function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&
  <div><h2>Institucional</h2><ul><li><a href="sobre.html">Sobre nós</a></li><li><a href="sobre.html#como-funciona">Como funciona</a></li><li><a href="contato.html">Contato</a></li><li><a href="privacidade.html">Política de privacidade</a></li>
  ${wa?`<li><a href="${esc(cHref(wa))}" target=_blank rel=noopener>WhatsApp</a></li>`:''}${MARCA.emailAtivo&&MARCA.email?`<li><a href="mailto:${esc(MARCA.email)}">${esc(MARCA.email)}</a></li>`:''}${soc.map(x=>`<li><a href="${esc(cHref(x))}" target=_blank rel=noopener>${esc(CTYPES[x.type].n)}</a></li>`).join('')}</ul></div></div>
  <p class=fdis>${DISCLAIMER} Preços, estoques, fretes e condições podem mudar a qualquer momento na loja de destino.${S.footer_text?'':''}</p>
- <p class=cpy>© ${new Date().getFullYear()} ${esc(S.name)}. Todos os direitos reservados.</p><button type=button id=tema class=temabtn></button></div></footer><div id=lb></div>`}
-function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();
+ <p class=cpy>© ${new Date().getFullYear()} ${esc(S.name)}. Todos os direitos reservados.</p><button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button></div></footer><div id=lb></div>`}
+function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();notifBtn();
  const here=(location.pathname.split('/').pop()||'./')+location.search,hn=here==='index.html'?'./':here;
  document.querySelectorAll('header nav a').forEach(a=>{const h=a.getAttribute('href');if(h===hn||(h.includes('?')&&hn.startsWith(h))){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
 export async function boot(){
@@ -161,7 +161,7 @@ export async function boot(){
  shell();
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
- if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e));visitTrack()}
+ if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e)).finally(()=>setTimeout(()=>pushSyncProfile(),3000));visitTrack()}
  return S}
 // ---- monitoramento de visitantes (Estatísticas do painel): só um código anônimo de sessão, sem dados pessoais.
 // Entrada ao abrir o site; sinal de atividade a cada 30 s com a aba visível; saída ao fechar/sair.
@@ -306,12 +306,12 @@ function iosHelp(){const d=document.createElement('div');d.id='pnh';
  <ol><li>Toque em <b>Compartilhar</b> <span aria-hidden=true>⬆️</span> (na barra do Safari).</li><li>Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.</li><li>Abra o <b>Compras Rápidas</b> pelo novo ícone e toque de novo em <b>Receber ofertas no celular</b>.</li></ol>
  <p class=note>Precisa do iOS 16.4 ou mais novo.</p><button class="btn big" type=button>Entendi</button></div>`;
  d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d);d.querySelector('button').focus()}
-const PN_KEY='cr_push_dismiss',PN_OK='cr_push_ok';
+const PN_KEY='cr_push_dismiss',PN_OK='cr_push_ok',PN_OFF='cr_push_off',PN_PERS='cr_push_pers',PN_SYNC='cr_push_sync';
 async function pushBar(){
  const ios=isIOS(),inst=isStandalone();
  if(!pushOk()&&!(ios&&!inst))return;          // navegador sem suporte: não mostra nada
  if(pushOk()&&Notification.permission==='denied')return;
- try{if(+localStorage.getItem(PN_KEY)>Date.now())return}catch(_){}
+ try{if(+localStorage.getItem(PN_KEY)>Date.now()||localStorage.getItem(PN_OFF)==='1')return}catch(_){}
  let ok=false;try{ok=localStorage.getItem(PN_OK)==='1'}catch(_){}
  if(pushOk()){const sub=await currentSub().catch(()=>null);
   if(sub){if(Notification.permission==='granted')saveSub(sub).catch(()=>{});try{localStorage.setItem(PN_OK,'1')}catch(_){}return} // já inscrito: esconde (e confirma no banco)
@@ -326,7 +326,7 @@ async function pushBar(){
  const h=$('#hdr');(h?h:document.body).insertAdjacentElement(h?'afterend':'afterbegin',bar);
  $('#pnx').onclick=()=>{try{localStorage.setItem(PN_KEY,Date.now()+7*864e5)}catch(_){}bar.remove();fitFx()};
  $('#pnok').onclick=async()=>{if(ios&&!inst)return iosHelp();const b=$('#pnok');b.disabled=true;b.textContent='Ativando…';
-  try{await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
+  try{await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}pushSyncProfile(true);bar.querySelector('.w').innerHTML='<p>✅ Pronto! Você vai receber nossas ofertas neste aparelho.</p>';setTimeout(()=>{bar.remove();fitFx()},4000)}
   catch(e){b.disabled=false;b.textContent='Receber ofertas no celular';alert(e.message||e);if(Notification.permission==='denied'){bar.remove();fitFx()}}};
  // ao voltar para o app (depois da janela de permissão do Android), fecha a faixa se já estiver tudo certo
  const chk=async()=>{if(document.hidden||!bar.isConnected||!pushOk())return;
@@ -335,6 +335,33 @@ async function pushBar(){
   try{if(!await currentSub())await pushSubscribe();try{localStorage.setItem(PN_OK,'1')}catch(_){}bar.remove();fitFx()}catch(e){console.warn('push',e)}};
  document.addEventListener('visibilitychange',chk);addEventListener('focus',chk);addEventListener('pageshow',chk);
  fitFx()}
+// ---- ofertas personalizadas por notificação: o aparelho envia só um resumo dos interesses (categorias, segmentos e faixa de preço),
+// e só se o visitante aceitou notificações e não desligou "ofertas personalizadas". Buscas digitadas e produtos vistos nunca saem do aparelho.
+export const persOn=()=>{try{return localStorage.getItem(PN_PERS)!=='0'}catch(_){return true}};
+export async function pushSyncProfile(force){try{
+ if(!CONFIGURED||!pushOk()||Notification.permission!=='granted')return;const sub=await currentSub();if(!sub)return;
+ if(!force&&Date.now()-(+localStorage.getItem(PN_SYNC)||0)<6*36e5)return;
+ let pers=persOn(),sum=null;if(pers){const V=await import('./vitrine.js');if(V.optedOut())pers=false;else sum=V.interestSummary(S)}
+ const {error}=await sb.rpc('cr_push_perfil',{p_endpoint:sub.endpoint,p_interesses:sum,p_personalizar:pers});
+ if(!error)try{localStorage.setItem(PN_SYNC,String(Date.now()))}catch(_){} }catch(e){console.warn('perfil de notificações',e)}}
+// botão "🔔 Notificações" no rodapé: o visitante vê se estão ligadas, desliga a personalização ou desativa os avisos
+function notifBtn(){const b=$('#notifp');if(!b||!CONFIGURED||!(pushOk()||isIOS()))return;b.hidden=false;b.onclick=()=>notifPanel().catch(e=>alert(e.message||e))}
+async function notifPanel(){document.getElementById('npf')?.remove();
+ const sub=pushOk()?await currentSub().catch(()=>null):null,on=!!sub&&Notification.permission==='granted',d=document.createElement('div');d.id='npf';
+ if(!document.getElementById('npst'))document.head.insertAdjacentHTML('beforeend','<style id=npst>#pnh{position:fixed;inset:0;background:#000a;z-index:60;display:grid;place-items:center;padding:16px}#pnh>div{background:#fff;border-radius:14px;padding:18px;max-width:420px;width:100%}#pnh h3{margin:0 0 8px;color:var(--c1)}#pnh ol{padding-left:20px}#pnh li{margin:6px 0}</style>');
+ d.innerHTML=`<style>#npf{position:fixed;inset:0;background:#000a;z-index:60;display:grid;place-items:center;padding:16px}#npf>div{background:#fff;color:#12213a;border-radius:14px;padding:18px;max-width:420px;width:100%}#npf h3{margin:0 0 8px;color:var(--c1)}#npf label{display:flex;gap:10px;align-items:flex-start;margin:12px 0;font-size:.95rem}#npf input{width:22px;height:22px;flex:0 0 auto;margin-top:1px}#npf .row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}</style>
+ <div role=dialog aria-modal=true aria-labelledby=npft><h3 id=npft>🔔 Notificações</h3>
+ ${on?`<p>Ativas neste aparelho.</p><label><input type=checkbox id=npp ${persOn()?'checked':''}><span><b>Ofertas escolhidas pelo meu interesse</b><br><small class=note>No máximo 1 por dia. Usamos só um resumo (categorias e faixa de preço que você costuma ver); suas buscas e os produtos vistos ficam neste aparelho.</small></span></label>
+  <div class=row2><button class="btn alt" type=button id=npx>Desativar notificações</button><button class=btn type=button id=npc>Fechar</button></div>`
+ :`<p>${pushOk()||isIOS()?'Desativadas neste aparelho.':'Este navegador não recebe notificações.'}</p><div class=row2>${pushOk()||isIOS()?'<button class=btn type=button id=npa>Ativar notificações</button>':''}<button class="btn alt" type=button id=npc>Fechar</button></div>`}
+ <p class=note style="margin:12px 0 0"><a href="privacidade.html" style="text-decoration:underline">Política de privacidade</a></p></div>`;
+ document.body.appendChild(d);const close=()=>d.remove();d.onclick=e=>{if(e.target===d)close()};d.querySelector('#npc').onclick=close;d.querySelector('button').focus();
+ d.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+ const pp=d.querySelector('#npp');if(pp)pp.onchange=()=>{try{localStorage.setItem(PN_PERS,pp.checked?'1':'0')}catch(_){}pushSyncProfile(true)};
+ const x=d.querySelector('#npx');if(x)x.onclick=async()=>{if(!confirm('Desativar as notificações neste aparelho? Você pode ativar de novo aqui mesmo.'))return;
+  x.disabled=true;try{await pushUnsubscribe();try{localStorage.setItem(PN_OFF,'1');localStorage.removeItem(PN_OK)}catch(_){}close();alert('Notificações desativadas neste aparelho.')}catch(e){x.disabled=false;alert(e.message||e)}};
+ const a=d.querySelector('#npa');if(a)a.onclick=async()=>{if(isIOS()&&!isStandalone()){close();return iosHelp()}a.disabled=true;
+  try{await pushSubscribe();try{localStorage.removeItem(PN_OFF);localStorage.setItem(PN_OK,'1')}catch(_){}await pushSyncProfile(true);close();alert('Pronto! Notificações ativadas neste aparelho.')}catch(e){a.disabled=false;alert(e.message||e)}}}
 // Chave do tema (no rodapé): "claro" (padrão) mantém a página clara mesmo com o celular no modo escuro; "auto" deixa o navegador seguir o tema do celular.
 function temaBtn(){const b=$('#tema');if(!b)return;const R=document.documentElement;let auto=R.dataset.tema==='auto';
  const draw=()=>{b.textContent=auto?'Tema: igual ao do celular (tocar para deixar claro)':'Tema: sempre claro (tocar para seguir o celular)';b.setAttribute('aria-pressed',String(!auto))};

@@ -260,3 +260,18 @@ export function related(rows,prod,n=12){const C0=C||cfg(null),R=compile(C0),base
  // evita encher a seção com variações quase iguais do mesmo item
  const out=[],seenName=new Set();for(const id of ids){const p=rows.find(x=>x.id===id),k=relToks(p.n).slice(0,3).join(' ');if(seenName.has(k)&&out.length<ids.length-1)continue;seenName.add(k);out.push(id);if(out.length>=n)break}
  return out}
+
+// ---- resumo de interesses para as ofertas personalizadas por notificação (painel › Notificações › Ofertas automáticas)
+// Só é enviado por quem aceitou receber notificações e não desligou "ofertas personalizadas".
+// Vai apenas um resumo: peso por categoria (incluindo as categorias dos segmentos de interesse), segmentos e faixa de preço.
+// NUNCA vão as buscas digitadas, os produtos vistos, nome, e-mail ou telefone.
+export function interestSummary(S){try{if(optedOut())return null;const c=cfg(S),P=loadProf();decay(P);if((P.ev||0)<1)return null;
+ const cat={},ct=Object.values(P.cat||{}).reduce((a,b)=>a+b,0);for(const [k,v] of Object.entries(P.cat||{}))if(k&&k!=='undefined')cat[k]=v/(ct||1);
+ const st=Object.values(P.seg||{}).reduce((a,b)=>a+b,0),seg={};for(const [k,v] of Object.entries(P.seg||{}))if(SEGS[k])seg[k]=v/(st||1);
+ // segmentos (ex.: Tecnologia) viram peso nas categorias onde esses produtos estão, usando o catálogo já guardado no aparelho
+ const rows=poolCached();if(rows&&st>0){const R=compile(c),by={};for(const p of rows){if(!p.c)continue;const o=by[p.c]||(by[p.c]={n:0,s:{}});o.n++;for(const [k,v] of Object.entries(segsOf(p,R)))o.s[k]=(o.s[k]||0)+v}
+  for(const [cid,o] of Object.entries(by)){let w=0;for(const [k,v] of Object.entries(seg))if(k!=='economico'&&k!=='achadinhos')w+=v*(o.s[k]||0)/o.n;if(w>0)cat[cid]=(cat[cid]||0)+w*.6}}
+ const r3=v=>Math.round(v*1000)/1000,top=(m,n)=>Object.fromEntries(Object.entries(m).filter(x=>x[1]>=.02).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([k,v])=>[k,r3(v)]));
+ const out={v:1,cat:top(cat,10),seg:top(seg,4)};if(!Object.keys(out.cat).length)return null;
+ if(P.pr&&P.pr.n>.5){const m=P.pr.s/P.pr.n,sd=Math.sqrt(Math.max(P.pr.q/P.pr.n-m*m,.04)),f=v=>Math.round(Math.exp(v)*100)/100;out.pr={lo:f(m-1.2*sd),hi:f(m+1.2*sd),med:f(m)}}
+ return out}catch(e){return null}}

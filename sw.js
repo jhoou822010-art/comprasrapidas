@@ -47,8 +47,8 @@ self.addEventListener('push', e => {
     body: d.body || '',
     icon: d.icon || d.image || BASE + 'icon-192.png', // foto do produto aparece mesmo com a notificação recolhida
     badge: BASE + 'badge-96.png', // carrinho branco com fundo transparente (o Android só usa o contorno)
-    data: { id: d.id || null, url: d.url || BASE },
-    tag: d.id || undefined,
+    data: { id: d.id || null, e: d.e || null, url: d.url || BASE }, // e = entrega personalizada (toque por cliente)
+    tag: d.e ? d.id + '-' + d.e : d.id || undefined,
   };
   if (d.image) opt.image = d.image;
   e.waitUntil(self.registration.showNotification(title, opt));
@@ -56,7 +56,7 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const { id, url } = e.notification.data || {};
+  const { id, e: ent, url } = e.notification.data || {};
   let target;
   try { target = new URL(url || BASE, BASE).href; } catch (_) { target = BASE; }
   e.waitUntil((async () => {
@@ -65,7 +65,7 @@ self.addEventListener('notificationclick', e => {
         await fetch(SB_URL + '/rest/v1/rpc/cr_push_click', {
           method: 'POST',
           headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_notification_id: id }),
+          body: JSON.stringify(ent ? { p_notification_id: id, p_entrega: ent } : { p_notification_id: id }),
         });
       } catch (_) { /* clique não contado, mas abre o site mesmo assim */ }
     }

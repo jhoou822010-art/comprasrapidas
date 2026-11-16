@@ -4,7 +4,9 @@
 
 export const OD_CRIT = { cheap: 'Mais barato', discount: 'Maior desconto (%)', category: 'Melhor oferta por categoria' };
 export const OD_MAX = 2; // no máximo 2 envios da Oferta do dia por dia
-export const OD_PADRAO = { on: false, times: ['10:00', '19:00'], min: 10, norep: 7, crit: 'cheap', cats: [], title: '🔥 Oferta do dia', body: '{nome} por {preco}' };
+export const OD_MODOS = { geral: 'Igual para todos', personalizado: 'Personalizado por interesse' };
+export const OD_INTERVALO_H = 20; // modo personalizado: no máximo 1 por cliente por dia, com pelo menos 20 h de intervalo
+export const OD_PADRAO = { on: false, modo: 'geral', sem_perfil: 'geral', times: ['10:00', '19:00'], min: 10, norep: 7, crit: 'cheap', cats: [], title: '🔥 Oferta do dia', body: '{nome} por {preco}' };
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 // lê a configuração salva, sempre com valores válidos
@@ -14,6 +16,8 @@ export function odCfg(S) {
   const num = (v, d, a, b) => { const n = Number(v); return v === '' || v == null || !isFinite(n) ? d : Math.min(b, Math.max(a, n)); };
   return {
     on: o.on === true,
+    modo: OD_MODOS[o.modo] ? o.modo : 'geral',
+    sem_perfil: o.sem_perfil === 'nada' ? 'nada' : 'geral',
     times,
     min: num(o.min, OD_PADRAO.min, 0, 100000),
     norep: Math.round(num(o.norep, OD_PADRAO.norep, 0, 60)),
@@ -72,3 +76,63 @@ export const odRow = (p, c, slot, ns, site) => ({
   title: odText(c.title, p).slice(0, 80) || OD_PADRAO.title, body: odText(c.body, p).slice(0, 200) || null,
   image_url: null, url: odLink(p, ns, site), product_id: p.id, source: 'auto_offer', status: 'scheduled', scheduled_at: slot.at, error: null,
 });
+
+// ===================== Modo personalizado (1 por cliente por dia) =====================
+// O aparelho envia só um resumo: { v:1, cat:{idCategoria:peso}, seg:{segmento:peso}, pr:{lo,hi,med} } (sem buscas, sem nome, sem e-mail).
+// Só entram produtos com informação confiável: ativos, com foto, preço, link https e nome legível. Nada de avaliação ou desconto inventado:
+// o desconto só conta quando o preço anterior é maior que o atual.
+export const odConfiavel = (p, c, now = Date.now()) => !!p && p.status === 'active' && p.price != null && +p.price >= c.min && hasImg(p)
+  && /^https:\/\/[^\s]+\.[^\s]+/i.test(p.affiliate_url || '') && String(p.name || '').trim().length >= 5;
+
+const h32 = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const unit = s => h32(s) / 4294967296;
+
+// pesos por categoria do cliente, ajustados pelo que ele fez com as notificações anteriores:
+// tocou → a categoria ganha força; recebeu e ignorou → perde um pouco. Um toque NÃO é tratado como compra.
+export function odPesos(sub, hist = [], now = Date.now()) {
+  const I = sub && sub.personalizar !== false && sub.interesses && typeof sub.interesses === 'object' ? sub.interesses : null;
+  const base = I && I.cat && typeof I.cat === 'object' ? I.cat : {};
+  const w = {};
+  for (const [k, v] of Object.entries(base)) if (+v > 0) w[k] = +v;
+  if (!Object.keys(w).length) return null;
+  const adj = {};
+  for (const h of hist) {
+    if (!h.cat) continue;
+    if (h.tocou) adj[h.cat] = (adj[h.cat] || 1) + 0.3;
+    else if (now - Date.parse(h.enviada_em) > 864e5) adj[h.cat] = (adj[h.cat] || 1) - 0.15;
+  }
+  for (const [k, a] of Object.entries(adj)) if (w[k]) w[k] *= Math.min(2, Math.max(0.4, a));
+  // variedade: categorias das 3 últimas entregas perdem força (abre espaço para produtos complementares)
+  hist.slice(0, 3).forEach(h => { if (h.cat && w[h.cat]) w[h.cat] *= 0.7; });
+  return { w, pr: I.pr && +I.pr.med > 0 ? I.pr : null };
+}
+
+// escolhe o produto de UM cliente. ctx: { now, hist (entregas dele, mais recentes primeiro, com cat e tocou), pop {id:cliques}, norepDias }
+export function odEscolher(sub, prods, c, ctx = {}) {
+  const now = ctx.now || Date.now(), hist = ctx.hist || [], pesos = odPesos(sub, hist, now);
+  if (!pesos) return null;
+  const norep = now - (ctx.norepDias ?? c.norep) * 864e5, ja = new Set(hist.filter(h => Date.parse(h.enviada_em) >= Math.min(norep, now - 864e5)).map(h => h.product_id));
+  const maxW = Math.max(...Object.values(pesos.w)), maxPop = Math.max(1, ...Object.values(ctx.pop || {})), dia = spDay(now);
+  let best = null;
+  for (const p of prods) {
+    if (ja.has(p.id) || !odConfiavel(p, c, now)) continue;
+    const ci = (pesos.w[p.category_id] || 0) / maxW;
+    if (ci < 0.15) continue; // pouco a ver com o interesse do cliente
+    let fit = 0.5;
+    if (pesos.pr) { const r = Math.abs(Math.log(+p.price / +pesos.pr.med)); fit = +p.price >= +pesos.pr.lo && +p.price <= +pesos.pr.hi ? 1 : 1 / (1 + r * 2); }
+    const off = offerOn(p, now) ? 1 : 0, rec = now - Date.parse(p.created_at || 0) < 14 * 864e5 ? 1 : 0, pop = (ctx.pop?.[p.id] || 0) / maxPop;
+    const sc = ci * 0.55 + fit * 0.15 + Math.min(0.6, desconto(p)) / 0.6 * 0.1 + off * 0.08 + rec * 0.04 + pop * 0.08 + unit(sub.id + '|' + dia + '|' + p.id) * 0.02;
+    if (!best || sc > best.sc) best = { p, sc, ci };
+  }
+  return best;
+}
+
+// texto natural e variado (a variação muda por cliente e por dia); preço e desconto só quando reais
+const TIT = ['✨ Separamos isto pra você', '💡 Pode te interessar', '🛍️ Achamos algo do seu gosto', '🔎 Escolhido pelo seu interesse'];
+export function odMsg(p, sub, now = Date.now(), cat = '') {
+  const k = h32(String(sub?.id || '') + '|' + spDay(now)), d = desconto(p);
+  const titulo = (k % 5 === 4 && cat ? '🛍️ Novidade em ' + cat : TIT[k % TIT.length]).slice(0, 80);
+  const preco = p.price != null ? brl(p.price) : '';
+  const corpo = (String(p.name || '').trim().slice(0, 120) + (preco ? ' por ' + preco : '') + (d >= 0.05 ? ` (${Math.round(d * 100)}% off)` : '')).slice(0, 200);
+  return { titulo, corpo };
+}

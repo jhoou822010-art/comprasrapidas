@@ -563,29 +563,61 @@ async function odCard(box,N){const O=await import('../supabase/functions/send-pu
   sb.from('cr_products').select('id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,product_images:cr_product_images(url)').eq('status','active').eq('offer',true).limit(5000),
   sb.from('cr_notifications').select('product_id,created_at,status').not('product_id','is',null).in('status',['scheduled','sending','sent']).gte('created_at',new Date(Date.now()-61*864e5).toISOString()).limit(5000)]);
  if(pe)throw pe;const saved=!!s0.push_oferta_dia;let c=O.odCfg(s0);
- const read=()=>O.odCfg({push_oferta_dia:{on:$('#od0').checked,times:[$('#odt1').value,$('#odt2').value].filter(Boolean),min:num($('#odm').value),norep:$('#odr').value,crit:$('#odc').value,
+ const read=()=>O.odCfg({push_oferta_dia:{on:$('#od0').checked,modo:$('#odmo').value,sem_perfil:$('#odsp').value,times:[$('#odt1').value,$('#odt2').value].filter(Boolean),min:num($('#odm').value),norep:$('#odr').value,crit:$('#odc').value,
   cats:[...box.querySelectorAll('[data-odc]:checked')].map(x=>x.value),title:$('#odti').value,body:$('#odb').value}});
  const prev=()=>{c=read();const since=Math.min(O.spDayStart(),Date.now()-c.norep*864e5),skip=new Set((rec||[]).filter(x=>Date.parse(x.created_at)>=since).map(x=>x.product_id));
   const out=c.times.map((t,i)=>{const p=O.odPick(pr||[],c,{skip,slot:i});if(p)skip.add(p.id);return {t,p}});
-  $('#odcats').hidden=c.crit!=='category';
+  $('#odcats').hidden=c.crit!=='category';$('#odpz').hidden=c.modo!=='personalizado';$('#odpt').textContent=c.modo==='personalizado'?'Oferta geral (para quem ainda não tem perfil de interesses)':'Prévia de hoje';
+  $('#odcl').textContent=c.modo==='personalizado'?'Oferta geral: como escolher o produto':'Como escolher o produto';
   $('#odw').innerHTML=(N.daily_limit??2)<c.times.length?`<p class=bkn>⚠ O limite diário de envios automáticos está em ${N.daily_limit??2}. Aumente em “Envios automáticos” para sair ${c.times.length} por dia.</p>`:'';
   $('#odp').innerHTML=out.map(({t,p})=>p?`<div class=pr>${pimg(p)?`<img src="${esc(pimg(p))}" alt="">`:'<img alt="">'}<div class=tt><small><b>${t}</b> · se enviasse agora:</small><b>${esc(O.odText(c.title,p))}</b><small>${esc(O.odText(c.body,p))}</small></div></div>`:`<div class=pr><div class=tt><small><b>${t}</b></small><b>Nenhum produto serviria agora</b><small>Nada é enviado neste horário. Confira o preço mínimo, o critério e as categorias.</small></div></div>`).join('')||'<p class=note>Escolha pelo menos um horário.</p>'};
- box.innerHTML=`<h3>🔥 Oferta do dia (automática)</h3><p class=note>Nos horários escolhidos, o sistema escolhe sozinho uma oferta e envia a notificação, com a foto e o link do próprio produto. No máximo ${O.OD_MAX} por dia. Respeita o horário de silêncio e o limite diário acima; se não puder enviar em até 2 horas, aquele horário é pulado.</p>
+ box.innerHTML=`<h3>🔥 Ofertas automáticas (Oferta do dia)</h3><p class=note>Nos horários escolhidos, o sistema escolhe sozinho e envia a notificação, com a foto e o link do próprio produto. Igual para todos: no máximo ${O.OD_MAX} por dia. Personalizado: cada cliente recebe no máximo 1 por dia, escolhida pelo interesse dele. Respeita o horário de silêncio e o limite diário acima; se não puder enviar em até 2 horas, aquele horário é pulado.</p>
  ${saved?'':'<p class=note style="color:#b45309"><b>Ainda não salvo.</b></p>'}
- <label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type=checkbox id=od0 ${c.on?'checked':''} style="width:22px;height:22px"> Oferta do dia ligada</label>
+ <label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type=checkbox id=od0 ${c.on?'checked':''} style="width:22px;height:22px"> Ofertas automáticas ligadas</label>
+ <label>Modo<select id=odmo>${Object.entries(O.OD_MODOS).map(([k,n])=>`<option value=${k} ${k===c.modo?'selected':''}>${n}</option>`).join('')}</select></label>
+ <div id=odpz class=box style="background:var(--lt)"><p class=note style="margin:0 0 6px">Cada cliente recebe um produto diferente, escolhido pelos interesses que a vitrine aprendeu no aparelho dele (categorias e faixa de preço), pela qualidade da oferta (foto, link válido, desconto real, oferta no prazo) e pelo que ele já recebeu e tocou. Nunca repete o produto para a mesma pessoa no período abaixo. Se nada combinar com aquele cliente, ele não recebe nada nesse dia. No 2º horário só recebe quem ainda não recebeu no dia.</p>
+ <label>Clientes ainda sem perfil de interesses<select id=odsp><option value=geral ${c.sem_perfil==='geral'?'selected':''}>Recebem a oferta geral (critério abaixo)</option><option value=nada ${c.sem_perfil==='nada'?'selected':''}>Não recebem nada</option></select></label></div>
  <div class=row><label>1º horário (Brasília)<input type=time id=odt1 value="${c.times[0]||''}"></label><label>2º horário (opcional)<input type=time id=odt2 value="${c.times[1]||''}"></label></div>
- <label>Como escolher o produto<select id=odc>${Object.entries(O.OD_CRIT).map(([k,n])=>`<option value=${k} ${k===c.crit?'selected':''}>${n}</option>`).join('')}</select></label>
+ <label><span id=odcl>Como escolher o produto</span><select id=odc>${Object.entries(O.OD_CRIT).map(([k,n])=>`<option value=${k} ${k===c.crit?'selected':''}>${n}</option>`).join('')}</select></label>
  <div id=odcats class=box style="background:var(--lt)"><b>Categorias</b> <span class=note>(nenhuma marcada = todas). Em cada envio pega a maior oferta (desconto %) de uma categoria, alternando entre as marcadas.</span><div class=row>${(cs||[]).map(x=>`<label><input type=checkbox data-odc value="${x.id}" ${c.cats.includes(x.id)?'checked':''}> ${esc(x.name)}</label>`).join('')}</div></div>
  <div class=row><label>Preço mínimo (R$)<input id=odm inputmode=decimal value="${String(c.min).replace('.',',')}"></label><label>Não repetir o mesmo produto por (dias)<input id=odr type=number min=0 max=60 value="${c.norep}"></label></div>
  <label>Título<input id=odti maxlength=80 value="${esc(c.title)}"></label><label>Mensagem<input id=odb maxlength=200 value="${esc(c.body)}"></label>
  <p class=note>Use {nome}, {preco} e {desconto} no título ou na mensagem. “Maior desconto” só considera produtos com preço anterior maior que o atual.</p>
- <div id=odw></div><h4 style="margin:12px 0 4px">Prévia de hoje</h4><div id=odp></div>
+ <div id=odw></div><h4 style="margin:12px 0 4px" id=odpt>Prévia de hoje</h4><div id=odp></div>
  <button class="btn" id=odsv style="margin-top:10px">Salvar Oferta do dia</button>`;
  box.querySelectorAll('input,select').forEach(i=>{i.addEventListener('input',prev);i.addEventListener('change',prev)});prev();
  $('#odsv').onclick=()=>run(async()=>{const v=read();if(isNaN(num($('#odm').value)??0))throw new Error('Preço mínimo inválido. Use só números, por exemplo 10,00.');
   if(v.on&&!v.times.length)throw new Error('Escolha pelo menos um horário.');if($('#odt1').value&&$('#odt1').value===$('#odt2').value)throw new Error('Os dois horários são iguais.');
   const cur=await getSet();const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,push_oferta_dia:{...v,saved_at:new Date().toISOString()}}});if(error)throw error;
-  alert(v.on?'Oferta do dia salva e ligada. Horários: '+v.times.join(' e ')+'.':'Oferta do dia salva (desligada).');odCard(box,N)})}
+  alert(v.on?'Ofertas automáticas salvas e ligadas ('+O.OD_MODOS[v.modo].toLowerCase()+'). Horários: '+v.times.join(' e ')+'.':'Ofertas automáticas salvas (desligadas).');odCard(box,N);const z=$('#pzbox');if(z)pzCard(z,N).catch(()=>{})})}
+// ---------- Notificações › Personalização: números, interesses e histórico por cliente (cr_push_subscriptions + cr_push_entregas)
+const uaTipo=u=>/iPhone|iPad|iPod/i.test(u||'')?'iPhone':/Android/i.test(u||'')?'Android':/Windows|Macintosh|Linux/i.test(u||'')?'Computador':'Outro';
+async function pzCard(box,N){const O=await import('../supabase/functions/send-push/oferta-dia.js'),V=await import('../js/vitrine.js');
+ const d30=new Date(Date.now()-30*864e5).toISOString(),site=N.site_url||new URL('../',location.href).href;
+ const [s0,sr,er,{data:cs},{data:pr},{data:ck}]=await Promise.all([getSet(),sb.from('cr_push_subscriptions').select('id,endpoint,user_agent,created_at,last_success_at,origin,interesses,interesses_em,personalizar').order('created_at',{ascending:false}).limit(2000),
+  sb.from('cr_push_entregas').select('id,subscription_id,product_id,enviada_em,tocou_em,ok,motivo,products:cr_products(name)').gte('enviada_em',d30).order('enviada_em',{ascending:false}).limit(5000),
+  sb.from('cr_categories').select('id,name'),sb.from('cr_products').select('id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,affiliate_url,created_at,product_images:cr_product_images(url,sort)').eq('status','active').limit(5000),
+  sb.from('cr_click_events').select('product_id').gte('created_at',d30).limit(20000)]);
+ if(sr.error||er.error){box.innerHTML='<h3>🎯 Personalização</h3><p class=note>Ainda não disponível: falta aplicar no banco o arquivo <b>supabase/06-ofertas-personalizadas.sql</b>.</p>';return}
+ const c=O.odCfg(s0),org=(()=>{try{return new URL(site).origin}catch(_){return null}})(),cn=Object.fromEntries((cs||[]).map(x=>[x.id,x.name]));
+ const byEp=new Map();for(const x of sr.data||[])if(!x.origin||x.origin===org)if(!byEp.has(x.endpoint))byEp.set(x.endpoint,x);const subs=[...byEp.values()];
+ const E=er.data||[],pop={};for(const x of ck||[])if(x.product_id)pop[x.product_id]=(pop[x.product_id]||0)+1;const P=pr||[],pc=Object.fromEntries(P.map(p=>[p.id,p.category_id]));
+ const comPerfil=subs.filter(x=>x.personalizar!==false&&x.interesses&&Object.keys(x.interesses.cat||{}).length),semPers=subs.filter(x=>x.personalizar===false).length;
+ const ok=E.filter(x=>x.ok),toq=E.filter(x=>x.tocou_em).length;
+ const seg={},cat={};for(const x of comPerfil){for(const [k,v] of Object.entries(x.interesses.seg||{}))seg[k]=(seg[k]||0)+ +v;for(const [k,v] of Object.entries(x.interesses.cat||{}))cat[k]=(cat[k]||0)+ +v}
+ const bars=(m,lab)=>{const a=Object.entries(m).sort((x,y)=>y[1]-x[1]).slice(0,6),mx=a[0]?.[1]||1;return a.map(([k,v])=>`<p style="margin:4px 0">${esc(lab(k))}<span class=bar style="display:block;height:6px;width:${Math.max(4,v/mx*100)}%"></span></p>`).join('')||'<p class=note>Ainda sem dados.</p>'};
+ // o que cada cliente receberia agora (mesma regra da função de envio)
+ const plano=subs.map(x=>{const hist=E.filter(e=>e.subscription_id===x.id).map(e=>({...e,cat:pc[e.product_id],tocou:!!e.tocou_em}));const r=O.odPesos(x,hist)?O.odEscolher(x,P,c,{hist,pop}):null;return {x,hist,r}});
+ const dif=new Set(plano.filter(o=>o.r).map(o=>o.r.p.id)).size,nr=plano.filter(o=>o.r).length;
+ box.innerHTML=`<div class=hrow><h3 style="margin:0;flex:1">🎯 Personalização</h3><span class="chip ${c.on?'ok':''}">${c.on?'Ligadas · '+esc(O.OD_MODOS[c.modo]):'Pausadas'}</span><button class="btn alt sm" id=pzt>${c.on?'⏸ Pausar':'▶ Reativar'}</button></div>
+ <div class=kpi style="margin-top:10px">${[['Aparelhos com notificações',subs.length],['Com perfil de interesses',comPerfil.length],['Personalização desligada',semPers],['Entregas (30 dias)',ok.length],['Toques (30 dias)',toq],['Taxa de toque',ok.length?Math.round(toq/ok.length*100)+'%':'—']].map(([k,v])=>`<div class=box><b>${v}</b>${k}</div>`).join('')}</div>
+ <p class=note>${nr?`Se enviasse agora: <b>${nr}</b> cliente(s) com perfil receberiam <b>${dif}</b> produto(s) diferente(s).`:'Nenhum cliente com perfil receberia oferta personalizada agora.'} Toques são contados quando a pessoa abre a notificação; não indicam compra.</p>
+ <div class=row><div><h4 style="margin:8px 0 4px">Interesses mais comuns</h4>${bars(seg,k=>V.SEGS[k]||k)}</div><div><h4 style="margin:8px 0 4px">Categorias de maior interesse</h4>${bars(cat,k=>cn[k]||'(categoria removida)')}</div></div>
+ <h4 style="margin:14px 0 6px">Clientes</h4><div class="tbx"><table class=lt><thead><tr><th>Cliente<th>Interesses<th>Recebidas (30 d)<th>Última oferta<th>Receberia agora</tr></thead><tbody>${plano.map(({x,hist,r})=>{const segs=Object.keys(x.interesses?.seg||{}).slice(0,2).map(k=>V.SEGS[k]||k).join(', '),u=hist[0];
+  return `<tr><td><span class=pn1>#${esc(x.id.slice(0,6))}</span><br><small>${uaTipo(x.user_agent)} · desde ${new Date(x.created_at).toLocaleDateString('pt-BR')}</small><td>${x.personalizar===false?'<span class=chip>Personalização desligada</span>':segs?esc(segs)+(x.interesses?.pr?`<br><small>${esc(money(x.interesses.pr.lo))} – ${esc(money(x.interesses.pr.hi))}</small>`:''):'<small>Sem perfil ainda</small>'}<td>${hist.length} · ${hist.filter(h=>h.tocou).length} toque(s)<td>${u?`${esc(u.products?.name||'(produto removido)')}<br><small>${new Date(u.enviada_em).toLocaleDateString('pt-BR')} · ${u.tocou_em?'✓ tocou':u.ok===false?'falhou':'não tocou'}</small>`:'<small>—</small>'}<td>${r?esc(r.p.name):O.odPesos(x,hist)?'<small>Nada adequado (não envia)</small>':`<small>${c.sem_perfil==='geral'?'Oferta geral':'Não recebe'}</small>`}</tr>`}).join('')||'<tr><td colspan=5>Nenhum aparelho inscrito.</tr>'}</tbody></table></div>
+ <p class=note>O código do cliente é anônimo (sem nome, e-mail ou telefone). O resumo de interesses é atualizado pelo próprio aparelho ao visitar a loja.</p>`;
+ $('#pzt').onclick=()=>run(async()=>{const cur=await getSet(),v=O.odCfg(cur);const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,push_oferta_dia:{...(cur.push_oferta_dia||{}),...v,on:!v.on}}});if(error)throw error;
+  alert(v.on?'Ofertas automáticas pausadas.':'Ofertas automáticas reativadas.');const ob=$('#odbox');if(ob)odCard(ob,N).catch(()=>{});pzCard(box,N)})}
 // ---------- Notificações (push)
 const BR='America/Sao_Paulo',brDate=d=>d?new Date(d).toLocaleString('pt-BR',{timeZone:BR,day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
 const brInput=(ms=Date.now())=>new Date(ms-3*36e5).toISOString().slice(0,16); // "agora" no horário de Brasília para o campo data/hora
@@ -625,10 +657,12 @@ async function notif(el,editId=null){
   <div class=row><label>Avisar “acabando” quantas horas antes do fim<input type=number min=1 max=168 id=seh value="${N.ending_hours??24}"></label><label>Limite de envios automáticos por dia<input type=number min=0 max=50 id=sdl value="${N.daily_limit??2}"></label>
   <label>Silêncio começa às<select id=sqs>${hrs(N.quiet_start??22)}</select></label><label>Silêncio termina às<select id=sqe>${hrs(N.quiet_end??8)}</select></label></div>
   <button class="btn sm" id=ssv>Salvar configurações</button></div>
- <div class=box id=odbox><h3>🔥 Oferta do dia (automática)</h3><p class=note>Carregando…</p></div>
+ <div class=box id=odbox><h3>🔥 Ofertas automáticas</h3><p class=note>Carregando…</p></div>
+ <div class=box id=pzbox><h3>🎯 Personalização</h3><p class=note>Carregando…</p></div>
  <h3>Histórico</h3><div class="tw tbx"><table class=lt><tr class=hd><th>Data<th>Título<th>Origem<th>Status<th>Enviados<th>Falhas<th>Cliques<th></tr>${H.map(x=>`<tr><td>${brDate(x.sent_at||x.scheduled_at||x.created_at)}<td>${esc(x.title)}<td>${NSRC[x.source]||esc(x.source)}<td${x.error?` title="${esc(x.error)}"`:''}>${NST[x.status]||esc(x.status)}${x.error?' <span class=note>ⓘ</span>':''}<td>${x.sent_count||0}<td>${x.failed_count||0}<td>${x.clicks||0}<td class=ac>${
   x.status==='scheduled'?dots([mi(`data-nc="${x.id}"`,'🚫 Cancelar envio',1)]):x.status==='draft'?`<button class="btn sm" data-ne="${x.id}">Editar</button>${dots([mi(`data-nd="${x.id}"`,'🗑️ Excluir',1)])}`:x.status==='failed'?`<button class="btn alt sm" data-nr="${x.id}">Tentar de novo</button>`:''}</tr>`).join('')||'<tr><td colspan=8>Nenhuma notificação ainda.</td></tr>'}</table></div>
  <p class=note>Datas no horário de Brasília. Passe o dedo/mouse em “Falhou” para ver o motivo.</p>`;
+pzCard($('#pzbox'),N).catch(e=>{$('#pzbox').innerHTML='<h3>🎯 Personalização</h3><p class=note>Não foi possível carregar: '+esc(e.message||e)+'</p>'});
  odCard($('#odbox'),N).catch(e=>{$('#odbox').innerHTML='<h3>🔥 Oferta do dia</h3><p class=note>Não foi possível carregar: '+esc(e.message||e)+'</p>'});
  const t=$('#nft'),b=$('#nfb'),im=$('#nfi'),u=$('#nfu'),ps=$('#nfp'),msg=m=>$('#nfmsg').textContent=m;
  const pv=()=>{$('#pvt').textContent=t.value||'Título da notificação';$('#pvb').textContent=b.value||'Sua mensagem aparece aqui.';const i=$('#pvi');i.style.display=im.value?'block':'none';if(im.value)i.src=im.value;
