@@ -133,6 +133,8 @@ function header(){const logo=S.logo&&/^https:\/\//.test(S.logo)?`<img src="${esc
  <form action=lista.html role=search><input type=hidden name=tipo value=busca><label class=sr for=q>Pesquisar produtos</label><input id=q name=q type=search enterkeyhint=search placeholder="O que você está procurando?" value="${esc(qs('tipo')==='busca'?qs('q')||'':'')}"><button type=submit aria-label="Buscar">${ICO.search}</button></form></div>
  <nav class=mn aria-label="Menu principal">${[...NAV,...(jogosOn()?[['jogos.html','Jogos 🎮']]:[])].map(([h,t])=>`<a href="${h}">${t}</a>`).join('')}</nav></div></header>
  <div class=aff><div class=w><span>Vitrine com links de afiliado: a compra é finalizada na loja parceira.</span> <a href="sobre.html#como-funciona">Saiba mais</a></div></div>${stripHtml()}`}
+// Assinatura de autoria (dados em js/marca.js); o mesmo texto está fixo no rodapé de cada página .html.
+export const assinatura=()=>`<div class=cpy><p class=cpn>${esc(MARCA.plataforma)}</p><p>Plataforma desenvolvida por ${esc(MARCA.criador)}.<br>${esc(MARCA.criadorFuncao)}.</p><p>© ${MARCA.anoCriacao} – ${esc(MARCA.criador)}. Todos os direitos reservados.</p></div>`;
 function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&&cHref(x));const wa=it.find(x=>x.type==='whatsapp'),soc=it.filter(x=>CTYPES[x.type]?.g==='rs');
  const info=[MARCA.responsavel&&'Responsável: '+esc(MARCA.responsavel),MARCA.cnpj&&'CNPJ: '+esc(MARCA.cnpj),MARCA.cidade&&esc(MARCA.cidade)].filter(Boolean);
  return `${AREA==='top'?'':stripHtml()}<footer><div class=w><div class=fg>
@@ -141,7 +143,7 @@ function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&
  <div><h2>Institucional</h2><ul><li><a href="sobre.html">Sobre nós</a></li><li><a href="sobre.html#como-funciona">Como funciona</a></li><li><a href="contato.html">Contato</a></li><li><a href="privacidade.html">Política de privacidade</a></li>
  ${wa?`<li><a href="${esc(cHref(wa))}" target=_blank rel=noopener>WhatsApp</a></li>`:''}${MARCA.emailAtivo&&MARCA.email?`<li><a href="mailto:${esc(MARCA.email)}">${esc(MARCA.email)}</a></li>`:''}${soc.map(x=>`<li><a href="${esc(cHref(x))}" target=_blank rel=noopener>${esc(CTYPES[x.type].n)}</a></li>`).join('')}</ul></div></div>
  <p class=fdis>${DISCLAIMER} Preços, estoques, fretes e condições podem mudar a qualquer momento na loja de destino.${S.footer_text?'':''}</p>
- <p class=cpy>© ${new Date().getFullYear()} ${esc(S.name)}. Todos os direitos reservados.</p><button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button></div></footer><div id=lb></div>`}
+ ${assinatura()}<button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button></div></footer><div id=lb></div>`}
 function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();notifBtn();
  const here=(location.pathname.split('/').pop()||'./')+location.search,hn=here==='index.html'?'./':here;
  document.querySelectorAll('header nav a').forEach(a=>{const h=a.getAttribute('href');if(h===hn||(h.includes('?')&&hn.startsWith(h))){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}

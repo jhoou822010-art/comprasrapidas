@@ -142,7 +142,7 @@ footer{background:var(--c1);color:#d4def0;margin-top:48px;padding:32px 0 20px;fo
 footer h2{color:#fff;font-size:1rem;margin:0 0 8px}footer p{margin:0 0 8px}footer ul{list-style:none;margin:0;padding:0}footer li{margin:0 0 4px}
 footer a{color:#fff;text-decoration:underline;text-underline-offset:2px;display:inline-block;padding:4px 0}
 .fdis{border-top:1px solid #ffffff26;margin-top:22px;padding-top:16px;font-size:.85rem;color:#c3d0e6}
-.cpy{font-size:.82rem;color:#b8c7e6;margin-top:10px}
+.cpy{font-size:.82rem;color:#b8c7e6;margin-top:10px;line-height:1.5}.cpy p{margin:0 0 4px}.cpy .cpn{color:#dfe7f5;font-weight:600}
 .temabtn{background:#ffffff14;color:#e3ebf7;border:1px solid #ffffff40;border-radius:99px;padding:8px 14px;font:inherit;font-size:.8rem;cursor:pointer;min-height:40px;margin-top:8px}.temabtn:hover{background:#ffffff26}
 /* itens de grid não podem crescer além da tela (carrossel e miniaturas) */
 .hero>*,.pd>*,.two>*,.how>*,.fg>*{min-width:0}
