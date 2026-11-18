@@ -6,5 +6,13 @@ setMeta({title:'Brick Game 10 em 1 | '+S.name,canonical:SITE+'brickgame.html'});
 // liga e desliga em painel › Jogos › “Brick Game 10 em 1”
 if(!C.brickgame){document.head.insertAdjacentHTML('beforeend','<meta name=robots content="noindex,follow">');el.innerHTML=`<div class="box jres"><p class=jtt>Este jogo não está disponível no momento.</p><a class="btn big" href="${OFERTAS}">Ver ofertas</a></div>`}
 else{el.innerHTML='<section class=bgx aria-label="Brick Game 10 em 1"></section><div id=bgdx></div>';const api=(await import('./js/brickgame.js')).brickgame(el.firstChild); // o jogo só é baixado aqui
- import('./js/brickgame-desafio.js').then(m=>m.desafio(document.getElementById('bgdx'),api,sb,{pushOk,pushSubscribe,currentSub},async()=>{const {data}=await list({offer:true,per:60});const ok=(data||[]).filter(p=>p.product_images?.length);if(!ok.length)return '';let vis=[];try{vis=JSON.parse(localStorage.getItem('cr_brick_ofv'))||[]}catch(e){}let nov=ok.filter(p=>!vis.includes(p.id));if(!nov.length){vis=[];nov=ok} /* já viu todas: recomeça a lista */ const p=nov[Math.floor(Math.random()*nov.length)];try{localStorage.setItem('cr_brick_ofv',JSON.stringify([...vis,p.id].slice(-200)))}catch(e){}return card(p)})).catch(()=>{})} // Desafio: ranking visto por todos
+ import('./js/brickgame-desafio.js').then(m=>m.desafio(document.getElementById('bgdx'),api,sb,{pushOk,pushSubscribe,currentSub},async()=>{const {data}=await list({offer:true,per:100});const ok=(data||[]).filter(p=>p.product_images?.length);if(!ok.length)return '';
+ // não repete: lembra no aparelho as ofertas já mostradas (depois de ver todas, recomeça)
+ let vis=[];try{vis=JSON.parse(localStorage.getItem('cr_brick_ofv'))||[]}catch(e){}let nov=ok.filter(p=>!vis.includes(p.id));if(!nov.length){vis=[];nov=ok}
+ // combina com quem joga: categorias que a pessoa mais olha no site (vitrine inteligente, guardado só no aparelho; respeita quem desligou)
+ let int=null;try{int=(await import('./js/vitrine.js')).interestSummary(S)?.cat||null}catch(e){}
+ const pref=int?nov.filter(p=>int[p.category_id]>0):[],lista=pref.length?pref:nov;
+ let p=lista[Math.floor(Math.random()*lista.length)];
+ if(pref.length){const tot=pref.reduce((t,x)=>t+int[x.category_id],0);let r=Math.random()*tot;for(const x of pref){r-=int[x.category_id];if(r<=0){p=x;break}}}
+ try{localStorage.setItem('cr_brick_ofv',JSON.stringify([...vis,p.id].slice(-200)))}catch(e){}return card(p)})).catch(()=>{})} // Desafio: ranking visto por todos
 </script></body></html>
