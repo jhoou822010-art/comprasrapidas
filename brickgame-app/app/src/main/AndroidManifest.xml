@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Brick Game 2 em 1: app pessoal, sem internet, sem anúncios e sem nenhuma permissão. -->
+<!-- Brick Game 10 em 1: app pessoal, sem internet, sem anúncios e sem nenhuma permissão. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:label="Brick Game"

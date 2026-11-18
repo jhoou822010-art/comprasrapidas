@@ -1,4 +1,4 @@
-# Gera o APK do Brick Game 2 em 1 para instalar direto no celular (fora da Play Store).
+# Gera o APK do Brick Game 10 em 1 para instalar direto no celular (fora da Play Store).
 # O jogo vai DENTRO do app (feito a partir de css/brickgame.css e js/brickgame.js): abre sem internet e não depende do site.
 # Roda sozinho quando o jogo muda; para gerar na hora: aba Actions > "Brick Game (APK)" > Run workflow.
 # O APK fica no link fixo: Releases > "Brick Game (APK)" > brick-game.apk
@@ -84,6 +84,6 @@ jobs:
           make_latest: false
           files: brick-game.apk
           body: |
-            Brick Game 2 em 1 (Corrida e Blocos) para instalar direto no celular Android, fora da Play Store.
+            Brick Game 10 em 1 (Corrida, Blocos, Cobrinha, Tanque, Muralha, Quebra-tijolos, Travessia, Pingue-pongue, Chuva e Saltador) para instalar direto no celular Android, fora da Play Store.
             Funciona sem internet, sem anúncios e sem nenhuma permissão. Versão 1.0.${{ github.run_number }}.
             Como instalar: baixe brick-game.apk no celular, abra o arquivo e permita "instalar apps desta fonte" quando o Android pedir.

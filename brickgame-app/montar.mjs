@@ -13,7 +13,7 @@ const html=`<!doctype html><html lang=pt-BR><head><meta charset=utf-8>
 html,body{margin:0;height:100%;background:#3a3a3d;overscroll-behavior:none}
 body{display:flex;align-items:center;justify-content:center;padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));box-sizing:border-box}
 .bgx{width:100%;max-width:440px;margin:0 auto}
-</style></head><body><section class=bgx aria-label="Brick Game 2 em 1"></section>
+</style></head><body><section class=bgx aria-label="Brick Game 10 em 1"></section>
 <script type=module>
 ${js}
 brickgame(document.querySelector('.bgx'));
