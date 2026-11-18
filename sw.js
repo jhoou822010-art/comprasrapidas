@@ -6,7 +6,7 @@ const BASE = new URL('./', self.location.href).href; // pasta do site (ex.: .../
 
 // Página mostrada quando o app/site abre sem internet (exigência de qualidade do app na Play Store).
 // Ao mudar a lista abaixo, troque o número da versão: o cache antigo é apagado na ativação.
-const OFFLINE_CACHE = 'cr-offline-v8';
+const OFFLINE_CACHE = 'cr-offline-v9';
 const OFFLINE_URL = BASE + 'offline.html';
 // Página dos jogos (/jogos/) e os arquivos de que ela precisa: ficam guardados para abrir mesmo sem internet.
 const JOGOS = ['jogos.html', 'jogos/', 'cobrinha.html', 'js/cobrinha.js', 'brickgame.html', 'js/brickgame.js', 'css/brickgame.css', 'js/brickgame-desafio.js', 'js/jogos.js', 'js/app.js', 'js/db.js', 'js/marca.js', 'js/titulo.js', 'config.js', 'css/style.css'].map(u => BASE + u);

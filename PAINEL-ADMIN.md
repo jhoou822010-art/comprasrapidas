@@ -100,3 +100,16 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
 - **Tamanho:** cada aparelho guarda no máximo 2 partidas por jogo (a melhor geral e a melhor da semana); partidas abertas somem em 1 dia.
 - **Desfazer:** reverter o commit (o Desafio some do site) e, se quiser apagar do banco, o bloco DESFAZER no fim do arquivo 08.
 - O app do celular (APK) não usa internet: continua só com o recorde do aparelho.
+
+## Desafio Brick Game, parte 2: campeões, recado e avisos
+
+- **Recado do campeão:** quem vira o 1º lugar de um jogo escolhe uma de 12 frases prontas (ex.: “Toma! Cadê o próximo? 😎”).
+  Ninguém digita texto: o banco guarda só o número da frase. Aparece junto do nome do líder.
+- **Últimos recordes:** “JOÃO passou MARIA em Corrida: 52 × 40” (os 100 mais recentes ficam guardados; o site mostra 8).
+- **Avisos:** depois de entrar no ranking, convite opcional “Ativar avisos” (recebe o aviso do Desafio e as ofertas da loja).
+  Quando alguém toma o 1º lugar, o campeão anterior recebe “😱 FULANO passou seu recorde!” com link para o jogo.
+  Sai pela função `send-push` a cada 5 minutos, respeitando o horário de silêncio; não conta no limite diário de ofertas.
+- **Instalar:** rodar uma vez `supabase/09-brickgame-campeoes.sql` (depois do 08) e publicar de novo a função `send-push`.
+  Sem o 09, o Desafio continua como antes (sem recado, mural e avisos).
+- Apagar um resultado no painel troca o campeão sem gerar aviso nem “quem passou quem”.
+- **Desfazer:** bloco DESFAZER no fim do arquivo 09 + publicar a versão anterior da função.

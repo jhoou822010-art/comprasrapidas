@@ -32,3 +32,8 @@
 .bgdf select{padding:9px;border:1px solid #b7c4d8;border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--tx,#111);min-height:44px}
 .bgdp{display:flex;gap:6px}.bgdp .btn{width:auto!important;padding:8px 12px;min-height:44px}.bgdp .btn[aria-pressed=true]{background:var(--c2,#1a5fd6);color:#fff;border-color:var(--c2,#1a5fd6)}
 .bgd .cbrs{text-align:center;margin:0 auto 10px}.bgd .cbaf{margin:0 auto}
+.bgdfr{display:block;margin-top:4px;font-style:italic;font-weight:700;color:var(--c1,#0b2a5b)}.bgdq{text-align:center;margin:-4px 0 12px}.bgdq .btn{width:auto!important}
+.bgdre{text-align:center}.bgdrl{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}.bgdrl .btn{width:auto!important;padding:8px 12px;min-height:44px;font-size:.92rem}.bgdrl .btn.on{outline:2px solid var(--c2,#1a5fd6)}
+.bgdn{margin:14px 0 0;padding:12px;border-radius:12px;background:var(--lt,#eef3fb);text-align:center;font-size:.93rem}.bgdn p{margin:0 0 8px}.bgdn .btn{width:auto!important}
+.bgdm{margin-top:16px;border-top:1px solid var(--ln,#dde3ec);padding-top:12px}.bgdm h3{margin:0 0 8px;font-size:1rem;text-align:center}.bgdm ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:.9rem}
+.bgdm li{padding:6px 10px;border-radius:10px;background:var(--bg,#f4f6fa)}.bgdm small{color:var(--mu,#667);margin-left:4px}

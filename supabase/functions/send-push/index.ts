@@ -246,6 +246,32 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
   return { slot: slot.t, personalizado: { enviados: ok, falhas: fail } };
 }
 
+// Desafio Brick Game: avisos "alguém passou seu recorde" (fila cr_brick_avisos, criada por supabase/09-brickgame-campeoes.sql).
+// Cada aviso vai só para o aparelho do campeão anterior. Fora do horário de silêncio; sem a tabela, não faz nada.
+// deno-lint-ignore no-explicit-any
+async function avisosBrick(settings: any, quiet: boolean) {
+  if (quiet) return { waiting: "horário de silêncio" };
+  const desde = new Date(Date.now() - 86400e3).toISOString();
+  const { data, error } = await db.from("cr_brick_avisos").select("id,endpoint,titulo,corpo,url")
+    .is("enviado_em", null).gte("criado_em", desde).order("criado_em").limit(50);
+  if (error) return { skipped: error.code === "42P01" || /does not exist|schema cache/.test(error.message) ? "Desafio parte 2 não instalado" : error.message };
+  let ok = 0, fail = 0;
+  for (const a of data ?? []) {
+    let erro: string | null = null;
+    try {
+      const subs = await loadSubs({ endpoint: a.endpoint });
+      if (!subs.length) erro = "aparelho sem inscrição";
+      else {
+        const r = await deliver(subs, JSON.stringify({ id: null, title: a.titulo, body: a.corpo, image: null, icon: settings?.icon_url ?? null, url: a.url || settings?.site_url || "/" }));
+        if (r.ok) ok++; else erro = r.lastError ?? "falhou";
+      }
+    } catch (e) { erro = String((e as Error).message ?? e).slice(0, 300); }
+    if (erro) fail++;
+    await db.from("cr_brick_avisos").update({ enviado_em: new Date().toISOString(), erro }).eq("id", a.id);
+  }
+  return { ok, fail };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
@@ -274,7 +300,10 @@ Deno.serve(async (req) => {
         }
         results.push(await sendNotificationRow(n.id, settings));
       }
-      return json({ mode: "cron", oferta, results });
+      // avisos do Desafio Brick Game: independentes do limite diário (são pessoais) e nunca impedem os outros envios
+      let brick: unknown = null;
+      try { brick = await avisosBrick(settings, quiet); } catch (e) { brick = { error: String((e as Error).message ?? e) }; }
+      return json({ mode: "cron", oferta, results, brick });
     }
 
     // Painel admin

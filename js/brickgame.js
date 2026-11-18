@@ -369,5 +369,5 @@ export function brickgame(raiz,ganchos={}){
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&modo==='jogo'){modo='pausa';solta();avisar(textoModo());desenhar()}});
  addEventListener('resize',ajustar);
  avisar(textoModo());ajustar();requestAnimationFrame(quadro);
- const api={acao,ganchos,estado:()=>({modo,jogo,s,rec,som,geral}),geral:o=>{geral={};for(const k of ORDEM)geral[k]=Math.max(0,Math.floor(+o?.[k]||0));desenhar()}};raiz.__bg=api;return api // estado consultado pelos testes automáticos
+ const api={acao,ganchos,estado:()=>({modo,jogo,s,rec,som,geral}),menu:j=>{if(JOGOS[j]&&modo==='menu'){jogo=j;avisar(textoModo());desenhar()}},geral:o=>{geral={};for(const k of ORDEM)geral[k]=Math.max(0,Math.floor(+o?.[k]||0));desenhar()}};raiz.__bg=api;return api // estado consultado pelos testes automáticos
 }
