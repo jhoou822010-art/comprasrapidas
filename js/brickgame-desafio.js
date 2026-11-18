@@ -15,8 +15,8 @@ function idAparelho(){let v=ler(IK,'');if(/^[0-9a-f-]{36}$/.test(v))return v;
  gravar(IK,v);return v}
 const MED=['',' 🥇',' 🥈',' 🥉'];
 // recados do campeão: frases prontas (o banco guarda só o número, 0 a 11; ninguém digita texto)
-export const FRASES=['Toma! Cadê o próximo? 😎','Vem me pegar! 🏃','Sou o rei deste jogo 👑','Treinei muito! 💪','Duvido você passar 😏','Fácil demais 😴',
- 'Quem é o próximo? 🎯','Esse recorde é meu! 🏆','Tenta aí, se puder 😜','Boa sorte, galera! 🍀','GG! Bom jogo 🤝','Esse foi suado 😅'];
+export const FRASES=['Cadê o próximo?','Vamos lá, jogar!','Vem me pegar!','Duvido passar!','Quem é o próximo?','O recorde é meu!',
+ 'Tenta aí!','Fácil demais!','Bora jogar!','Boa sorte!','Treinei muito!','GG!'];
 const quando=t=>{const m=Math.max(0,(Date.now()-new Date(t))/6e4);return m<1?'agora':m<60?`há ${Math.round(m)} min`:m<1440?`há ${Math.round(m/60)} h`:`há ${Math.round(m/1440)} d`};
 const erroTxt=e=>{const m=String(e?.message||e||'');return /Apelido|impossível|desligado|Muitas partidas|expirada|já foi enviada/.test(m)?m.replace(/^.*?(Apelido|Pontuação|O Brick|Muitas|Partida|Esta)/,'$1'):'sem conexão no momento.'};
 

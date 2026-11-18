@@ -103,7 +103,7 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
 
 ## Desafio Brick Game, parte 2: campeões, recado e avisos
 
-- **Recado do campeão:** quem vira o 1º lugar de um jogo escolhe uma de 12 frases prontas (ex.: “Toma! Cadê o próximo? 😎”).
+- **Recado do campeão:** quem vira o 1º lugar de um jogo escolhe uma de 12 frases prontas (curtas, ex.: “Cadê o próximo?”, “Vamos lá, jogar!”).
   Ninguém digita texto: o banco guarda só o número da frase. Aparece junto do nome do líder.
 - **Últimos recordes:** “JOÃO passou MARIA em Corrida: 52 × 40” (os 100 mais recentes ficam guardados; o site mostra 8).
 - **Avisos:** depois de entrar no ranking, convite opcional “Ativar avisos” (recebe o aviso do Desafio e as ofertas da loja).
