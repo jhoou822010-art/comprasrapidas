@@ -21,7 +21,8 @@ const quando=t=>{const m=Math.max(0,(Date.now()-new Date(t))/6e4);return m<1?'ag
 const erroTxt=e=>{const m=String(e?.message||e||'');return /Apelido|impossível|desligado|Muitas partidas|expirada|já foi enviada/.test(m)?m.replace(/^.*?(Apelido|Pontuação|O Brick|Muitas|Partida|Esta)/,'$1'):'sem conexão no momento.'};
 
 // push (opcional, só no site): {pushOk,pushSubscribe,currentSub} de js/app.js, para o convite "Ativar avisos"
-export function desafio(el,api,sb,push=null){
+// oferta (opcional, só no site): função que devolve o HTML do cartão de uma oferta da loja (mostrado a quem é o 1º lugar)
+export function desafio(el,api,sb,push=null,oferta=null){
  if(!sb||!api)return;
  const aparelho=idAparelho();
  el.innerHTML=`<section class="box bgd" aria-labelledby=bgdt hidden>
@@ -29,6 +30,7 @@ export function desafio(el,api,sb,push=null){
   <p class=bgdc><b>Vamos ver quem faz mais pontos?</b> Jogue, coloque seu apelido e tente tirar o 1º lugar de cada jogo.
    O ranking da semana recomeça toda segunda-feira. Só pela diversão, sem prêmios.</p>
   <p class=bgdl aria-live=polite></p><p class=bgdq hidden></p>
+  <div class=bgdof hidden><h3>🔥 Oferta do momento</h3><div class=bgdofc></div></div>
   <div class=bgdf><label>Jogo <select id=bgdj>${ORDEM.map(k=>`<option value=${k}>${k} · ${escH(JOGOS[k].nome)}</option>`).join('')}</select></label>
    <span class=bgdp role=group aria-label="Período do ranking"><button type=button class="btn alt" data-p=semana aria-pressed=true>Esta semana</button><button type=button class="btn alt" data-p=geral aria-pressed=false>Geral</button></span></div>
   <div class=cbrs id=bgdr aria-live=polite></div>
@@ -47,7 +49,13 @@ export function desafio(el,api,sb,push=null){
   q('.bgdl').innerHTML=l?`Líder de <b>${escH(JOGOS[ver].nome)}</b>: <b>${escH(l.apelido)}</b> com <b>${fmt(l.pontos)}</b> pontos.${fr?`<span class=bgdfr>“${escH(fr)}”</span>`:' Consegue passar? 🔥'}`
   :`Ninguém marcou pontos em <b>${escH(JOGOS[ver].nome)}</b> ainda. Seja o primeiro! 🚀`;
   // o próprio campeão pode escolher ou trocar o recado
-  const bq=q('.bgdq');bq.hidden=!c?.voce;if(c?.voce){bq.innerHTML=`<button type=button class="btn alt" id=bgdqb>${c.frase==null?'👑 Deixar meu recado de campeão':'✏️ Trocar meu recado'}</button>`;q('#bgdqb').onclick=()=>recado(ver)}};
+  const bq=q('.bgdq');bq.hidden=!c?.voce;mostrarOferta(!!c?.voce);if(c?.voce){bq.innerHTML=`<button type=button class="btn alt" id=bgdqb>${c.frase==null?'👑 Deixar meu recado de campeão':'✏️ Trocar meu recado'}</button>`;q('#bgdqb').onclick=()=>recado(ver)}};
+ // quem está em 1º lugar no jogo vê uma oferta da loja (uma por visita; é só uma oferta comum, como as do site)
+ let ofHtml=null,ofPedido=null;
+ const mostrarOferta=on=>{const bo=q('.bgdof');if(!on||!oferta){bo.hidden=true;return}
+  if(ofHtml){bo.querySelector('.bgdofc').innerHTML=ofHtml;bo.hidden=false;return}
+  ofPedido=ofPedido||Promise.resolve().then(oferta).then(h=>{ofHtml=h||'';return ofHtml},()=>'');
+  ofPedido.then(h=>{if(!h)return;const c=mural?.campeoes?.[ver];if(!c?.voce)return;bo.querySelector('.bgdofc').innerHTML=h;bo.hidden=false})};
  // mural (parte 2, supabase/09-brickgame-campeoes.sql): campeões com recado e "quem passou quem". Sem ele, nada disso aparece.
  const verMural=d=>{mural=d;const f=d?.feitos||[],bm=q('.bgdm');bm.hidden=!f.length;
   q('#bgdm').innerHTML=f.map(x=>`<li><b>${escH(x.quem)}</b> passou <b>${escH(x.de)}</b> em ${escH(JOGOS[x.jogo]?.nome||x.jogo)}: ${fmt(x.pontos)} × ${fmt(x.antes)} <small>${quando(x.em)}</small></li>`).join('');chamada()};

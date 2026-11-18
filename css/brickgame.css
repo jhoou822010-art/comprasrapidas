@@ -37,3 +37,4 @@
 .bgdn{margin:14px 0 0;padding:12px;border-radius:12px;background:var(--lt,#eef3fb);text-align:center;font-size:.93rem}.bgdn p{margin:0 0 8px}.bgdn .btn{width:auto!important}
 .bgdm{margin-top:16px;border-top:1px solid var(--ln,#dde3ec);padding-top:12px}.bgdm h3{margin:0 0 8px;font-size:1rem;text-align:center}.bgdm ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:.9rem}
 .bgdm li{padding:6px 10px;border-radius:10px;background:var(--bg,#f4f6fa)}.bgdm small{color:var(--mu,#667);margin-left:4px}
+.bgdof{margin:0 auto 14px;max-width:280px}.bgdof h3{margin:0 0 8px;font-size:1rem;text-align:center}.bgdof .card{margin:0}
