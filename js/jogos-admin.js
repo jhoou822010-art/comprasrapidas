@@ -32,6 +32,7 @@ export async function panel(el,{sb,$,esc,run}){
   <label><input type=checkbox id=jr1 ${C.raspadinha?'checked':''}> <b>Raspadinha</b> ligada</label>
   <label><input type=checkbox id=jr2 ${C.roleta?'checked':''}> <b>Roleta</b> ligada</label>
   <label><input type=checkbox id=jr3 ${C.cobrinha?'checked':''}> <b>Jogo da Cobrinha</b> ligado <small>(página própria, com pontos e recorde pessoal no aparelho)</small></label>
+  <label><input type=checkbox id=jr4 ${C.brickgame?'checked':''}> <b>Brick Game 10 em 1</b> ligado <small>(página própria: Corrida, Blocos, Cobrinha, Tanque e mais 6 jogos no estilo anos 90; recorde no aparelho)</small></label>
   <label><input type=checkbox id=jbn ${C.banner?'checked':''}> Mostrar um banner pequeno na página inicial chamando para os jogos</label>
   <p class=note>${ligado(C)?'✅ O botão “Jogos 🎮” está no menu do site.':'⏸️ Jogos desligados: o botão “Jogos 🎮” não aparece no menu.'} ${saved?'':'Configuração ainda não salva (usando o padrão).'}</p>
   <p><a class="btn alt" target=_blank rel=noopener href="../jogos.html">Abrir a página dos jogos</a> <a class="btn alt" target=_blank rel=noopener href="../lista.html?tipo=achadinhos">Ver os achadinhos</a></p></div>
@@ -60,7 +61,7 @@ export async function panel(el,{sb,$,esc,run}){
    if(!data?.length)return alert('Nenhum produto ativo encontrado com esse nome.');
    data.forEach(p=>nomes.set(p.id,p.name));R[i].valor=data[0].id;linhas();root.querySelector(`select[data-i="${i}"][data-f=valor]`)?.focus()})});
  const ler=()=>{const s=String($('#jmax').value).trim(),mx=Number(s.includes(',')?s.replace(/\./g,'').replace(',','.'):s); // aceita 30, 29.90 ou 29,90
-  return {raspadinha:$('#jr1').checked,roleta:$('#jr2').checked,cobrinha:$('#jr3').checked,banner:$('#jbn').checked,achadinhos_max:mx,limite:Math.round(+$('#jlim').value||0),
+  return {raspadinha:$('#jr1').checked,roleta:$('#jr2').checked,cobrinha:$('#jr3').checked,brickgame:$('#jr4').checked,banner:$('#jbn').checked,achadinhos_max:mx,limite:Math.round(+$('#jlim').value||0),
    resultados:R.map(r=>({txt:String(r.txt||'').trim(),emoji:String(r.emoji||'').trim(),tipo:r.tipo,valor:String(r.valor||'').trim(),peso:Number(r.peso)}))}};
  $('#jsave').onclick=()=>run(async()=>{const c=ler();
   if(!(c.achadinhos_max>=1))return alert('Informe o preço máximo dos achadinhos (ex.: 30).');
@@ -74,7 +75,7 @@ export async function panel(el,{sb,$,esc,run}){
   if((c.raspadinha||c.roleta)&&!c.resultados.some(r=>r.peso>0))return alert('Para ligar um jogo, cadastre pelo menos um resultado com peso maior que zero.');
   const now=await getSet();   // lê de novo para não apagar mudanças feitas em outras abas do painel
   const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...now,jogos:{...cfg({jogos:c}),saved_at:new Date().toISOString()}}});if(error)throw error;
-  alert('Salvo. '+(ligado(c)?'Jogos ligados: '+[c.raspadinha&&'Raspadinha',c.roleta&&'Roleta',c.cobrinha&&'Cobrinha'].filter(Boolean).join(', ')+'.':'Os jogos estão desligados.'));panel(el,{sb,$,esc,run})});
+  alert('Salvo. '+(ligado(c)?'Jogos ligados: '+[c.raspadinha&&'Raspadinha',c.roleta&&'Roleta',c.cobrinha&&'Cobrinha',c.brickgame&&'Brick Game'].filter(Boolean).join(', ')+'.':'Os jogos estão desligados.'));panel(el,{sb,$,esc,run})});
  // resumo: jogadas e cliques no resultado, últimos 7 e 30 dias
  const desde=d=>new Date(Date.now()-d*864e5).toISOString();
  const cnt=async(jogo,tipo,d)=>{const {count,error}=await sb.from('cr_jogos_eventos').select('id',{count:'exact',head:true}).eq('jogo',jogo).eq('tipo',tipo).gte('created_at',desde(d));if(error)throw error;return count||0};

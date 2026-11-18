@@ -127,7 +127,7 @@ const ICO={check:'<svg width=22 height=22 viewBox="0 0 24 24" aria-hidden=true><
 export {ICO};
 const NAV=[['./','Início'],['lista.html?tipo=ofertas','Ofertas'],['lista.html?tipo=categorias','Categorias'],['lista.html?tipo=destaques','Destaques'],['sobre.html','Sobre'],['contato.html','Contato']];
 // jogos (raspadinha/roleta/cobrinha): o botão do menu só aparece com pelo menos um jogo ligado em painel › Jogos
-export const jogosOn=()=>S.jogos?.raspadinha===true||S.jogos?.roleta===true||S.jogos?.cobrinha===true;
+export const jogosOn=()=>{const j=S.jogos||{},velhos=j.raspadinha===true||j.roleta===true||j.cobrinha===true;return velhos||j.brickgame===true}; // brickgame sem escolha salva acompanha os outros
 function header(){const logo=S.logo&&/^https:\/\//.test(S.logo)?`<img src="${esc(S.logo)}" alt="" width=40 height=40>`:'';
  return `<a class=skip href="#m">Pular para o conteúdo</a>${themeUi(TH)}<header><div class=w><div class=top><a class=logo href="./" aria-label="${esc(S.name)} — página inicial">${logoDeco()}${logo}<span>${esc(S.name)}<small>Vitrine de ofertas de lojas parceiras</small></span></a>
  <form action=lista.html role=search><input type=hidden name=tipo value=busca><label class=sr for=q>Pesquisar produtos</label><input id=q name=q type=search enterkeyhint=search placeholder="O que você está procurando?" value="${esc(qs('tipo')==='busca'?qs('q')||'':'')}"><button type=submit aria-label="Buscar">${ICO.search}</button></form></div>

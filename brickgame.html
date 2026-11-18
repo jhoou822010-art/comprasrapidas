@@ -3,7 +3,7 @@ import {boot,setMeta,SITE} from './js/app.js';
 import {cfg,ligado,lembrar,OFERTAS} from './js/jogos.js';
 const S=lembrar(await boot()),C=cfg(S),el=document.getElementById('cb');
 setMeta({title:'Brick Game 10 em 1 | '+S.name,canonical:SITE+'brickgame.html'});
-// aparece junto com a área de jogos (painel › Jogos): com todos os jogos desligados, fica indisponível como os demais
-if(!ligado(C)){document.head.insertAdjacentHTML('beforeend','<meta name=robots content="noindex,follow">');el.innerHTML=`<div class="box jres"><p class=jtt>Este jogo não está disponível no momento.</p><a class="btn big" href="${OFERTAS}">Ver ofertas</a></div>`}
+// liga e desliga em painel › Jogos › “Brick Game 10 em 1”
+if(!C.brickgame){document.head.insertAdjacentHTML('beforeend','<meta name=robots content="noindex,follow">');el.innerHTML=`<div class="box jres"><p class=jtt>Este jogo não está disponível no momento.</p><a class="btn big" href="${OFERTAS}">Ver ofertas</a></div>`}
 else{el.innerHTML='<section class=bgx aria-label="Brick Game 10 em 1"></section>';(await import('./js/brickgame.js')).brickgame(el.firstChild)} // o jogo só é baixado aqui
 </script></body></html>
