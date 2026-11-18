@@ -569,12 +569,21 @@ const SHX={'INVALID_JWT':'Seu login não foi aceito. Saia e entre de novo no pai
 // image_link, product_short link, product_link, itemid, global_category1/2, description). Campo ausente = simplesmente não aparece.
 const shNum=v=>{const n=parseFloat(String(v??'').replace(',','.'));return isFinite(n)?n:null};
 const shUrl=v=>/^https:\/\//i.test(String(v||''))?String(v):'';
+// produtos já cadastrados: código do item Shopee tirado do link (…/product/<loja>/<item> ou …-i.<loja>.<item>) ou de ext_id
+let SHIDX=null;
+const shItemOf=u=>{let x=String(u||'');try{x=decodeURIComponent(x)}catch(_){}const m=x.match(/\/product\/\d+\/(\d+)/)||x.match(/-i\.\d+\.(\d+)/);return m?m[1]:null};
+async function shIndex(){if(SHIDX)return SHIDX;const map=new Map();let short=0;
+ for(let f=0;;f+=1000){const {data,error}=await sb.from('cr_products').select('name,status,affiliate_url,ext_source,ext_id').order('id').range(f,f+999);if(error)throw error;
+  for(const p of data||[]){const id=p.ext_source==='shopee'&&p.ext_id?String(p.ext_id):shItemOf(p.affiliate_url);if(id)map.set(id,p);else if(/shopee|shope\.ee/i.test(p.affiliate_url||''))short++}
+  if(!data||data.length<1000)break}
+ return SHIDX={map,short}}
 function shCard(c,upd,n){if(!c||typeof c!=='object')return `<div class="box shc"><b>Item ${n}</b><p class=note>Formato inesperado.</p><pre class=shpre>${esc(JSON.stringify(c,null,2))}</pre></div>`;
  const sale=shNum(c.sale_price),full=shNum(c.price),now=sale??full,old=sale!=null&&full!=null&&full>sale?full:null,disc=shNum(c.discount_percentage),rate=shNum(c.item_rating);
  const img=shUrl(c.image_link),link=shUrl(c['product_short link'])||shUrl(c.product_short_link)||shUrl(c.product_link),aff=!!(shUrl(c['product_short link'])||shUrl(c.product_short_link));
+ const ja=SHIDX&&c.itemid?SHIDX.map.get(String(c.itemid)):null,ST2={active:'ativo',inactive:'inativo',archived:'arquivado'};
  const cat=[c.global_category1,c.global_category2].filter(Boolean).map(String).join(' › '),desc=String(c.description||'').replace(/\s+/g,' ').trim();
  return `<div class="box shc">${img?`<img src="${esc(img)}" alt="" loading=lazy onerror="this.style.visibility='hidden'">`:'<div class=shph></div>'}<div class=shb>
- <small class=note>Item ${n}${upd?` · <span class=chip>${esc(String(upd))}</span>`:''}${c.itemid?` · ID ${esc(String(c.itemid))}`:''}</small>
+ ${ja?`<span class="chip ok" title="${esc(ja.name)}">✓ Já está na loja (${ST2[ja.status]||esc(ja.status)})</span>`:''}<small class=note>Item ${n}${upd?` · <span class=chip>${esc(String(upd))}</span>`:''}${c.itemid?` · ID ${esc(String(c.itemid))}`:''}</small>
  <b class=sht>${esc(String(c.title||'(sem nome)'))}</b>
  <div class=shp>${now!=null?`<b>${money(now)}</b>`:'<small class=note>sem preço</small>'}${old?` <s>${money(old)}</s>`:''}${disc&&disc>0?` <span class="chip off">-${esc(String(Math.round(disc)))}%</span>`:''}</div>
  <small class=note>${rate!=null?`★ ${esc(rate.toFixed(2).replace('.',','))}`:'sem avaliação'}${cat?` · ${esc(cat)}`:''}</small>
@@ -590,10 +599,11 @@ async function shopeeTest(el){
  const raw=j=>`<details style="margin-top:10px"><summary class=note style="cursor:pointer">Resposta completa</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:.8rem;max-height:360px;overflow:auto;background:#f7f9fc;border:1px solid #e2e7ef;border-radius:8px;padding:10px">${esc(JSON.stringify(j,null,2))}</pre></details>`;
  const fail=r=>{const j=r.j||{},codes=[j.code,j.error,...(j.errors||[]).map(e=>String(e.code))].filter(Boolean),hint=codes.map(c=>SHX[c]).find(Boolean)||(j.errors?.length?'A Shopee respondeu com erro. Se for de campo ou de permissão, o catálogo de itens pode precisar de liberação na sua conta de afiliado.':'');
   return `<div class="box" style="border-color:#efc3c8"><h3 style="color:var(--dng,#c62f3f)">Não funcionou${r.status?' ('+r.status+')':''}</h3><p>${esc(j.message||j.error||r.msg||'Erro desconhecido')}</p>${(j.errors||[]).map(e=>`<p class=note>Shopee${e.code!=null?' '+esc(String(e.code)):''}: ${esc(e.message)}</p>`).join('')}${hint?`<p><b>O que fazer:</b> ${esc(hint)}</p>`:''}${raw(r.j||{message:r.msg})}</div>`};
- const items=async(id,name,offset,btn)=>{busy(btn,'Consultando…');try{const r=await call({datafeedId:String(id),offset,limit:20});
+ const items=async(id,name,offset,btn)=>{busy(btn,'Consultando…');try{const [r]=await Promise.all([call({datafeedId:String(id),offset,limit:20}),shIndex().catch(e=>{console.warn('índice da loja',e)})]);
    if(!r.ok){out.insertAdjacentHTML('beforeend',fail(r));return}
    const rows=r.j.rows||[],pi=r.j.pageInfo||{},cell=c=>{let v=c;if(typeof v==='string'){try{v=JSON.parse(v)}catch(_){}}return v};
-   out.insertAdjacentHTML('beforeend',`<div class=box><h3>Itens de “${esc(name)}”</h3><p class=note>Mostrando ${pi.offset??offset}–${(pi.offset??offset)+rows.length} de ${pi.totalCount??'?'} · ${pi.hasMore?'há mais páginas':'última página'} · nada foi gravado</p>${rows.length?`<div class=shg>${rows.slice(0,20).map((x,i)=>shCard(cell(x.columns),x.updateType,(pi.offset??offset)+i+1)).join('')}</div>`:'<p>Nenhum item nesta página.</p>'}
+   const vis=rows.slice(0,20).map(x=>cell(x.columns)),rep=SHIDX?vis.filter(c=>c&&c.itemid&&SHIDX.map.has(String(c.itemid))).length:null;
+   out.insertAdjacentHTML('beforeend',`<div class=box><h3>Itens de “${esc(name)}”</h3><p class=note>Mostrando ${pi.offset??offset}–${(pi.offset??offset)+rows.length} de ${pi.totalCount??'?'} · ${pi.hasMore?'há mais páginas':'última página'} · nada foi gravado</p>${rep!=null?`<p class="bkn ${rep?'ok':''}" style="margin:8px 0"><b>${rep} de ${vis.length}</b>&nbsp;desta página já ${rep===1?'está':'estão'} na loja.${SHIDX.short?` <small>(${SHIDX.short} produtos da loja usam link curto e não dá para comparar pelo código.)</small>`:''}</p>`:'<p class=note>Não foi possível comparar com os produtos da loja agora.</p>'}${rows.length?`<div class=shg>${rows.slice(0,20).map((x,i)=>shCard(vis[i],x.updateType,(pi.offset??offset)+i+1)).join('')}</div>`:'<p>Nenhum item nesta página.</p>'}
    ${pi.hasMore?`<button class="btn alt sm" data-shn="${esc(String(id))}" data-sho="${(pi.offset??offset)+rows.length}" data-shname="${esc(name)}">Próxima página</button>`:''}${raw(r.j)}</div>`);
    wire()}finally{busy(btn)}};
  const wire=()=>out.querySelectorAll('[data-shi],[data-shn]').forEach(b=>{if(b.dataset.w)return;b.dataset.w=1;b.onclick=()=>run(()=>items(b.dataset.shi||b.dataset.shn,b.dataset.shname,+(b.dataset.sho||0),b))});
