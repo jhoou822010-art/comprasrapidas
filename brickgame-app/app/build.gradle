@@ -1,0 +1,25 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.brickgame.doisemum'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.brickgame.doisemum'
+        minSdk 24
+        targetSdk 34
+        versionCode (System.getenv('VERSAO_CODIGO') ?: '1') as int
+        versionName System.getenv('VERSAO_NOME') ?: '1.0'
+    }
+    // APK para instalar direto no celular (fora da Play Store): assinado com a chave informada pelo workflow
+    signingConfigs {
+        pessoal {
+            storeFile file(System.getenv('BG_KEYSTORE') ?: 'chave.jks')
+            storePassword System.getenv('BG_KEY_PASS') ?: 'brickgame'
+            keyAlias 'brickgame'
+            keyPassword System.getenv('BG_KEY_PASS') ?: 'brickgame'
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.pessoal }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

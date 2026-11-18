@@ -1,0 +1,89 @@
+# Gera o APK do Brick Game 2 em 1 para instalar direto no celular (fora da Play Store).
+# O jogo vai DENTRO do app (feito a partir de css/brickgame.css e js/brickgame.js): abre sem internet e não depende do site.
+# Roda sozinho quando o jogo muda; para gerar na hora: aba Actions > "Brick Game (APK)" > Run workflow.
+# O APK fica no link fixo: Releases > "Brick Game (APK)" > brick-game.apk
+#
+# Opcional, para poder ATUALIZAR o app sem desinstalar (e sem perder os recordes): crie os segredos
+#   BRICKGAME_KEY_BASE64 (chave .jks em base64) e BRICKGAME_KEY_PASS (senha; alias "brickgame").
+# Sem eles, cada geração usa uma chave nova e, para instalar outra versão, é preciso desinstalar a anterior.
+name: Brick Game (APK)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['ccr-239007fe-eta9yz', 'main']
+    paths: ['brickgame-app/**', 'js/brickgame.js', 'css/brickgame.css', '.github/workflows/brickgame-apk.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: brickgame-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Colocar o jogo dentro do app
+        run: node brickgame-app/montar.mjs
+
+      - name: Chave de assinatura
+        env:
+          KEY_B64: ${{ secrets.BRICKGAME_KEY_BASE64 }}
+          KEY_PASS: ${{ secrets.BRICKGAME_KEY_PASS }}
+        run: |
+          if [ -n "$KEY_B64" ] && [ -n "$KEY_PASS" ]; then
+            echo "$KEY_B64" | base64 -d > "$RUNNER_TEMP/bg.jks"
+            echo "BG_KEY_PASS=$KEY_PASS" >> "$GITHUB_ENV"
+            echo "Usando a chave fixa (atualizações sem desinstalar)."
+          else
+            keytool -genkeypair -keystore "$RUNNER_TEMP/bg.jks" -alias brickgame -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass brickgame -keypass brickgame -dname "CN=Brick Game"
+            echo "BG_KEY_PASS=brickgame" >> "$GITHUB_ENV"
+            echo "::notice::Chave nova gerada: para instalar esta versão por cima de outra, desinstale a anterior."
+          fi
+          echo "BG_KEYSTORE=$RUNNER_TEMP/bg.jks" >> "$GITHUB_ENV"
+
+      - name: Gerar o APK
+        working-directory: brickgame-app
+        env:
+          VERSAO_CODIGO: ${{ github.run_number }}
+          VERSAO_NOME: 1.0.${{ github.run_number }}
+        run: gradle --no-daemon assembleRelease
+
+      - name: Separar o arquivo
+        run: cp brickgame-app/app/build/outputs/apk/release/app-release.apk brick-game.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: brick-game-apk
+          path: brick-game.apk
+
+      - name: Link fixo para baixar no celular
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: brickgame-apk
+          name: Brick Game (APK)
+          prerelease: true
+          make_latest: false
+          files: brick-game.apk
+          body: |
+            Brick Game 2 em 1 (Corrida e Blocos) para instalar direto no celular Android, fora da Play Store.
+            Funciona sem internet, sem anúncios e sem nenhuma permissão. Versão 1.0.${{ github.run_number }}.
+            Como instalar: baixe brick-game.apk no celular, abra o arquivo e permita "instalar apps desta fonte" quando o Android pedir.

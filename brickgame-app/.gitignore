@@ -1,0 +1,6 @@
+# gerados no build (o index.html é montado a partir de css/brickgame.css e js/brickgame.js)
+app/src/main/assets/index.html
+app/build/
+build/
+.gradle/
+*.jks
