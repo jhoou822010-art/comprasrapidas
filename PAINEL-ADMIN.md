@@ -70,3 +70,15 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
 **Banco:** nada novo. Configuração na chave `push_oferta_dia` de `cr_site_settings.data`.
 **Publicação:** a função precisa ser publicada no Supabase (com os dois arquivos da pasta `send-push`).
 **Desligar:** desmarcar “Oferta do dia ligada” e salvar. **Desfazer:** reverter o commit e publicar de novo a versão anterior da função.
+
+# Shopee: importar com aprovação (Operações › Teste Shopee)
+
+- Lista os catálogos da API de Afiliados (função `shopee-affiliate-preview-v1`, somente leitura) e carrega 20, 100 ou 500 itens por página.
+- Filtros: categoria da Shopee, desconto mínimo, avaliação mínima, faixa de preço e “esconder os que já estão na loja”
+  (comparação pelo código do item Shopee dentro do link de afiliado ou pelo `ext_id`).
+- Só grava quando você marca itens e toca em **Importar selecionados** (até 50 por vez, com confirmação). Cada produto entra
+  **inativo**, na loja Shopee, com `ext_source = 'shopee'` e `ext_id = itemid` (o índice único do banco impede duplicata),
+  preço = `sale_price`, preço anterior = `price` quando maior, oferta quando o desconto real é de 10% ou mais, link = `product_short link`, até 10 fotos.
+- Lembra a categoria escolhida para cada categoria da Shopee (`cr_site_settings.data.shopee_cat_map`) e guarda as últimas 10 importações
+  (`shopee_imports`). **Desfazer esta importação** apaga só os produtos daquela importação que ainda estão inativos.
+- Nenhuma mudança no banco: usa as colunas `ext_source`/`ext_id` e o índice único que já existiam.

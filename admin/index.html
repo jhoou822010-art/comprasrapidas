@@ -78,6 +78,9 @@ body.adb{background:#eef1f6}body.adb #app{max-width:none;padding:0}
 .shc{display:grid;grid-template-columns:96px 1fr;gap:12px;margin:0!important;padding:12px!important}.shc>img,.shph{width:96px;height:96px;border-radius:8px;object-fit:cover;background:#eef1f6}
 .shb{min-width:0;display:flex;flex-direction:column;gap:3px}.sht{color:var(--ink,#1b2a44);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .shp b{font-size:1.05rem;color:var(--ink,#1b2a44)}.shp s{color:#6b7891;font-size:.85rem}.shd{margin:2px 0;font-size:.8rem}.sha{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+.shc.on{border-color:var(--c2);box-shadow:0 0 0 2px #1a5fd633}.shck{display:flex;align-items:center;gap:8px;margin:0 0 2px;font-weight:600;font-size:.88rem}.shck input{width:20px;height:20px}
+.shimp{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:#fff;border:1px solid var(--line,#e2e7ef);border-radius:12px;padding:10px 12px;margin-top:12px;box-shadow:0 -4px 16px #0b2a5b14}
+.adm .shf{grid-template-columns:1fr 1fr}@media(min-width:900px){.adm .shf{grid-template-columns:repeat(3,1fr)}}
 .shpre{white-space:pre-wrap;word-break:break-word;font-size:.75rem;max-height:280px;overflow:auto;background:#f7f9fc;border:1px solid #e2e7ef;border-radius:8px;padding:8px;margin:6px 0 0}
 .adm .pf{grid-template-columns:1fr 1fr;gap:0 10px}.adm .pf label:first-child{grid-column:1/-1}@media(min-width:700px){.adm .pf{grid-template-columns:2fr 1fr 1fr}.adm .pf label:first-child{grid-column:auto}}
 @media(max-width:599px){.tb small{display:none}.adm h2{font-size:1.2rem}}
@@ -577,39 +580,95 @@ async function shIndex(){if(SHIDX)return SHIDX;const map=new Map();let short=0;
   for(const p of data||[]){const id=p.ext_source==='shopee'&&p.ext_id?String(p.ext_id):shItemOf(p.affiliate_url);if(id)map.set(id,p);else if(/shopee|shope\.ee/i.test(p.affiliate_url||''))short++}
   if(!data||data.length<1000)break}
  return SHIDX={map,short}}
-function shCard(c,upd,n){if(!c||typeof c!=='object')return `<div class="box shc"><b>Item ${n}</b><p class=note>Formato inesperado.</p><pre class=shpre>${esc(JSON.stringify(c,null,2))}</pre></div>`;
+// ---- importação com aprovação: só os itens marcados, até SHMAX por vez, sempre INATIVOS (você revisa e ativa depois).
+// Grava pelo próprio painel (login de administrador), como o cadastro de produto e a importação CSV. A função da Shopee continua só leitura.
+// Configurações guardadas em cr_site_settings.data: shopee_cat_map {categoria Shopee → categoria da loja} e shopee_imports (últimas importações, para desfazer).
+const SHMAX=50,SHOFFER=10;
+const shLink=c=>shUrl(c['product_short link'])||shUrl(c.product_short_link);
+const shCat=c=>[c.global_category1,c.global_category2].filter(Boolean).map(String).join(' › ')||'(sem categoria)';
+const shWhy=c=>!c||typeof c!=='object'?'formato inesperado':!c.itemid?'sem código':SHIDX?.map.has(String(c.itemid))?'já está na loja':!shLink(c)?'sem link de afiliado':(shNum(c.sale_price)??shNum(c.price))==null?'sem preço':!String(c.title||'').trim()?'sem nome':'';
+const shImgs=c=>[c.image_link,...Array.from({length:12},(_,i)=>c['image_link_'+(i+2)])].map(shUrl).filter(Boolean).filter((u,i,a)=>a.indexOf(u)===i).slice(0,10);
+function shCard(c,upd,n,i,sel){if(!c||typeof c!=='object')return `<div class="box shc"><b>Item ${n}</b><p class=note>Formato inesperado.</p><pre class=shpre>${esc(JSON.stringify(c,null,2))}</pre></div>`;
  const sale=shNum(c.sale_price),full=shNum(c.price),now=sale??full,old=sale!=null&&full!=null&&full>sale?full:null,disc=shNum(c.discount_percentage),rate=shNum(c.item_rating);
- const img=shUrl(c.image_link),link=shUrl(c['product_short link'])||shUrl(c.product_short_link)||shUrl(c.product_link),aff=!!(shUrl(c['product_short link'])||shUrl(c.product_short_link));
+ const img=shUrl(c.image_link),link=shLink(c)||shUrl(c.product_link),aff=!!shLink(c),why=shWhy(c);
  const ja=SHIDX&&c.itemid?SHIDX.map.get(String(c.itemid)):null,ST2={active:'ativo',inactive:'inativo',archived:'arquivado'};
- const cat=[c.global_category1,c.global_category2].filter(Boolean).map(String).join(' › '),desc=String(c.description||'').replace(/\s+/g,' ').trim();
- return `<div class="box shc">${img?`<img src="${esc(img)}" alt="" loading=lazy onerror="this.style.visibility='hidden'">`:'<div class=shph></div>'}<div class=shb>
+ const desc=String(c.description||'').replace(/\s+/g,' ').trim();
+ return `<div class="box shc${sel?' on':''}">${img?`<img src="${esc(img)}" alt="" loading=lazy onerror="this.style.visibility='hidden'">`:'<div class=shph></div>'}<div class=shb>
+ ${i!=null?`<label class=shck><input type=checkbox data-shsel="${i}" ${sel?'checked':''} ${why?'disabled':''}> ${why?`<small class=note>Não importável: ${esc(why)}</small>`:'Importar este'}</label>`:''}
  ${ja?`<span class="chip ok" title="${esc(ja.name)}">✓ Já está na loja (${ST2[ja.status]||esc(ja.status)})</span>`:''}<small class=note>Item ${n}${upd?` · <span class=chip>${esc(String(upd))}</span>`:''}${c.itemid?` · ID ${esc(String(c.itemid))}`:''}</small>
  <b class=sht>${esc(String(c.title||'(sem nome)'))}</b>
  <div class=shp>${now!=null?`<b>${money(now)}</b>`:'<small class=note>sem preço</small>'}${old?` <s>${money(old)}</s>`:''}${disc&&disc>0?` <span class="chip off">-${esc(String(Math.round(disc)))}%</span>`:''}</div>
- <small class=note>${rate!=null?`★ ${esc(rate.toFixed(2).replace('.',','))}`:'sem avaliação'}${cat?` · ${esc(cat)}`:''}</small>
+ <small class=note>${rate!=null?`★ ${esc(rate.toFixed(2).replace('.',','))}`:'sem avaliação'} · ${esc(shCat(c))}</small>
  ${desc?`<p class="note shd">${esc(desc.slice(0,140))}${desc.length>140?'…':''}</p>`:''}
  <div class=sha>${link?`<a class="btn alt sm" href="${esc(link)}" target=_blank rel="noopener sponsored">Abrir na Shopee ↗</a>`:''}${link?`<small class=note>${aff?'link de afiliado':'link comum (sem afiliado)'}</small>`:''}</div>
  <details><summary class=note style="cursor:pointer">Dados completos</summary><pre class=shpre>${esc(JSON.stringify(c,null,2))}</pre></details></div></div>`}
 async function shopeeTest(el){
- el.innerHTML=`<h2>Teste Shopee</h2><div class=box><p class=note style="margin-top:0"><b>Somente leitura.</b> Consulta a API de Afiliados da Shopee com as chaves guardadas no Supabase e mostra o resultado aqui. Nenhum produto é criado, alterado ou publicado na loja.</p>
- <div class=row><label>Tipo de catálogo<select id=shm><option value=FULL>Completo (FULL)</option><option value=DELTA>Só mudanças (DELTA)</option></select></label></div><button class=btn id=shl>Listar catálogos</button></div><div id=shr></div>`;
- const out=$('#shr'),busy=(b,t)=>{b.disabled=!!t;if(t){b.dataset.t=b.textContent;b.textContent=t}else if(b.dataset.t)b.textContent=b.dataset.t};
+ el.innerHTML=`<h2>Teste Shopee</h2><div class=box><p class=note style="margin-top:0">Consulta a API de Afiliados da Shopee com as chaves guardadas no Supabase. <b>Só grava quando você marca itens e toca em “Importar selecionados”</b>: eles entram <b>inativos</b> (não aparecem no site) até você revisar e ativar em Produtos.</p>
+ <div class=row><label>Tipo de catálogo<select id=shm><option value=FULL>Completo (FULL)</option><option value=DELTA>Só mudanças (DELTA)</option></select></label><label>Itens por página<select id=shpp><option>20</option><option selected>100</option><option>500</option></select></label></div><button class=btn id=shl>Listar catálogos</button></div><div id=shbk></div><div id=shr></div><div id=shpg></div><div id=shres></div>`;
+ bkNote(1).then(h=>{$('#shbk').innerHTML=h.replace('<span>','<span>Antes de importar, tenha um backup recente. ')}).catch(()=>{});
+ const out=$('#shr'),pg=$('#shpg'),res=$('#shres'),busy=(b,t)=>{b.disabled=!!t;if(t){b.dataset.t=b.textContent;b.textContent=t}else if(b.dataset.t)b.textContent=b.dataset.t};
  const call=async body=>{const {data,error}=await sb.functions.invoke('shopee-affiliate-preview-v1',{body});if(!error)return {ok:true,j:data};
   let j=null;try{j=await error.context.json()}catch(_){}return {ok:false,j,status:error.context?.status,msg:error.message}};
  const raw=j=>`<details style="margin-top:10px"><summary class=note style="cursor:pointer">Resposta completa</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:.8rem;max-height:360px;overflow:auto;background:#f7f9fc;border:1px solid #e2e7ef;border-radius:8px;padding:10px">${esc(JSON.stringify(j,null,2))}</pre></details>`;
  const fail=r=>{const j=r.j||{},codes=[j.code,j.error,...(j.errors||[]).map(e=>String(e.code))].filter(Boolean),hint=codes.map(c=>SHX[c]).find(Boolean)||(j.errors?.length?'A Shopee respondeu com erro. Se for de campo ou de permissão, o catálogo de itens pode precisar de liberação na sua conta de afiliado.':'');
   return `<div class="box" style="border-color:#efc3c8"><h3 style="color:var(--dng,#c62f3f)">Não funcionou${r.status?' ('+r.status+')':''}</h3><p>${esc(j.message||j.error||r.msg||'Erro desconhecido')}</p>${(j.errors||[]).map(e=>`<p class=note>Shopee${e.code!=null?' '+esc(String(e.code)):''}: ${esc(e.message)}</p>`).join('')}${hint?`<p><b>O que fazer:</b> ${esc(hint)}</p>`:''}${raw(r.j||{message:r.msg})}</div>`};
- const items=async(id,name,offset,btn)=>{busy(btn,'Consultando…');try{const [r]=await Promise.all([call({datafeedId:String(id),offset,limit:20}),shIndex().catch(e=>{console.warn('índice da loja',e)})]);
-   if(!r.ok){out.insertAdjacentHTML('beforeend',fail(r));return}
-   const rows=r.j.rows||[],pi=r.j.pageInfo||{},cell=c=>{let v=c;if(typeof v==='string'){try{v=JSON.parse(v)}catch(_){}}return v};
-   const vis=rows.slice(0,20).map(x=>cell(x.columns)),rep=SHIDX?vis.filter(c=>c&&c.itemid&&SHIDX.map.has(String(c.itemid))).length:null;
-   out.insertAdjacentHTML('beforeend',`<div class=box><h3>Itens de “${esc(name)}”</h3><p class=note>Mostrando ${pi.offset??offset}–${(pi.offset??offset)+rows.length} de ${pi.totalCount??'?'} · ${pi.hasMore?'há mais páginas':'última página'} · nada foi gravado</p>${rep!=null?`<p class="bkn ${rep?'ok':''}" style="margin:8px 0"><b>${rep} de ${vis.length}</b>&nbsp;desta página já ${rep===1?'está':'estão'} na loja.${SHIDX.short?` <small>(${SHIDX.short} produtos da loja usam link curto e não dá para comparar pelo código.)</small>`:''}</p>`:'<p class=note>Não foi possível comparar com os produtos da loja agora.</p>'}${rows.length?`<div class=shg>${rows.slice(0,20).map((x,i)=>shCard(vis[i],x.updateType,(pi.offset??offset)+i+1)).join('')}</div>`:'<p>Nenhum item nesta página.</p>'}
-   ${pi.hasMore?`<button class="btn alt sm" data-shn="${esc(String(id))}" data-sho="${(pi.offset??offset)+rows.length}" data-shname="${esc(name)}">Próxima página</button>`:''}${raw(r.j)}</div>`);
-   wire()}finally{busy(btn)}};
- const wire=()=>out.querySelectorAll('[data-shi],[data-shn]').forEach(b=>{if(b.dataset.w)return;b.dataset.w=1;b.onclick=()=>run(()=>items(b.dataset.shi||b.dataset.shn,b.dataset.shname,+(b.dataset.sho||0),b))});
+ const cell=c=>{let v=c;if(typeof v==='string'){try{v=JSON.parse(v)}catch(_){}}return v};
+ let PG=null,RT=0,F={cat:'',disc:0,rate:0,pmin:'',pmax:'',hide:true};const SEL=new Set();
+ const [{data:cats},cfg0]=await Promise.all([sb.from('cr_categories').select('id,name').order('name'),getSet()]);let CMAP=cfg0.shopee_cat_map&&typeof cfg0.shopee_cat_map==='object'?{...cfg0.shopee_cat_map}:{};
+ const passes=c=>{if(!c||typeof c!=='object')return !F.hide;if(F.hide&&SHIDX?.map.has(String(c.itemid)))return false;if(F.cat&&shCat(c)!==F.cat)return false;
+  const p=shNum(c.sale_price)??shNum(c.price),d=shNum(c.discount_percentage)||0,r=shNum(c.item_rating)||0;
+  if(F.disc&&d<F.disc)return false;if(F.rate&&r<F.rate)return false;if(F.pmin!==''&&(p==null||p<+F.pmin))return false;if(F.pmax!==''&&(p==null||p>+F.pmax))return false;return true};
+ const draw=()=>{if(!PG){pg.innerHTML='';return}const {id,name,offset,pi,vis,raw:rj}=PG,o=pi.offset??offset;
+  const rep=SHIDX?vis.filter(c=>c&&c.itemid&&SHIDX.map.has(String(c.itemid))).length:null,keys={};vis.forEach(c=>{if(c&&typeof c==='object'){const k=shCat(c);keys[k]=(keys[k]||0)+1}});
+  const show=vis.map((c,i)=>({c,i})).filter(x=>passes(x.c)),okN=show.filter(x=>!shWhy(x.c)).length,sug=F.cat&&CMAP[F.cat]?CMAP[F.cat]:'';
+  pg.innerHTML=`<div class=box><h3>Itens de “${esc(name)}”</h3><p class=note>Página com ${vis.length} itens (${o+1}–${o+vis.length} de ${pi.totalCount??'?'}) · ${pi.hasMore?'há mais páginas':'última página'}</p>${rep!=null?`<p class="bkn ${rep?'ok':''}" style="margin:8px 0"><b>${rep} de ${vis.length}</b>&nbsp;desta página já ${rep===1?'está':'estão'} na loja.${SHIDX.short?` <small>(${SHIDX.short} produtos da loja usam link curto e não dá para comparar pelo código.)</small>`:''}</p>`:'<p class=note>Não foi possível comparar com os produtos da loja agora.</p>'}
+  <div class="row shf"><label>Categoria da Shopee<select id=sfc><option value="">Todas</option>${Object.entries(keys).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<option value="${esc(k)}" ${k===F.cat?'selected':''}>${esc(k)} (${n})</option>`).join('')}</select></label>
+  <label>Desconto mínimo (%)<input id=sfd type=number min=0 max=95 value="${F.disc||''}" placeholder="0"></label><label>Avaliação mínima<select id=sfr>${[0,4,4.5,4.8].map(v=>`<option value=${v} ${+F.rate===v?'selected':''}>${v?'★ '+String(v).replace('.',','):'Qualquer'}</option>`).join('')}</select></label>
+  <label>Preço de (R$)<input id=sfa inputmode=decimal value="${esc(String(F.pmin))}"></label><label>Preço até (R$)<input id=sfb inputmode=decimal value="${esc(String(F.pmax))}"></label><label style="align-self:end"><input type=checkbox id=sfh ${F.hide?'checked':''}> Esconder os que já estão na loja</label></div>
+  <p class=note>${show.length} item(ns) com estes filtros · ${okN} podem ser importados. <button class="btn alt sm" id=sfall>Marcar os que podem (até ${SHMAX})</button> <button class="btn alt sm" id=sfnone>Desmarcar todos</button></p>
+  ${show.length?`<div class=shg>${show.map(({c,i})=>shCard(c,rj[i]?.updateType,o+i+1,i,SEL.has(i))).join('')}</div>`:'<p>Nenhum item com estes filtros nesta página.</p>'}
+  <div class=pgn style="margin-top:12px">${o>0?`<button class="btn alt sm" data-shpg="${Math.max(0,o-PG.limit)}">‹ Página anterior</button>`:''}${pi.hasMore?`<button class="btn alt sm" data-shpg="${o+vis.length}">Próxima página ›</button>`:''}</div>
+  <div class=shimp><b>${SEL.size}</b>&nbsp;marcado(s)<label style="margin:0;flex:1 1 200px">Entrar na categoria da loja<select id=shcat><option value="">Escolha…</option>${(cats||[]).map(x=>`<option value="${x.id}" ${x.id===sug?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label><button class=btn id=shimp ${SEL.size?'':'disabled'}>Importar selecionados</button>
+  <small class=note style="flex-basis:100%">Entram inativos · loja Shopee · desconto real a partir de ${SHOFFER}% entra como oferta · até ${SHMAX} por vez · nunca repete produto já importado.</small></div>${raw(rj.slice(0,3))}</div>`;
+  const re=()=>{F={cat:$('#sfc').value,disc:+$('#sfd').value||0,rate:+$('#sfr').value||0,pmin:num($('#sfa').value)??'',pmax:num($('#sfb').value)??'',hide:$('#sfh').checked};if(isNaN(F.pmin))F.pmin='';if(isNaN(F.pmax))F.pmax='';clearTimeout(RT);RT=setTimeout(draw,0)};
+  ['#sfc','#sfr','#sfh'].forEach(s=>$(s).onchange=re);['#sfd','#sfa','#sfb'].forEach(s=>$(s).onchange=re);
+  pg.querySelectorAll('[data-shsel]').forEach(x=>x.onchange=()=>{const i=+x.dataset.shsel;if(x.checked){if(SEL.size>=SHMAX){x.checked=false;return alert('No máximo '+SHMAX+' por importação.')}SEL.add(i)}else SEL.delete(i);draw()});
+  $('#sfall').onclick=()=>{for(const {c,i} of show){if(SEL.size>=SHMAX)break;if(!shWhy(c))SEL.add(i)}draw()};$('#sfnone').onclick=()=>{SEL.clear();draw()};
+  pg.querySelectorAll('[data-shpg]').forEach(b=>b.onclick=()=>run(()=>load(id,name,+b.dataset.shpg,b)));
+  $('#shimp').onclick=()=>run(()=>importar($('#shimp')))};
+ const load=async(id,name,offset,btn)=>{const limit=+$('#shpp').value||100;busy(btn,'Consultando…');try{const [r]=await Promise.all([call({datafeedId:String(id),offset,limit}),shIndex().catch(e=>{console.warn('índice da loja',e)})]);
+   if(!r.ok){pg.innerHTML=fail(r);return}const rows=r.j.rows||[];SEL.clear();
+   PG={id,name,offset,limit,pi:r.j.pageInfo||{},vis:rows.map(x=>cell(x.columns)),raw:rows};draw();pg.scrollIntoView?.({block:'start'})}finally{if(btn.isConnected)busy(btn)}};
+ // grava os marcados (inativos), as fotos, lembra a categoria escolhida e registra a importação para poder desfazer
+ const importar=async btn=>{const idx=[...SEL].sort((a,b)=>a-b),catId=$('#shcat').value,catName=(cats||[]).find(x=>x.id===catId)?.name;
+  if(!idx.length)throw new Error('Marque pelo menos um item.');if(idx.length>SHMAX)throw new Error('No máximo '+SHMAX+' por importação.');if(!catId)throw new Error('Escolha a categoria da loja em que os produtos vão entrar.');
+  if(!confirm(`Importar ${idx.length} produto(s) para “${catName}”?\n\nEles entram INATIVOS (não aparecem no site) até você revisar e ativar em Produtos.`))return;
+  busy(btn,'Importando…');const done=[],skip=[];
+  try{let {data:m}=await sb.from('cr_merchants').select('id').ilike('name','shopee').maybeSingle();if(!m){const r=await sb.from('cr_merchants').insert({name:'Shopee'}).select('id').single();if(r.error)throw r.error;m=r.data}
+   for(const i of idx){const c=PG.vis[i],why=shWhy(c);if(why){skip.push([c?.title||'Item',why]);continue}
+    const sale=shNum(c.sale_price)??shNum(c.price),full=shNum(c.price),disc=full&&full>sale?(full-sale)/full*100:0,name=String(c.title).trim().slice(0,200);
+    const row={name,slug:slug(name),description:String(c.description||'').trim().slice(0,5000)||null,price:sale,old_price:full!=null&&full>sale?full:null,category_id:catId,merchant_id:m.id,affiliate_url:shLink(c),featured:false,offer:disc>=SHOFFER,status:'inactive',ext_source:'shopee',ext_id:String(c.itemid)};
+    const {data:p,error}=await sb.from('cr_products').insert(row).select('id').single();
+    if(error){skip.push([name,error.code==='23505'?'já existia (código repetido)':error.message]);continue}
+    const imgs=shImgs(c);if(imgs.length){const {error:ie}=await sb.from('cr_product_images').insert(imgs.map((url,k)=>({product_id:p.id,url,sort:k,is_cover:k===0})));if(ie)console.warn('fotos',ie)}
+    done.push(p.id);SHIDX?.map.set(String(c.itemid),{name,status:'inactive'})}
+   const cur=await getSet(),keysSel=[...new Set(idx.map(i=>shCat(PG.vis[i])))];keysSel.forEach(k=>{CMAP[k]=catId});
+   const log=[{at:new Date().toISOString(),ids:done,cat:catName,n:done.length},...(Array.isArray(cur.shopee_imports)?cur.shopee_imports:[])].slice(0,10);
+   const {error:se}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,shopee_cat_map:{...(cur.shopee_cat_map||{}),...CMAP},shopee_imports:done.length?log:cur.shopee_imports}});if(se)console.warn('config',se)}
+  finally{busy(btn)}
+  SEL.clear();draw();showRes(done,skip,catName)};
+ const showRes=(done,skip,catName)=>{res.innerHTML=`<div class=box style="border-color:#bcd0f0"><h3>Importação concluída</h3><p><b>${done.length}</b> produto(s) cadastrado(s) em “${esc(catName||'')}”, <b>inativos</b>. Revise em <a href="#" id=shgo style="text-decoration:underline">Produtos</a> (filtro Status › Inativos) e ative os que quiser.</p>
+  ${skip.length?`<p><b>${skip.length}</b> não importado(s):</p><ul>${skip.slice(0,20).map(([n,w])=>`<li>${esc(n)} — <small>${esc(w)}</small></li>`).join('')}</ul>`:''}
+  ${done.length?`<button class="btn dng sm" id=shundo>Desfazer esta importação</button> <small class=note>Apaga só os produtos desta importação que ainda estiverem inativos.</small>`:''}</div>`;
+  res.scrollIntoView?.({block:'start'});$('#shgo').onclick=e=>{e.preventDefault();document.querySelector('[data-t=Produtos]').click()};
+  const u=$('#shundo');if(u)u.onclick=()=>run(async()=>{if(!confirm(`Apagar os produtos desta importação que ainda estão inativos (até ${done.length})? Não dá para desfazer.`))return;
+   const {data:del,error}=await sb.from('cr_products').delete().in('id',done).eq('status','inactive').select('id');if(error)throw error;
+   const cur=await getSet();await sb.from('cr_site_settings').upsert({id:1,data:{...cur,shopee_imports:(cur.shopee_imports||[]).filter(x=>!(x.ids||[]).some(i=>done.includes(i)))}});
+   SHIDX=null;await shIndex().catch(()=>{});draw();res.innerHTML=`<div class=box><p>Desfeito: <b>${(del||[]).length}</b> produto(s) apagado(s).${(del||[]).length<done.length?' Os que você já tinha ativado foram mantidos.':''}</p></div>`})};
+ const wire=()=>out.querySelectorAll('[data-shi]').forEach(b=>{if(b.dataset.w)return;b.dataset.w=1;b.onclick=()=>run(()=>load(b.dataset.shi,b.dataset.shname,0,b))});
  $('#shl').onclick=()=>run(async()=>{const b=$('#shl');busy(b,'Consultando a Shopee…');out.innerHTML='';
   try{const r=await call({feedMode:$('#shm').value});if(!r.ok){out.innerHTML=fail(r);return}
-   const f=r.j.feeds||[];out.innerHTML=`<div class=box><h3>Catálogos encontrados: ${f.length}</h3>${f.length?`<div class=tbx><table class=lt><thead><tr><th>Catálogo<th>Itens<th>Data<th>Tipo<th class=ac><span class=sr>Ações</span></tr></thead><tbody>${f.map(x=>`<tr><td><span class=pn1>${esc(x.datafeedName||'(sem nome)')}</span>${x.description?`<br><small>${esc(x.description)}</small>`:''}<br><small>ID ${esc(String(x.datafeedId??''))}</small><td>${esc(String(x.totalCount??'—'))}<td>${esc(String(x.date??'—'))}<td>${esc(String(x.feedMode??''))}<td class=ac><button class="btn sm" data-shi="${esc(String(x.datafeedId??''))}" data-shname="${esc(x.datafeedName||'catálogo')}">Ver 20 itens</button></tr>`).join('')}</tbody></table></div>`:'<p class=note>A Shopee não devolveu nenhum catálogo para esta conta.</p>'}<p class=note>Resposta da função: persisted=${esc(String(r.j.persisted))}, published=${esc(String(r.j.published))} (nada gravado).</p>${raw(r.j)}</div>`;wire()}finally{busy(b)}})}
+   const f=r.j.feeds||[];out.innerHTML=`<div class=box><h3>Catálogos encontrados: ${f.length}</h3>${f.length?`<div class=tbx><table class=lt><thead><tr><th>Catálogo<th>Itens<th>Data<th>Tipo<th class=ac><span class=sr>Ações</span></tr></thead><tbody>${f.map(x=>`<tr><td><span class=pn1>${esc(x.datafeedName||'(sem nome)')}</span>${x.description?`<br><small>${esc(x.description)}</small>`:''}<br><small>ID ${esc(String(x.datafeedId??''))}</small><td>${esc(String(x.totalCount??'—'))}<td>${esc(String(x.date??'—'))}<td>${esc(String(x.feedMode??''))}<td class=ac><button class="btn sm" data-shi="${esc(String(x.datafeedId??''))}" data-shname="${esc(x.datafeedName||'catálogo')}">Ver itens</button></tr>`).join('')}</tbody></table></div>`:'<p class=note>A Shopee não devolveu nenhum catálogo para esta conta.</p>'}<p class=note>Resposta da função: persisted=${esc(String(r.j.persisted))}, published=${esc(String(r.j.published))} (a consulta não grava nada).</p>${raw(r.j)}</div>`;wire()}finally{busy(b)}})}
 // ---------- Notificações › Oferta do dia (automática). Regras em supabase/functions/send-push/oferta-dia.js (as mesmas da função de envio)
 async function odCard(box,N){const O=await import('../supabase/functions/send-push/oferta-dia.js');
  const [s0,{data:cs},{data:pr,error:pe},{data:rec}]=await Promise.all([getSet(),sb.from('cr_categories').select('id,name').order('name'),
