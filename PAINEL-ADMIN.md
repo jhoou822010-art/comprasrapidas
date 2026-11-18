@@ -82,3 +82,7 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
 - Lembra a categoria escolhida para cada categoria da Shopee (`cr_site_settings.data.shopee_cat_map`) e guarda as últimas 10 importações
   (`shopee_imports`). **Desfazer esta importação** apaga só os produtos daquela importação que ainda estão inativos.
 - Nenhuma mudança no banco: usa as colunas `ext_source`/`ext_id` e o índice único que já existiam.
+- **Busca no catálogo inteiro:** “Procurar no catálogo inteiro” percorre o catálogo (500 por vez, até 20.000 itens) e para ao juntar 50 produtos
+  importáveis que passem nos filtros, incluindo **categoria da Shopee** (pode digitar parte do nome, ex.: “Women Clothes”) e **palavras no nome**
+  (ex.: “vestido, blusa, saia”). Tem botão Parar. Somente leitura.
+- **Filtros salvos:** guardados com nome em `cr_site_settings.data.shopee_filters` (até 20); excluir pede confirmação.
