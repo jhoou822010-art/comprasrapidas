@@ -7,6 +7,12 @@ export const MARCA = {
   email: 'contato@comprasrapidasandrade.com.br',
   emailAtivo: false,
 
+  // Autoria da plataforma (assinatura no rodapé, no Sobre, no painel e nos dados para o Google).
+  plataforma: 'Compras Rápidas Andrade',
+  criador: 'Jonatha Melo',
+  criadorFuncao: 'Criador e desenvolvedor da plataforma',
+  anoCriacao: 2026,
+
   responsavel: '',        // ex.: 'Nome Sobrenome' ou razão social
   cnpj: '',               // somente se existir, ex.: '00.000.000/0001-00'
   cidade: '',             // ex.: 'Londrina – PR' (cidade/região de atuação)

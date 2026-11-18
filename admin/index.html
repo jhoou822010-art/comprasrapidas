@@ -28,7 +28,7 @@ body.adb{background:#eef1f6}body.adb #app{max-width:none;padding:0}
 .adm .ad button:hover,.sdo:hover{background:#ffffff14;color:#fff}.adm .ad button.on{background:#ffffff26;color:#fff;font-weight:600;box-shadow:inset 3px 0 0 #fff}
 .adm .ad button:focus-visible,.sdo:focus-visible,.sdc:focus-visible{outline:2px solid #ffb703;outline-offset:1px}
 .adm svg{flex:0 0 auto}.ad .lb,.sdo .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sdf{padding:8px 10px 14px;border-top:1px solid #ffffff1f}
+.sdf{padding:8px 10px 14px;border-top:1px solid #ffffff1f}.sdf .sdcr{margin:8px 10px 0;font-size:.7rem;line-height:1.4;color:#93a6c8;white-space:normal}
 .adm.col{--sw:68px}.adm.col .sdh b,.adm.col .lb,.adm.col .sdg{display:none}.adm.col .sdh{flex-direction:column;padding:12px 8px;gap:8px}.adm.col .ad button,.adm.col .sdo{justify-content:center;padding:8px}.adm.col .sdg+button{margin-top:10px}.adm.col .sdc svg{transform:rotate(180deg)}
 .mw{flex:1;min-width:0;display:flex;flex-direction:column}
 .tb{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--line);padding:10px 24px;min-height:56px}.tb b{font-size:1rem;color:var(--ink)}.tb small{color:#6b7891;margin-left:auto;font-size:.82rem}
@@ -79,7 +79,7 @@ body.adb{background:#eef1f6}body.adb #app{max-width:none;padding:0}
 </style></head>
 <body><div id=app class=w></div>
 <script type=module>
-import {$,esc,money,priceTxt,isOffer,cover,cleanTitle,sTokens,sPat,sMatch,sFilter,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref,pushSubscribe,currentSub} from '../js/app.js';
+import {MARCA,$,esc,money,priceTxt,isOffer,cover,cleanTitle,sTokens,sPat,sMatch,sFilter,CONFIGURED,THEMES,themeOn,contactCfg,CTYPES,CGROUPS,CBLOCKS,cIcon,cHref,pushSubscribe,currentSub} from '../js/app.js';
 // o site público usa um cliente leve (js/db.js); o painel precisa da biblioteca completa para login, gravação e envio de fotos
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import {SUPABASE_URL,SUPABASE_KEY} from '../config.js';
@@ -116,7 +116,7 @@ async function init(){if(!CONFIGURED){A.innerHTML='<div class=box><h2>Não confi
  document.body.classList.add('adb');A.className='';
  A.innerHTML=`<div class="adm${col?' col':''}" id=adm><aside class=sd id=sd aria-label="Menu do painel"><div class=sdh><img src=icon-192.png alt=""><b class=lb>Compras Rápidas</b><button type=button class=sdc id=sdc aria-label="Recolher menu" aria-expanded=${!col} title="Recolher/expandir menu">${ico('chev')}</button><button type=button class=sdx id=sdx aria-label="Fechar menu">${ico('x')}</button></div>
  <nav class=ad>${GR.map(([g,ks])=>`<p class=sdg>${g}</p>${ks.map(btn).join('')}`).join('')}</nav>
- <div class=sdf><button type=button class=sdo onclick="lo()" title=Sair>${ico('out')}<span class=lb>Sair</span></button></div></aside>
+ <div class=sdf><button type=button class=sdo onclick="lo()" title=Sair>${ico('out')}<span class=lb>Sair</span></button><p class="sdcr lb">Plataforma desenvolvida por <span style="white-space:nowrap">${esc(MARCA.criador)}</span><br>© ${MARCA.anoCriacao} – ${esc(MARCA.criador)}</p></div></aside>
  <div class=scrim id=scrim></div><div class=mw><header class=tb><button type=button class=mb id=mb aria-label="Abrir menu" aria-controls=sd aria-expanded=false>☰</button><b id=tt>Painel</b><small id=tu></small></header><main id=main></main></div></div>`;
  const adm=$('#adm'),mb=$('#mb'),drawer=o=>{adm.classList.toggle('open',o);mb.setAttribute('aria-expanded',o);if(o)A.querySelector('.ad button.on,.ad button')?.focus();else if(matchMedia('(max-width:899px)').matches)mb.focus()};
  mb.onclick=()=>drawer(true);$('#sdx').onclick=$('#scrim').onclick=()=>drawer(false);

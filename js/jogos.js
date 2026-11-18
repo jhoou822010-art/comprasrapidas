@@ -7,7 +7,7 @@ import {SUPABASE_URL as U,SUPABASE_KEY as K} from '../config.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const TIPOS={todas:'Todas as ofertas',achadinhos:'Achadinhos baratos',categoria:'Uma categoria',produto:'Um produto',link:'Link interno do site'};
 export const MAXR=12; // máximo de resultados (fatias legíveis na roleta)
-export const DEF={raspadinha:false,roleta:false,banner:false,achadinhos_max:30,limite:0,resultados:[
+export const DEF={raspadinha:false,roleta:false,cobrinha:false,banner:false,achadinhos_max:30,limite:0,resultados:[
  {txt:'Ver todas as ofertas',emoji:'🛍️',tipo:'todas',valor:'',peso:3},
  {txt:'Achadinhos baratos',emoji:'💸',tipo:'achadinhos',valor:'',peso:3},
  {txt:'Destaques da vitrine',emoji:'⭐',tipo:'link',valor:'lista.html?tipo=destaques',peso:2},
@@ -17,8 +17,8 @@ export const linkOk=v=>/^[\w.?=&%#-][\w.\/?=&%#-]*$/.test(v||'')&&!v.includes('.
 // lê a configuração salva e corrige qualquer valor fora do esperado
 export function cfg(s){const j=s?.jogos||{},n=(v,d,a,b)=>{v=Number(v);return Number.isFinite(v)?Math.min(b,Math.max(a,v)):d};
  const rs=(Array.isArray(j.resultados)?j.resultados:DEF.resultados).slice(0,MAXR).map(r=>({txt:String(r?.txt||'').trim().slice(0,40),emoji:String(r?.emoji||'').trim().slice(0,8),tipo:TIPOS[r?.tipo]?r.tipo:'todas',valor:String(r?.valor||'').trim().slice(0,200),peso:n(r?.peso,1,0,100)}));
- return {raspadinha:j.raspadinha===true,roleta:j.roleta===true,banner:j.banner===true,achadinhos_max:n(j.achadinhos_max,30,1,100000),limite:Math.round(n(j.limite,0,0,99)),resultados:rs}}
-export const ligado=c=>c.raspadinha||c.roleta;
+ return {raspadinha:j.raspadinha===true,roleta:j.roleta===true,cobrinha:j.cobrinha===true,banner:j.banner===true,achadinhos_max:n(j.achadinhos_max,30,1,100000),limite:Math.round(n(j.limite,0,0,99)),resultados:rs}}
+export const ligado=c=>c.raspadinha||c.roleta||c.cobrinha; // cobrinha: jogo com página própria (cobrinha.html, js/cobrinha.js)
 export const valido=r=>!!r.txt&&r.peso>0&&(r.tipo==='todas'||r.tipo==='achadinhos'||(r.tipo==='link'?linkOk(r.valor):!!r.valor));
 export const OFERTAS='lista.html?tipo=ofertas';
 export const destino=r=>r.tipo==='achadinhos'?'lista.html?tipo=achadinhos':r.tipo==='categoria'&&r.valor?'lista.html?tipo=categoria&slug='+encodeURIComponent(r.valor):r.tipo==='produto'&&r.valor?'produto.html?id='+encodeURIComponent(r.valor):r.tipo==='link'&&linkOk(r.valor)?r.valor:OFERTAS;
@@ -42,11 +42,11 @@ export function registrar(jogo,tipo,r){try{fetch(U+'/rest/v1/cr_jogos_eventos',{
 
 // ---- cores do tema ativo (as mesmas variáveis que o site usa: --c1, --c2 e --btn)
 const hex=c=>{const m=/^#([0-9a-f]{6})$/i.exec(String(c||'').trim());return m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):null};
-const cssv=(k,d)=>{let v='';try{v=getComputedStyle(document.documentElement).getPropertyValue(k).trim()}catch(e){}return hex(v)?v.toLowerCase():d};
+export const cssv=(k,d)=>{let v='';try{v=getComputedStyle(document.documentElement).getPropertyValue(k).trim()}catch(e){}return hex(v)?v.toLowerCase():d};
 const mix=(c,p)=>'#'+hex(c).map(x=>Math.round(x+(255-x)*p).toString(16).padStart(2,'0')).join('');
 const claro=c=>{const [r,g,b]=hex(c);return (r*299+g*587+b*114)/1000>150};
 export function cores(){const b=[...new Set([cssv('--c1','#0b2a5b'),cssv('--c2','#1a5fd6'),cssv('--btn','#1a5fd6')])];return b.flatMap(c=>[c,mix(c,.8)])}
-const calmo=()=>{try{return matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){return false}};
+export const calmo=()=>{try{return matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){return false}};
 
 // ---- telas comuns: resultado (com o botão grande do destino) e limite do dia
 function bloqueio(el){el.innerHTML=`<div class=jres><p class=jem aria-hidden=true>🌙</p><p class=jtt>Volte amanhã para jogar de novo</p><p class=note>As jogadas de hoje neste aparelho já foram usadas.</p><a class="btn big" href="${OFERTAS}">Ver ofertas</a></div>`}
