@@ -1,4 +1,4 @@
-# Continuar o projeto — texto para colar numa nova conversa
+# Coleção Brick Game — texto para colar numa nova conversa e continuar o projeto
 
 Copie tudo o que está dentro do bloco abaixo e cole no começo da próxima conversa, trocando a última linha pelo pedido novo.
 Atualize este arquivo sempre que uma etapa importante for concluída.
