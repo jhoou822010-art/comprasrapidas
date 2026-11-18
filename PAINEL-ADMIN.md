@@ -86,3 +86,17 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
   importáveis que passem nos filtros, incluindo **categoria da Shopee** (pode digitar parte do nome, ex.: “Women Clothes”) e **palavras no nome**
   (ex.: “vestido, blusa, saia”). Tem botão Parar. Somente leitura.
 - **Filtros salvos:** guardados com nome em `cr_site_settings.data.shopee_filters` (até 20); excluir pede confirmação.
+
+# Brick Game 10 em 1 e Desafio (Vitrine › Jogos)
+
+- Caixa **“Brick Game 10 em 1” ligado** em painel › Jogos (chave `jogos.brickgame`). Sem escolha salva, o jogo aparece junto com os outros jogos, como antes.
+- **Desafio Brick Game:** abaixo do aparelho, ranking **da semana** (recomeça toda segunda, horário de Brasília) e **geral** de cada um dos 10 jogos,
+  com o líder em destaque (“Consegue passar?”). O HI-SCORE do aparelho mostra o recorde do Desafio. Só diversão, sem prêmios.
+- Ao fim de uma partida com pontos, quem ainda não tem apelido escolhe um (2 a 12 letras; palavrões são recusados pelo servidor).
+- O servidor recusa pontos impossíveis para o tempo jogado e cada partida só é enviada uma vez. Em painel › Jogos › **Desafio Brick Game**,
+  “Apagar” (com confirmação) tira um apelido do ranking daquele jogo.
+- **Instalar:** rodar uma vez `supabase/08-brickgame-desafio.sql` no SQL Editor (só cria a tabela `cr_brick_partidas` e as funções `cr_brick_*`).
+  Antes disso, o Desafio fica escondido e o jogo funciona normalmente com o recorde do aparelho.
+- **Tamanho:** cada aparelho guarda no máximo 2 partidas por jogo (a melhor geral e a melhor da semana); partidas abertas somem em 1 dia.
+- **Desfazer:** reverter o commit (o Desafio some do site) e, se quiser apagar do banco, o bloco DESFAZER no fim do arquivo 08.
+- O app do celular (APK) não usa internet: continua só com o recorde do aparelho.

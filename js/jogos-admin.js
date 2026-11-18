@@ -3,6 +3,7 @@
 // O resumo lê a tabela cr_jogos_eventos (criada por supabase/05-jogos.sql). Nada aqui altera produtos ou categorias.
 import {cfg,ligado,TIPOS,MAXR,linkOk} from './jogos.js';
 
+const BKN={A:'Corrida',B:'Blocos',C:'Cobrinha',D:'Tanque',E:'Muralha',F:'Quebra-tijolos',G:'Travessia',H:'Pingue-pongue',I:'Chuva',J:'Saltador'}; // jogos do Brick Game 10 em 1
 export async function panel(el,{sb,$,esc,run}){
  const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle()).data?.data||{};
  const [cur,{data:cats0},{data:dest}]=await Promise.all([getSet(),
@@ -46,7 +47,11 @@ export async function panel(el,{sb,$,esc,run}){
  <div class=box><h3>Resumo</h3><div id=jsum><p class=note>Carregando…</p></div>
   <p class=note>“Jogadas” = vezes que alguém raspou ou girou. “Cliques” = toques no botão do resultado. Cliques não são vendas.</p><div id=jsc></div></div>
  <div class=box><h3>Ranking da Cobrinha</h3><div id=jrk><p class=note>Carregando…</p></div>
-  <p class=note>Os pontos são calculados pelo servidor, que refaz cada partida. Se um apelido for ofensivo, use “Remover”: some do ranking tudo o que foi jogado com esse apelido.</p></div>`;
+  <p class=note>Os pontos são calculados pelo servidor, que refaz cada partida. Se um apelido for ofensivo, use “Remover”: some do ranking tudo o que foi jogado com esse apelido.</p></div>
+ <div class=box><h3>Desafio Brick Game</h3><label>Jogo <select id=jbkj>${Object.entries(BKN).map(([k,v])=>`<option value=${k}>${k} · ${v}</option>`).join('')}</select></label>
+  <div id=jbk><p class=note>Carregando…</p></div>
+  <p class=note>Ranking geral de cada jogo do Brick Game. O servidor recusa pontos impossíveis para o tempo jogado, mas não refaz a partida:
+   se um resultado parecer falso ou o apelido for ofensivo, use “Apagar” (some só deste jogo).</p></div>`;
  linhas();
  // os campos gravam direto na lista em memória; só é salvo no banco ao clicar em Salvar
  root.addEventListener('input',e=>{const t=e.target,i=t.dataset?.i,f=t.dataset?.f;if(i==null||!f||!R[i])return;R[i][f]=t.value;
@@ -94,4 +99,16 @@ export async function panel(el,{sb,$,esc,run}){
    const {data:rows,error:e1}=await sb.from('cr_jogos_ranking').select('aparelho').eq('apelido',ap).limit(1000);if(e1)throw e1;
    const ids=[...new Set((rows||[]).map(r=>r.aparelho))];if(!ids.length)return alert('Nada encontrado com esse apelido.');
    const {error:e2}=await sb.from('cr_jogos_ranking').delete().in('aparelho',ids);if(e2)throw e2;alert('Removido do ranking.');rk()}))};
- try{await rk()}catch(e){const box=$('#jrk');if(box)box.innerHTML=SEM07}}
+ try{await rk()}catch(e){const box=$('#jrk');if(box)box.innerHTML=SEM07}
+ // Desafio Brick Game (tabela cr_brick_partidas, supabase/08-brickgame-desafio.sql): ranking geral com moderação
+ const SEM08='<p class=note>Desafio ainda não instalado. Rode uma vez o arquivo <b>supabase/08-brickgame-desafio.sql</b> no Supabase (SQL Editor).</p>';
+ const bk=async()=>{const box=$('#jbk'),j=$('#jbkj')?.value||'A';if(!box)return;const {data,error}=await sb.rpc('cr_brick_ranking',{p_jogo:j,p_aparelho:null,p_periodo:'geral',p_limite:20});
+  if(error){box.innerHTML=SEM08;return}
+  const top=data?.top||[];box.innerHTML=top.length?`<div class=tw><table><thead><tr><th>Posição</th><th>Apelido</th><th>Pontos</th><th></th></tr></thead><tbody>${top.map(x=>`<tr><td>${x.pos}º</td><td>${esc(x.apelido)}</td><td><b>${x.pontos}</b></td><td><button class="btn sm dng" type=button data-bk="${esc(x.apelido)}">Apagar</button></td></tr>`).join('')}</tbody></table></div><p class=note>${data.total} ${data.total===1?'jogador':'jogadores'} em ${BKN[j]}.</p>`:`<p class=note>Ninguém no ranking de ${BKN[j]} ainda.</p>`;
+  box.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>run(async()=>{const ap=b.dataset.bk;
+   if(!confirm(`Apagar “${ap}” do ranking de ${BKN[j]}? As partidas desse apelido neste jogo serão apagadas (não dá para desfazer).`))return;
+   const {data:rows,error:e1}=await sb.from('cr_brick_partidas').select('aparelho').eq('jogo',j).eq('apelido',ap).limit(1000);if(e1)throw e1;
+   const ids=[...new Set((rows||[]).map(r=>r.aparelho))];if(!ids.length)return alert('Nada encontrado com esse apelido.');
+   const {error:e2}=await sb.from('cr_brick_partidas').delete().eq('jogo',j).in('aparelho',ids);if(e2)throw e2;alert('Apagado do ranking.');bk()}))};
+ const sel=$('#jbkj');if(sel)sel.onchange=()=>bk().catch(()=>{const box=$('#jbk');if(box)box.innerHTML=SEM08});
+ try{await bk()}catch(e){const box=$('#jbk');if(box)box.innerHTML=SEM08}}

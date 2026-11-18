@@ -248,7 +248,8 @@ const LETRA={A:['01110','10001','10001','11111','10001','10001','10001'],B:['111
  G:['01111','10000','10000','10011','10001','10001','01111'],H:['10001','10001','10001','11111','10001','10001','10001'],
  I:['01110','00100','00100','00100','00100','00100','01110'],J:['00111','00010','00010','00010','00010','10010','01100']};
 
-export function brickgame(raiz){
+// ganchos (opcionais, usados só no site para o Desafio): inicio(jogo), fim(jogo,pontos), escolheu(jogo). O app do celular não usa.
+export function brickgame(raiz,ganchos={}){
  raiz.innerHTML=`<div class=bg-corpo>
   <div class=bg-topo><span class=bg-luz aria-hidden=true></span><span class=bg-marca>BRICK GAME</span><span class=bg-sub>10 IN 1</span></div>
   <div class=bg-moldura><canvas class=bg-lcd role=img aria-label="Tela do jogo"></canvas></div>
@@ -267,7 +268,7 @@ export function brickgame(raiz){
   <p class=bg-rodape>9999 IN 1 · MADE FOR FUN</p></div>`;
  const cv=raiz.querySelector('canvas'),dica=raiz.querySelector('.bg-dica'),ctx=cv.getContext('2d');
  // ---- estado do aparelho
- let modo='menu',jogo='A',s=null,rec=lerRec(),som=somOn(),acum=0,ult=0,turbo=false,anim=null,piscar=0,novoRec=false;
+ let geral={},modo='menu',jogo='A',s=null,rec=lerRec(),som=somOn(),acum=0,ult=0,turbo=false,anim=null,piscar=0,novoRec=false;
  // ---- som: bipes de onda quadrada, como o alto-falante de um portátil
  let ac=null;const bip=(f,d=.06,v=.05)=>{if(!som)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();
   const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=f;g.gain.value=v;o.connect(g).connect(ac.destination);const t=ac.currentTime;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0005,t+d);o.start(t);o.stop(t+d+.02)}catch(e){}};
@@ -298,7 +299,7 @@ export function brickgame(raiz){
   const m=grade();for(let y=0;y<H;y++)for(let x=0;x<W;x++)cristal(OX+x*C,OY+y*C,m[y][x]);
   const g=s&&modo!=='menu'?s.jogo:jogo,pts=s&&modo!=='menu'?s.pontos:0;
   rotulo(PX,OY,'SCORE');numero(PX,OY+12,pts,6,9,16);
-  rotulo(PX,OY+40,'HI-SCORE');numero(PX,OY+52,rec[g]||0,6,9,16);
+  rotulo(PX,OY+40,'HI-SCORE');numero(PX,OY+52,Math.max(rec[g]||0,geral[g]||0),6,9,16); // o maior: o seu ou o recorde do Desafio
   const nx=PX+14,ny=OY+96,c2=11;
   const J=JOGOS[g],ativo=!!s&&modo!=='menu',prox=ativo&&J.proxima?J.proxima(s):null,vidas=ativo&&s.vidas!=null?s.vidas:null;
   // caixinha 4 x 4: a próxima peça (Blocos) ou as vidas que restam (jogos com vidas)
@@ -314,6 +315,7 @@ export function brickgame(raiz){
   if(som){ctx.fillRect(sx+15,iy+6,2,9);ctx.fillRect(sx+19,iy+3,2,15)}
   rotulo(PX,OY+292,modo==='pausa'?'PAUSE':modo==='fim'?'GAME OVER':modo==='menu'?'SELECT':'');}
  const avisar=t=>{dica.textContent=t};
+ const aviso=(nome,...a)=>{try{ganchos[nome]?.(...a)}catch(e){}};
  const textoModo=()=>modo==='menu'?`Jogo ${jogo} · ${JOGOS[jogo].nome} (${ORDEM.indexOf(jogo)+1} de ${ORDEM.length}) — LEFT/RIGHT escolhe, START começa`:modo==='pausa'?'Pausado — START continua · RESET recomeça':
   modo==='fim'?`Fim de jogo: ${s?.pontos||0} pontos${novoRec?' · NOVO RECORDE!':''} — START joga de novo · RESET volta ao menu`:
   JOGOS[jogo].dica;
@@ -325,8 +327,8 @@ export function brickgame(raiz){
  // ---- ciclo do jogo
  // rola até o aparelho aparecer inteiro (o topo do site sai de cena ao rolar, então só a altura da tela importa)
  const mostrar=()=>{try{const r=raiz.querySelector('.bg-corpo').getBoundingClientRect();let d=0;if(r.bottom>innerHeight-6)d=r.bottom-innerHeight+6;if(r.top-d<6)d=r.top-6;if(d)scrollBy(0,d)}catch(e){}};
- function comecar(){mostrar();s=JOGOS[jogo].novo();modo='jogo';acum=0;anim=null;novoRec=false;melodia([523,659,784]);avisar(textoModo());desenhar()}
- function terminar(){modo='anim';anim=0;bip(110,.35,.07);const g=s.jogo;if((s.pontos||0)>(rec[g]||0)){rec={...rec,[g]:s.pontos};gravarRec(rec);novoRec=true}}
+ function comecar(){mostrar();s=JOGOS[jogo].novo();aviso('inicio',jogo);modo='jogo';acum=0;anim=null;novoRec=false;melodia([523,659,784]);avisar(textoModo());desenhar()}
+ function terminar(){modo='anim';anim=0;bip(110,.35,.07);const g=s.jogo;aviso('fim',g,s.pontos||0);if((s.pontos||0)>(rec[g]||0)){rec={...rec,[g]:s.pontos};gravarRec(rec);novoRec=true}}
  function passo(dt){
   if(modo==='menu'){acum+=dt;if(acum>500){acum=0;piscar++;desenhar()}return}
   if(modo==='anim'){acum+=dt;if(acum>35){acum=0;anim++;if(anim>H){anim=null;modo='fim';piscar=0;avisar(textoModo());if(novoRec)melodia([784,988,1175,1568],.1)}desenhar()}return}
@@ -341,7 +343,7 @@ export function brickgame(raiz){
   if(k==='som'){som=!som;try{localStorage.setItem(SK,som?'1':'0')}catch(e){}bip(880,.05);desenhar();return}
   if(k==='start'){if(modo==='menu'||modo==='fim')comecar();else if(modo==='jogo'){modo='pausa';bip(440,.08)}else if(modo==='pausa'){modo='jogo';acum=0;bip(660,.08)}avisar(textoModo());desenhar();return}
   if(k==='reset'){if(modo==='jogo'||modo==='pausa')comecar();else if(modo==='fim'||modo==='anim'){modo='menu';s=null;anim=null;piscar=0;bip(330,.06)}avisar(textoModo());desenhar();return}
-  if(modo==='menu'){if(k==='esq'||k==='dir'){jogo=ORDEM[(ORDEM.indexOf(jogo)+(k==='dir'?1:ORDEM.length-1))%ORDEM.length];bip(587,.04);avisar(textoModo());desenhar()}else if(k==='girar')acao('start');return}
+  if(modo==='menu'){if(k==='esq'||k==='dir'){jogo=ORDEM[(ORDEM.indexOf(jogo)+(k==='dir'?1:ORDEM.length-1))%ORDEM.length];bip(587,.04);aviso('escolheu',jogo);avisar(textoModo());desenhar()}else if(k==='girar')acao('start');return}
   if(modo!=='jogo')return;
   efeito(JOGOS[s.jogo].acao(s,k));
   desenhar()}
@@ -367,5 +369,5 @@ export function brickgame(raiz){
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&modo==='jogo'){modo='pausa';solta();avisar(textoModo());desenhar()}});
  addEventListener('resize',ajustar);
  avisar(textoModo());ajustar();requestAnimationFrame(quadro);
- const api={acao,estado:()=>({modo,jogo,s,rec,som})};raiz.__bg=api;return api // estado consultado pelos testes automáticos
+ const api={acao,ganchos,estado:()=>({modo,jogo,s,rec,som,geral}),geral:o=>{geral={};for(const k of ORDEM)geral[k]=Math.max(0,Math.floor(+o?.[k]||0));desenhar()}};raiz.__bg=api;return api // estado consultado pelos testes automáticos
 }

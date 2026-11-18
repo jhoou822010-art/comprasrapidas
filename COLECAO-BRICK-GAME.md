@@ -42,7 +42,7 @@ O QUE JÁ EXISTE E FUNCIONA
 - jogos.html lista os jogos; ligados em painel › Jogos (cr_site_settings.data.jogos).
 - Raspadinha e Roleta: dentro de jogos.html (js/jogos.js).
 - Cobrinha: cobrinha.html + js/cobrinha.js (ranking conferido pelo servidor, supabase/07-cobrinha-ranking.sql).
-- Brick Game 10 em 1 (A Corrida, B Blocos, C Cobrinha, D Tanque, E Muralha, F Quebra-tijolos, G Travessia, H Pingue-pongue, I Chuva, J Saltador): brickgame.html + js/brickgame.js, canvas puro, estilo LCD anos 90. Cada jogo é um "cartucho" na lista JOGOS (novo, passo, acao, tela, capa, nivel, intervalo); para criar outro, some uma letra nova e o desenho dela em LETRA. Também vira APK (brickgame-app/, workflow brickgame-apk.yml).
+- Brick Game 10 em 1 (A Corrida, B Blocos, C Cobrinha, D Tanque, E Muralha, F Quebra-tijolos, G Travessia, H Pingue-pongue, I Chuva, J Saltador): brickgame.html + js/brickgame.js, canvas puro, estilo LCD anos 90. Cada jogo é um "cartucho" na lista JOGOS (novo, passo, acao, tela, capa, nivel, intervalo); para criar outro, some uma letra nova e o desenho dela em LETRA. Também vira APK (brickgame-app/, workflow brickgame-apk.yml). Desafio (ranking visto por todos, só no site): js/brickgame-desafio.js + supabase/08-brickgame-desafio.sql; o aparelho avisa por ganchos inicio/fim/escolheu. Ao criar um jogo novo, ajuste também o teto de pontos por segundo em cr_brick_enviar e a letra permitida (A–J).
   Aparece junto com a área de jogos (sem botão próprio no painel).
 - Padrão para um jogo novo: página própria (copiar o esqueleto de cobrinha.html), um arquivo js/<jogo>.js
   com MOTOR (regras puras, testáveis) + TELA, um card em jogos.html, e incluir página e js na lista JOGOS
