@@ -308,7 +308,7 @@ function iosHelp(){const d=document.createElement('div');d.id='pnh';
  <ol><li>Toque em <b>Compartilhar</b> <span aria-hidden=true>⬆️</span> (na barra do Safari).</li><li>Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.</li><li>Abra o <b>Compras Rápidas</b> pelo novo ícone e toque de novo em <b>Receber ofertas no celular</b>.</li></ol>
  <p class=note>Precisa do iOS 16.4 ou mais novo.</p><button class="btn big" type=button>Entendi</button></div>`;
  d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d);d.querySelector('button').focus()}
-const PN_KEY='cr_push_dismiss',PN_OK='cr_push_ok',PN_OFF='cr_push_off',PN_PERS='cr_push_pers',PN_SYNC='cr_push_sync';
+const PN_KEY='cr_push_dismiss',PN_OK='cr_push_ok',PN_OFF='cr_push_off',PN_PERS='cr_push_pers',PN_SYNC='cr_push_sync',PN_SIG='cr_push_sig';
 async function pushBar(){
  const ios=isIOS(),inst=isStandalone();
  if(!pushOk()&&!(ios&&!inst))return;          // navegador sem suporte: não mostra nada
@@ -342,10 +342,13 @@ async function pushBar(){
 export const persOn=()=>{try{return localStorage.getItem(PN_PERS)!=='0'}catch(_){return true}};
 export async function pushSyncProfile(force){try{
  if(!CONFIGURED||!pushOk()||Notification.permission!=='granted')return;const sub=await currentSub();if(!sub)return;
- if(!force&&Date.now()-(+localStorage.getItem(PN_SYNC)||0)<6*36e5)return;
  let pers=persOn(),sum=null;if(pers){const V=await import('./vitrine.js');if(V.optedOut())pers=false;else sum=V.interestSummary(S)}
+ // envia de novo quando os interesses principais mudaram (ex.: acabou de se inscrever e depois navegou), sem esperar 6 h;
+ // fora isso, no máximo a cada 6 h. Antes, quem se inscrevia e navegava em seguida ficava horas sem perfil no servidor.
+ const sig=!pers?'off':sum?Object.keys(sum.cat).slice(0,3).join(','):'-';let last='';try{last=localStorage.getItem(PN_SIG)||''}catch(_){}
+ if(!force&&sig===last&&Date.now()-(+localStorage.getItem(PN_SYNC)||0)<6*36e5)return;
  const {error}=await sb.rpc('cr_push_perfil',{p_endpoint:sub.endpoint,p_interesses:sum,p_personalizar:pers});
- if(!error)try{localStorage.setItem(PN_SYNC,String(Date.now()))}catch(_){} }catch(e){console.warn('perfil de notificações',e)}}
+ if(!error)try{localStorage.setItem(PN_SYNC,String(Date.now()));localStorage.setItem(PN_SIG,sig)}catch(_){} }catch(e){console.warn('perfil de notificações',e)}}
 // botão "🔔 Notificações" no rodapé: o visitante vê se estão ligadas, desliga a personalização ou desativa os avisos
 function notifBtn(){const b=$('#notifp');if(!b||!CONFIGURED||!(pushOk()||isIOS()))return;b.hidden=false;b.onclick=()=>notifPanel().catch(e=>alert(e.message||e))}
 async function notifPanel(){document.getElementById('npf')?.remove();

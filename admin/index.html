@@ -169,6 +169,8 @@ async function dash(el){
 // produtos no banner do topo ficam em cr_site_settings.data.banner_ids
 const BMAX=10;
 const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle()).data?.data||{};
+// O Supabase devolve no máximo 1.000 linhas por consulta: lê em partes de 1.000 (até `max`). mk() devolve a consulta já ordenada.
+const todos=async(mk,max=5000)=>{const out=[];for(let de=0;de<max;de+=1000){const {data,error}=await mk().range(de,de+999);if(error)return {data:out,error};out.push(...(data||[]));if(!data||data.length<1000)break}return {data:out,error:null}};
 async function setBanner(pid,on){const cur=await getSet();let ids=(cur.banner_ids||[]).filter(i=>i!==pid);if(on)ids.push(pid);
  const {error}=await sb.from('cr_site_settings').upsert({id:1,data:{...cur,banner_ids:ids}});if(error)throw error}
 let PF={};const PP=50;
@@ -699,7 +701,7 @@ async function shopeeTest(el){
 // ---------- Notificações › Oferta do dia (automática). Regras em supabase/functions/send-push/oferta-dia.js (as mesmas da função de envio)
 async function odCard(box,N){const O=await import('../supabase/functions/send-push/oferta-dia.js');
  const [s0,{data:cs},{data:pr,error:pe},{data:rec}]=await Promise.all([getSet(),sb.from('cr_categories').select('id,name').order('name'),
-  sb.from('cr_products').select('id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,product_images:cr_product_images(url)').eq('status','active').eq('offer',true).limit(5000),
+  todos(()=>sb.from('cr_products').select('id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,product_images:cr_product_images(url)').eq('status','active').eq('offer',true).order('id')),
   sb.from('cr_notifications').select('product_id,created_at,status').not('product_id','is',null).in('status',['scheduled','sending','sent']).gte('created_at',new Date(Date.now()-61*864e5).toISOString()).limit(5000)]);
  if(pe)throw pe;const saved=!!s0.push_oferta_dia;let c=O.odCfg(s0);
  const read=()=>O.odCfg({push_oferta_dia:{on:$('#od0').checked,modo:$('#odmo').value,sem_perfil:$('#odsp').value,times:[$('#odt1').value,$('#odt2').value].filter(Boolean),min:num($('#odm').value),norep:$('#odr').value,crit:$('#odc').value,
@@ -735,8 +737,8 @@ async function pzCard(box,N){const O=await import('../supabase/functions/send-pu
  const d30=new Date(Date.now()-30*864e5).toISOString(),site=N.site_url||new URL('../',location.href).href;
  const [s0,sr,er,{data:cs},{data:pr},{data:ck}]=await Promise.all([getSet(),sb.from('cr_push_subscriptions').select('id,endpoint,user_agent,created_at,last_success_at,origin,interesses,interesses_em,personalizar').order('created_at',{ascending:false}).limit(2000),
   sb.from('cr_push_entregas').select('id,subscription_id,product_id,enviada_em,tocou_em,ok,motivo,products:cr_products(name)').gte('enviada_em',d30).order('enviada_em',{ascending:false}).limit(5000),
-  sb.from('cr_categories').select('id,name'),sb.from('cr_products').select('id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,affiliate_url,created_at,product_images:cr_product_images(url,sort)').eq('status','active').limit(5000),
-  sb.from('cr_click_events').select('product_id').gte('created_at',d30).limit(20000)]);
+  sb.from('cr_categories').select('id,name'),todos(()=>sb.from('cr_products').select('id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,affiliate_url,created_at,product_images:cr_product_images(url,sort)').eq('status','active').order('id')),
+  todos(()=>sb.from('cr_click_events').select('product_id').gte('created_at',d30).order('id'),20000)]);
  if(sr.error||er.error){box.innerHTML='<h3>🎯 Personalização</h3><p class=note>Ainda não disponível: falta aplicar no banco o arquivo <b>supabase/06-ofertas-personalizadas.sql</b>.</p>';return}
  const c=O.odCfg(s0),org=(()=>{try{return new URL(site).origin}catch(_){return null}})(),cn=Object.fromEntries((cs||[]).map(x=>[x.id,x.name]));
  const byEp=new Map();for(const x of sr.data||[])if(!x.origin||x.origin===org)if(!byEp.has(x.endpoint))byEp.set(x.endpoint,x);const subs=[...byEp.values()];
@@ -770,7 +772,7 @@ const siteOrigin=u=>{try{return new URL(u).origin}catch(_){return location.origi
 async function notif(el,editId=null){
  const [{data:ns},{data:hist},{data:pr}]=await Promise.all([sb.from('cr_notification_settings').select('*').eq('id',1).maybeSingle(),
   sb.from('cr_notifications').select('*').order('created_at',{ascending:false}).limit(60),
-  sb.from('cr_products').select('id,name,slug,product_images:cr_product_images(url,sort,is_cover)').eq('status','active').order('name',{ascending:true}).limit(2000)]);
+  todos(()=>sb.from('cr_products').select('id,name,slug,product_images:cr_product_images(url,sort,is_cover)').eq('status','active').order('name',{ascending:true}).order('id'))]);
  // conta só as inscrições do domínio atual (ou sem origem registrada)
  const nSubs=await cnt('cr_push_subscriptions',q=>q.or(`origin.is.null,origin.eq."${siteOrigin(ns?.site_url||location.href)}"`));
  const N=ns||{},P=pr||[],H=hist||[],ed=editId?H.find(x=>x.id===editId):null;

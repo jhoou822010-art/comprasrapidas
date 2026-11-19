@@ -56,7 +56,7 @@ do $$ declare t text; begin
  end loop; end $$;
 
 -- Nome dos jogos (para o texto do aviso)
-create or replace function cr_brick_nome(j text) returns text language sql immutable as $$
+create or replace function cr_brick_nome(j text) returns text language sql immutable set search_path=public as $$
  select case j when 'A' then 'Corrida' when 'B' then 'Blocos' when 'C' then 'Cobrinha' when 'D' then 'Tanque' when 'E' then 'Muralha'
   when 'F' then 'Quebra-tijolos' when 'G' then 'Travessia' when 'H' then 'Pingue-pongue' when 'I' then 'Chuva' else 'Saltador' end
 $$;

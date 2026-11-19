@@ -9,7 +9,9 @@ const PRIV='Personalização da vitrine: para mostrar produtos mais próximos do
 export async function panel(el,{sb,$,esc,run}){
  const getSet=async()=>(await sb.from('cr_site_settings').select('data').eq('id',1).maybeSingle()).data?.data||{};
  const [cur,{data:rows0,error},{data:cats}]=await Promise.all([getSet(),
-  sb.from('cr_products').select('id,name,price,old_price,offer,offer_start,offer_end,category_id,created_at,categories:cr_categories(name)').eq('status','active').order('created_at',{ascending:false}).limit(5000),
+  (async()=>{const out=[];for(let de=0;de<5000;de+=1000){   // o Supabase devolve no máximo 1.000 linhas por consulta: lê em partes
+   const {data,error}=await sb.from('cr_products').select('id,name,price,old_price,offer,offer_start,offer_end,category_id,created_at,categories:cr_categories(name)').eq('status','active').order('created_at',{ascending:false}).order('id').range(de,de+999);
+   if(error)return {data:null,error};out.push(...(data||[]));if(!data||data.length<1000)break}return {data:out,error:null}})(),
   sb.from('cr_categories').select('id,name,active').order('sort')]);
  if(error)throw error;
  const rows=(rows0||[]).map(r=>({id:r.id,n:r.name,p:r.price==null?null:+r.price,o:r.old_price==null?null:+r.old_price,of:!!r.offer,os:r.offer_start,oe:r.offer_end,c:r.category_id,cn:r.categories?.name||'',t:r.created_at}));

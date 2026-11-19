@@ -74,14 +74,18 @@ export const optedOut=()=>{try{return localStorage.getItem(K_OFF)==='1'||navigat
 export function setOptOut(v){try{if(v){localStorage.setItem(K_OFF,'1');LS.del(K_PROF)}else localStorage.removeItem(K_OFF)}catch(e){}}
 
 // ---- catálogo enxuto (só o necessário para escolher), com cache de 20 min no aparelho.
-// Uma única consulta, somente leitura, só produtos ativos. Nada é gravado no banco.
-const POOL_TTL=20*60e3,POOL_SEL='id,name,price,old_price,offer,offer_start,offer_end,category_id,created_at,categories:cr_categories(name)';
+// Somente leitura, só produtos ativos. Nada é gravado no banco.
+// O Supabase devolve no máximo 1.000 linhas por consulta: o catálogo vem em partes de 1.000 (até 5.000 produtos),
+// senão os produtos mais antigos sumiriam da vitrine e das páginas de categoria quando a loja passasse de 1.000.
+const POOL_TTL=20*60e3,POOL_MAX=5000,PAGE=1000,POOL_SEL='id,name,price,old_price,offer,offer_start,offer_end,category_id,created_at,categories:cr_categories(name)';
 let poolMem=null,poolReq=null;
 const slim=r=>({id:r.id,n:r.name,p:r.price==null?null:+r.price,o:r.old_price==null?null:+r.old_price,of:!!r.offer,os:r.offer_start,oe:r.offer_end,c:r.category_id,cn:r.categories?.name||'',t:r.created_at});
 function poolCached(){if(poolMem&&Date.now()-poolMem.t<POOL_TTL)return poolMem.rows;const x=LS.get(K_POOL);if(x&&Array.isArray(x.rows)&&Date.now()-x.t<POOL_TTL){poolMem=x;return x.rows}return null}
 export function pool(){const c=poolCached();if(c)return Promise.resolve(c);
- if(!poolReq)poolReq=(async()=>{const {data,error}=await sb.from('cr_products').select(POOL_SEL).eq('status','active').order('created_at',{ascending:false}).limit(5000);
-  if(error)throw error;const rows=(data||[]).map(slim);poolMem={t:Date.now(),rows};LS.set(K_POOL,poolMem);return rows})().finally(()=>{poolReq=null});
+ if(!poolReq)poolReq=(async()=>{const all=[];
+  for(let de=0;de<POOL_MAX;de+=PAGE){const {data,error}=await sb.from('cr_products').select(POOL_SEL).eq('status','active').order('created_at',{ascending:false}).order('id').range(de,de+PAGE-1);
+   if(error)throw error;all.push(...(data||[]));if(!data||data.length<PAGE)break}
+  const vistos=new Set(),rows=all.filter(r=>!vistos.has(r.id)&&vistos.add(r.id)).map(slim);poolMem={t:Date.now(),rows};LS.set(K_POOL,poolMem);return rows})().finally(()=>{poolReq=null});
  return poolReq}
 // começa a buscar o catálogo em paralelo com o resto da página, mas só se na última visita o sistema estava ligado
 export function prefetch(){try{const t=SS.get('cr_vtest');if(t==='0')return;if(t==='1'||LS.get(K_ON)===1)pool().catch(()=>{})}catch(e){}}
@@ -188,7 +192,10 @@ function compose(cands,n,mix,score,R){const sc=new Map(cands.map(p=>[p.id,score(
  while(sorted.length){let i=0;const L=outp.length;if(L>=2&&outp[L-1].c===outp[L-2].c){const j=sorted.findIndex(p=>p.c!==outp[L-1].c);if(j>0)i=j}outp.push(sorted.splice(i,1)[0])}
  return outp}
 
-function ctx(){const P=optedOut()?newProf():loadProf();const e=epochOf(P,C);
+// quem recusou a personalização: perfil vazio, mas com a mesma semente durante a visita (sessionStorage),
+// para os produtos não trocarem de lugar a cada recarga. Nada de interesse é guardado.
+function semPerfil(){const P=newProf();let s=SS.get('cr_vseed');if(!s){s=P.id;SS.set('cr_vseed',s)}P.id=s;P.t0=0;return P}
+function ctx(){const P=optedOut()?semPerfil():loadProf();const e=epochOf(P,C);
  if(P.hist?.e!==e){if(P.hist&&P.hist.e>=0&&P.hist.ids?.length)P.prev=[P.hist.ids,...(P.prev||[])].slice(0,2);P.hist={e,ids:[]};P.sel=null}   // renovou: novos produtos, mesmos interesses
  return {P,e,seed:P.id+':'+e,R:compile(C)}}
 const sigOf=(P,mx)=>Object.entries(mx.mix).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]+Math.round(x[1]*10)).join(',')+'|'+(Object.entries(P.cat||{}).sort((a,b)=>b[1]-a[1])[0]?.[0]||'');
@@ -256,9 +263,9 @@ export function related(rows,prod,n=12){const C0=C||cfg(null),R=compile(C0),base
   if(s<2.5)continue;                                                                  // precisa ter relação de verdade
   if(pers)s+=.35*pers(p);                                                             // toque pessoal (sistema ligado)
   sc.set(p.id,s)}
- let ids=[...sc.keys()].sort((a,b)=>sc.get(b)-sc.get(a));
+ let ids=[...sc.keys()].sort((a,b)=>sc.get(b)-sc.get(a));const byId=new Map(rows.map(x=>[x.id,x]));
  // evita encher a seção com variações quase iguais do mesmo item
- const out=[],seenName=new Set();for(const id of ids){const p=rows.find(x=>x.id===id),k=relToks(p.n).slice(0,3).join(' ');if(seenName.has(k)&&out.length<ids.length-1)continue;seenName.add(k);out.push(id);if(out.length>=n)break}
+ const out=[],seenName=new Set();for(const id of ids){const p=byId.get(id),k=relToks(p.n).slice(0,3).join(' ');if(seenName.has(k)&&out.length<ids.length-1)continue;seenName.add(k);out.push(id);if(out.length>=n)break}
  return out}
 
 // ---- resumo de interesses para as ofertas personalizadas por notificação (painel › Notificações › Ofertas automáticas)

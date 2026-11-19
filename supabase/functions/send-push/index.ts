@@ -102,6 +102,20 @@ async function deliver(subs: Sub[], payload: string) {
   return { ok, fail, removed: dead.length, lastError };
 }
 
+// O Supabase devolve no máximo 1.000 linhas por consulta: lê em partes de 1.000 até `max`.
+// mk() devolve a consulta já filtrada e ORDENADA (a ordem fixa evita pular ou repetir linhas entre as partes).
+// deno-lint-ignore no-explicit-any
+async function todas(mk: () => any, max = 5000): Promise<{ data: any[]; error: any }> {
+  const out: any[] = [];
+  for (let de = 0; de < max; de += 1000) {
+    const { data, error } = await mk().range(de, Math.min(de + 999, max - 1));
+    if (error) return { data: out, error };
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return { data: out, error: null };
+}
+
 async function getSettings() {
   const { data } = await db.from("cr_notification_settings").select("*").eq("id", 1).maybeSingle();
   return data;
@@ -168,12 +182,12 @@ async function ofertaDoDia(settings: any, autoToday: number, quiet: boolean) {
   if (c.modo === "personalizado") return await personalizadas(settings, c, slot);
   // não repete produto: nem hoje, nem nos últimos X dias
   const since = new Date(Math.min(spDayStart(), Date.now() - c.norep * 864e5)).toISOString();
-  const { data: rec, error: re } = await db.from("cr_notifications").select("product_id")
-    .not("product_id", "is", null).in("status", ["scheduled", "sending", "sent"]).gte("created_at", since).limit(5000);
+  const { data: rec, error: re } = await todas(() => db.from("cr_notifications").select("product_id")
+    .not("product_id", "is", null).in("status", ["scheduled", "sending", "sent"]).gte("created_at", since).order("id"));
   if (re) throw re;
-  const { data: prods, error: pe } = await db.from("cr_products")
+  const { data: prods, error: pe } = await todas(() => db.from("cr_products")
     .select("id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,product_images:cr_product_images(url)")
-    .eq("status", "active").eq("offer", true).gte("price", c.min).limit(5000);
+    .eq("status", "active").eq("offer", true).gte("price", c.min).order("id"));
   if (pe) throw pe;
   const p = odPick(prods ?? [], c, { skip: new Set((rec ?? []).map((x) => x.product_id)), slot: slot.i });
   if (!p) return { slot: slot.t, nothing: "nenhuma oferta disponível" };
@@ -189,36 +203,41 @@ async function ofertaDoDia(settings: any, autoToday: number, quiet: boolean) {
 async function personalizadas(settings: any, c: any, slot: { i: number; t: string; at: string }) {
   const now = Date.now(), dia = new Date(spDay(now) * 864e5).toISOString().slice(0, 10);
   const origin = siteOrigin(settings);
-  let qs = db.from("cr_push_subscriptions").select("id,endpoint,p256dh,auth,interesses,personalizar").limit(5000);
-  if (origin) qs = qs.or(`origin.is.null,origin.eq."${origin}"`);
-  const { data: subsAll, error: se } = await qs;
+  const { data: subsAll, error: se } = await todas(() => {
+    let qs = db.from("cr_push_subscriptions").select("id,endpoint,p256dh,auth,interesses,personalizar").order("created_at").order("id");
+    if (origin) qs = qs.or(`origin.is.null,origin.eq."${origin}"`);
+    return qs;
+  }, 20000);
   if (se) throw se;
   // um aparelho = um cliente (endpoint repetido conta uma vez)
   const byEp = new Map<string, any>();
   for (const s of subsAll ?? []) byEp.set(s.endpoint, s);
   const subs = [...byEp.values()];
   const desde = new Date(now - Math.max(c.norep, 30) * 864e5).toISOString();
-  const { data: ents, error: ee } = await db.from("cr_push_entregas").select("subscription_id,product_id,enviada_em,tocou_em,dia")
-    .gte("enviada_em", desde).order("enviada_em", { ascending: false }).limit(20000);
+  const { data: ents, error: ee } = await todas(() => db.from("cr_push_entregas").select("subscription_id,product_id,enviada_em,tocou_em,dia")
+    .gte("enviada_em", desde).order("enviada_em", { ascending: false }).order("id"), 50000);
   if (ee) throw ee;
+  // entregas agrupadas por cliente uma vez só (antes cada cliente percorria a lista inteira: lento com muitos inscritos)
+  const porSub = new Map<string, any[]>();
+  for (const e of ents ?? []) { const l = porSub.get(e.subscription_id); if (l) l.push(e); else porSub.set(e.subscription_id, [e]); }
   const limite = now - OD_INTERVALO_H * 3600e3;
-  const pend = subs.filter((s) => !(ents ?? []).some((e) => e.subscription_id === s.id && (e.dia === dia || Date.parse(e.enviada_em) > limite)));
+  const pend = subs.filter((s) => !(porSub.get(s.id) ?? []).some((e) => e.dia === dia || Date.parse(e.enviada_em) > limite));
   if (!pend.length) return { slot: slot.t, personalizado: "todos já receberam hoje" };
-  const { data: prods, error: pe } = await db.from("cr_products")
+  const { data: prods, error: pe } = await todas(() => db.from("cr_products")
     .select("id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,affiliate_url,created_at,product_images:cr_product_images(url,sort,is_cover)")
-    .eq("status", "active").gte("price", c.min).limit(5000);
+    .eq("status", "active").gte("price", c.min).order("id"));
   if (pe) throw pe;
   const P = prods ?? [], byId = new Map(P.map((p) => [p.id, p]));
   const { data: cats } = await db.from("cr_categories").select("id,name");
   const catName = new Map((cats ?? []).map((x) => [x.id, x.name]));
-  const { data: cl } = await db.from("cr_click_events").select("product_id").gte("created_at", new Date(now - 30 * 864e5).toISOString()).limit(20000);
+  const { data: cl } = await todas(() => db.from("cr_click_events").select("product_id").gte("created_at", new Date(now - 30 * 864e5).toISOString()).order("id"), 20000);
   const pop: Record<string, number> = {};
   for (const x of cl ?? []) if (x.product_id) pop[x.product_id] = (pop[x.product_id] || 0) + 1;
   // escolhe para cada cliente; sem perfil → oferta geral do dia (se o administrador permitir)
   const geral = c.sem_perfil === "geral" ? odPick(P.filter((p) => p.offer && odConfiavel(p, c, now)), c, { slot: slot.i }) : null;
   const plano = [];
   for (const s of pend) {
-    const hist = (ents ?? []).filter((e) => e.subscription_id === s.id).map((e) => ({ ...e, cat: byId.get(e.product_id)?.category_id, tocou: !!e.tocou_em }));
+    const hist = (porSub.get(s.id) ?? []).map((e) => ({ ...e, cat: byId.get(e.product_id)?.category_id, tocou: !!e.tocou_em }));
     // cliente COM perfil e sem produto adequado: não recebe nada hoje (não envia só para cumprir horário)
     const temPerfil = !!odPesos(s, hist, now), r = temPerfil ? odEscolher(s, P, c, { now, hist, pop }) : null;
     if (r) { const cn = catName.get(r.p.category_id) || ""; plano.push({ s, p: r.p, motivo: ("interesse: " + cn).slice(0, 80), msg: odMsg(r.p, s, now, cn) }); }
