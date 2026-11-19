@@ -343,9 +343,9 @@ export const persOn=()=>{try{return localStorage.getItem(PN_PERS)!=='0'}catch(_)
 export async function pushSyncProfile(force){try{
  if(!CONFIGURED||!pushOk()||Notification.permission!=='granted')return;const sub=await currentSub();if(!sub)return;
  let pers=persOn(),sum=null;if(pers){const V=await import('./vitrine.js');if(V.optedOut())pers=false;else sum=V.interestSummary(S)}
- // envia de novo quando os interesses principais mudaram (ex.: acabou de se inscrever e depois navegou), sem esperar 6 h;
+ // envia de novo quando os interesses principais (ou a hora preferida) mudaram (ex.: acabou de se inscrever e depois navegou), sem esperar 6 h;
  // fora isso, no máximo a cada 6 h. Antes, quem se inscrevia e navegava em seguida ficava horas sem perfil no servidor.
- const sig=!pers?'off':sum?Object.keys(sum.cat).slice(0,3).join(','):'-';let last='';try{last=localStorage.getItem(PN_SIG)||''}catch(_){}
+ const sig=!pers?'off':sum?Object.keys(sum.cat).slice(0,3).join(',')+'|'+(sum.h??'')+'|'+Math.min(sum.hn||0,3):'-';let last='';try{last=localStorage.getItem(PN_SIG)||''}catch(_){}
  if(!force&&sig===last&&Date.now()-(+localStorage.getItem(PN_SYNC)||0)<6*36e5)return;
  const {error}=await sb.rpc('cr_push_perfil',{p_endpoint:sub.endpoint,p_interesses:sum,p_personalizar:pers});
  if(!error)try{localStorage.setItem(PN_SYNC,String(Date.now()));localStorage.setItem(PN_SIG,sig)}catch(_){} }catch(e){console.warn('perfil de notificações',e)}}

@@ -6,7 +6,7 @@ export const OD_CRIT = { cheap: 'Mais barato', discount: 'Maior desconto (%)', c
 export const OD_MAX = 2; // no máximo 2 envios da Oferta do dia por dia
 export const OD_MODOS = { geral: 'Igual para todos', personalizado: 'Personalizado por interesse' };
 export const OD_INTERVALO_H = 20; // modo personalizado: no máximo 1 por cliente por dia, com pelo menos 20 h de intervalo
-export const OD_PADRAO = { on: false, modo: 'geral', sem_perfil: 'geral', times: ['10:00', '19:00'], min: 10, norep: 7, crit: 'cheap', cats: [], title: '🔥 Oferta do dia', body: '{nome} por {preco}' };
+export const OD_PADRAO = { on: false, modo: 'geral', sem_perfil: 'geral', hora_pessoal: true, times: ['10:00', '19:00'], min: 10, norep: 7, crit: 'cheap', cats: [], title: '🔥 Oferta do dia', body: '{nome} por {preco}' };
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 // lê a configuração salva, sempre com valores válidos
@@ -18,6 +18,7 @@ export function odCfg(S) {
     on: o.on === true,
     modo: OD_MODOS[o.modo] ? o.modo : 'geral',
     sem_perfil: o.sem_perfil === 'nada' ? 'nada' : 'geral',
+    hora_pessoal: o.hora_pessoal !== false, // modo personalizado: enviar na hora em que cada cliente costuma usar o site
     times,
     min: num(o.min, OD_PADRAO.min, 0, 100000),
     norep: Math.round(num(o.norep, OD_PADRAO.norep, 0, 60)),
@@ -78,6 +79,10 @@ export const odRow = (p, c, slot, ns, site) => ({
 });
 
 // ===================== Modo personalizado (1 por cliente por dia) =====================
+// Horário de cada cliente: o aparelho manda, junto do resumo, a hora (UTC) em que a pessoa mais costuma abrir o site (h)
+// e em quantos dias diferentes isso foi observado (hn). Só vale com pelo menos 3 dias; antes disso, segue os horários do painel.
+export const odHora = (sub) => { const I = sub && sub.interesses; const h = I && Number(I.h), n = I && Number(I.hn);
+  return Number.isInteger(h) && h >= 0 && h <= 23 && n >= 3 ? h : null; };
 // O aparelho envia só um resumo: { v:1, cat:{idCategoria:peso}, seg:{segmento:peso}, pr:{lo,hi,med} } (sem buscas, sem nome, sem e-mail).
 // Só entram produtos com informação confiável: ativos, com foto, preço, link https e nome legível. Nada de avaliação ou desconto inventado:
 // o desconto só conta quando o preço anterior é maior que o atual.

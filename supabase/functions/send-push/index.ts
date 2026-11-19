@@ -4,7 +4,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
-import { odCfg, odDue, odEscolher, odLink, odConfiavel, odMsg, odPesos, odPick, odRow, odText, OD_INTERVALO_H, spDay, spDayStart } from "./oferta-dia.js";
+import { odCfg, odDue, odEscolher, odHora, odLink, odConfiavel, odMsg, odPesos, odPick, odRow, odText, OD_INTERVALO_H, spDay, spDayStart } from "./oferta-dia.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -169,6 +169,23 @@ async function ofertaDoDia(settings: any, autoToday: number, quiet: boolean) {
   const { data: st } = await db.from("cr_site_settings").select("data").eq("id", 1).maybeSingle();
   const c = odCfg(st?.data);
   if (!c.on) return { off: true };
+  // Modo personalizado: no máximo 1 por cliente por dia (regra garantida pelas entregas), então não usa o limite geral.
+  // Com "horário de cada cliente", roda a cada passagem do agendador: quem tem horário conhecido recebe na própria hora,
+  // os demais nos horários do painel.
+  if (c.modo === "personalizado") {
+    if (quiet) return { waiting: "horário de silêncio" };
+    const dueP = odDue(c);
+    let slotP: { i: number; t: string; at: string } | null = null;
+    if (dueP.length) {
+      const { data: madeP, error: meP } = await db.from("cr_notifications").select("scheduled_at")
+        .eq("source", "auto_offer").in("scheduled_at", dueP.map((s) => s.at));
+      if (meP) throw meP;
+      const doneP = new Set((madeP ?? []).map((x) => new Date(x.scheduled_at).toISOString()));
+      slotP = dueP.find((s) => !doneP.has(s.at)) ?? null;
+    }
+    if (!slotP && !c.hora_pessoal) return dueP.length ? { done: true } : { idle: true };
+    return await personalizadas(settings, c, slotP);
+  }
   const due = odDue(c);
   if (!due.length) return { idle: true };
   if (quiet) return { waiting: "horário de silêncio" };
@@ -179,7 +196,6 @@ async function ofertaDoDia(settings: any, autoToday: number, quiet: boolean) {
   const done = new Set((made ?? []).map((x) => new Date(x.scheduled_at).toISOString()));
   const slot = due.find((s) => !done.has(s.at));
   if (!slot) return { done: true };
-  if (c.modo === "personalizado") return await personalizadas(settings, c, slot);
   // não repete produto: nem hoje, nem nos últimos X dias
   const since = new Date(Math.min(spDayStart(), Date.now() - c.norep * 864e5)).toISOString();
   const { data: rec, error: re } = await todas(() => db.from("cr_notifications").select("product_id")
@@ -200,8 +216,13 @@ async function ofertaDoDia(settings: any, autoToday: number, quiet: boolean) {
 // Uma linha em cr_notifications registra a rodada (histórico e cliques); cada envio fica em cr_push_entregas,
 // cuja chave única (cliente, dia) impede duplicatas mesmo se o agendador rodar duas vezes ao mesmo tempo.
 // deno-lint-ignore no-explicit-any
-async function personalizadas(settings: any, c: any, slot: { i: number; t: string; at: string }) {
+async function personalizadas(settings: any, c: any, slot: { i: number; t: string; at: string } | null) {
   const now = Date.now(), dia = new Date(spDay(now) * 864e5).toISOString().slice(0, 10);
+  const hNow = new Date(now).getUTCHours();
+  // hora preferida do cliente (UTC) que cai no horário de silêncio não vale: ele recebe nos horários do painel
+  const silencioUTC = (h: number) => settings ? inQuiet((h + 21) % 24, settings.quiet_start, settings.quiet_end) : false;
+  const naVez = (s: any) => { const hp = c.hora_pessoal ? odHora(s) : null; return hp != null && !silencioUTC(hp) ? hp === hNow : !!slot; };
+  const rotulo = slot ? slot.t : `${String((hNow + 21) % 24).padStart(2, "0")}h (horário de cada cliente)`;
   const origin = siteOrigin(settings);
   const { data: subsAll, error: se } = await todas(() => {
     let qs = db.from("cr_push_subscriptions").select("id,endpoint,p256dh,auth,interesses,personalizar").order("created_at").order("id");
@@ -221,8 +242,8 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
   const porSub = new Map<string, any[]>();
   for (const e of ents ?? []) { const l = porSub.get(e.subscription_id); if (l) l.push(e); else porSub.set(e.subscription_id, [e]); }
   const limite = now - OD_INTERVALO_H * 3600e3;
-  const pend = subs.filter((s) => !(porSub.get(s.id) ?? []).some((e) => e.dia === dia || Date.parse(e.enviada_em) > limite));
-  if (!pend.length) return { slot: slot.t, personalizado: "todos já receberam hoje" };
+  const pend = subs.filter((s) => naVez(s) && !(porSub.get(s.id) ?? []).some((e) => e.dia === dia || Date.parse(e.enviada_em) > limite));
+  if (!pend.length) return { slot: rotulo, personalizado: "ninguém na vez agora (ou todos já receberam hoje)" };
   const { data: prods, error: pe } = await todas(() => db.from("cr_products")
     .select("id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,affiliate_url,created_at,product_images:cr_product_images(url,sort,is_cover)")
     .eq("status", "active").gte("price", c.min).order("id"));
@@ -234,7 +255,7 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
   const pop: Record<string, number> = {};
   for (const x of cl ?? []) if (x.product_id) pop[x.product_id] = (pop[x.product_id] || 0) + 1;
   // escolhe para cada cliente; sem perfil → oferta geral do dia (se o administrador permitir)
-  const geral = c.sem_perfil === "geral" ? odPick(P.filter((p) => p.offer && odConfiavel(p, c, now)), c, { slot: slot.i }) : null;
+  const geral = c.sem_perfil === "geral" ? odPick(P.filter((p) => p.offer && odConfiavel(p, c, now)), c, { slot: slot?.i ?? 0 }) : null;
   const plano = [];
   for (const s of pend) {
     const hist = (porSub.get(s.id) ?? []).map((e) => ({ ...e, cat: byId.get(e.product_id)?.category_id, tocou: !!e.tocou_em }));
@@ -243,10 +264,10 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
     if (r) { const cn = catName.get(r.p.category_id) || ""; plano.push({ s, p: r.p, motivo: ("interesse: " + cn).slice(0, 80), msg: odMsg(r.p, s, now, cn) }); }
     else if (!temPerfil && geral && !hist.some((h) => h.product_id === geral.id)) plano.push({ s, p: geral, motivo: "geral (sem perfil)", msg: { titulo: odText(c.title, geral).slice(0, 80) || "🔥 Oferta do dia", corpo: odText(c.body, geral).slice(0, 200) || geral.name } });
   }
-  if (!plano.length) return { slot: slot.t, personalizado: "nenhum produto adequado para os clientes pendentes" };
+  if (!plano.length) return { slot: rotulo, personalizado: "nenhum produto adequado para os clientes pendentes" };
   const { data: camp, error: ce } = await db.from("cr_notifications").insert({
-    title: `Ofertas personalizadas · ${slot.t}`, body: `${plano.length} cliente(s)`, url: settings?.site_url ?? "/",
-    source: "auto_offer", status: "sending", scheduled_at: slot.at, error: null,
+    title: `Ofertas personalizadas · ${rotulo}`, body: `${plano.length} cliente(s)`, url: settings?.site_url ?? "/",
+    source: "auto_offer", status: "sending", scheduled_at: slot ? slot.at : null, error: null,
   }).select("id").single();
   if (ce) throw ce;
   let ok = 0, fail = 0;
@@ -262,7 +283,7 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
     await db.from("cr_push_entregas").update({ ok: r.ok > 0, erro: r.ok ? null : (r.lastError ?? "falhou") }).eq("id", ent.id);
   }
   await db.from("cr_notifications").update({ status: ok || !fail ? "sent" : "failed", sent_at: new Date().toISOString(), sent_count: ok, failed_count: fail, body: `${ok} cliente(s), produtos escolhidos por interesse` }).eq("id", camp.id);
-  return { slot: slot.t, personalizado: { enviados: ok, falhas: fail } };
+  return { slot: rotulo, personalizado: { enviados: ok, falhas: fail } };
 }
 
 // Desafio Brick Game: avisos "alguém passou seu recorde" (fila cr_brick_avisos, criada por supabase/09-brickgame-campeoes.sql).
@@ -302,9 +323,12 @@ Deno.serve(async (req) => {
     // Agendador (pg_cron)
     if (safeEqual(req.headers.get("x-cron-token") ?? "", config.cr_push_cron_token)) {
       const quiet = settings ? inQuiet(spHour(), settings.quiet_start, settings.quiet_end) : false;
+      // envios automáticos de hoje; as rodadas personalizadas (cada cliente recebe no máximo 1) contam como 1 no total
       const { count } = await db.from("cr_notifications").select("id", { count: "exact", head: true })
-        .neq("source", "manual").eq("status", "sent").gte("sent_at", spDayStartISO());
-      let autoToday = count ?? 0;
+        .neq("source", "manual").eq("status", "sent").gte("sent_at", spDayStartISO()).not("title", "like", "Ofertas personalizadas%");
+      const { count: pers } = await db.from("cr_notifications").select("id", { count: "exact", head: true })
+        .neq("source", "manual").eq("status", "sent").gte("sent_at", spDayStartISO()).like("title", "Ofertas personalizadas%");
+      let autoToday = (count ?? 0) + ((pers ?? 0) > 0 ? 1 : 0);
       // falha na Oferta do dia nunca impede os outros envios
       let oferta: unknown = null;
       try { oferta = await ofertaDoDia(settings, autoToday, quiet); } catch (e) { oferta = { error: String((e as Error).message ?? e) }; }

@@ -63,7 +63,7 @@ export function start(S){try{
  const t=SS.get('cr_vtest');C=cfg(S);
  ON=t==='0'?false:t==='1'?true:!!C.on;
  LS.set(K_ON,C.on?1:0);   // lembra para pré-carregar na próxima visita
- if(ON)observe();
+ if(ON){observe();marcaHora()}
  return ON}catch(e){ON=false;return false}}
 export const isOn=()=>ON;
 export const area=k=>ON&&!!C?.areas?.[k];
@@ -118,7 +118,7 @@ const HALF=21*864e5;           // meia-vida dos interesses: 21 dias (interesses 
 const W={search:3,cat:2,view:2,click:1,buy:4};
 const newProf=()=>({v:1,id:(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)),t0:Date.now(),lu:Date.now(),ev:0,seg:{},cat:{},tok:{},pr:{n:0,s:0,q:0},sel:null,hist:{e:-1,ids:[]},prev:[]});
 function loadProf(){const p=LS.get(K_PROF);return p&&p.v===1&&p.id?p:newProf()}
-function decay(p){const f=Math.pow(.5,(Date.now()-(p.lu||Date.now()))/HALF);if(f<.999){for(const m of [p.seg,p.cat,p.tok])for(const k in m){m[k]*=f;if(m[k]<.05)delete m[k]}p.ev*=f;p.pr.n*=f;p.pr.s*=f;p.pr.q*=f}p.lu=Date.now()}
+function decay(p){const f=Math.pow(.5,(Date.now()-(p.lu||Date.now()))/HALF);if(f<.999){for(const m of [p.seg,p.cat,p.tok,p.hr||{}])for(const k in m){m[k]*=f;if(m[k]<.05)delete m[k]}p.ev*=f;p.pr.n*=f;p.pr.s*=f;p.pr.q*=f}p.lu=Date.now()}
 const cap=(m,n)=>{const e=Object.entries(m);if(e.length>n){e.sort((a,b)=>b[1]-a[1]);for(const [k] of e.slice(n))delete m[k]}};
 const add=(m,k,v)=>{if(k)m[k]=(m[k]||0)+v};
 const STOPW=new Set('kit com sem para de da do das dos em no na unidades unidade pecas peca cm mm ml litros original novo nova cor cores tamanho modelo premium pro'.split(' '));
@@ -143,6 +143,11 @@ export function track(type,d={}){try{if(!ON||optedOut())return;const w=W[type];i
   add(P.cat,sp.c,w);obs(sp.p);for(const t of nameToks(sp.n))add(P.tok,t,w*.35);for(const [k,v] of Object.entries(segsOf(sp,R)))add(P.seg,k,w*v*.6);
   if(type!=='click'){P.seen=(P.seen||[]).filter(x=>x!==sp.id);P.seen.unshift(sp.id);P.seen.length=Math.min(P.seen.length,30)}}}
  cap(P.cat,30);cap(P.tok,40);cap(P.seg,10);LS.set(K_PROF,P)}catch(e){}}
+
+// Horário de uso: guarda só a HORA (UTC) das visitas, no máximo uma vez por hora, e em quantos dias diferentes o site foi aberto.
+// Serve para as ofertas personalizadas chegarem na hora em que a pessoa costuma usar o site. Nada além da hora é guardado.
+function marcaHora(){try{if(optedOut())return;const P=loadProf(),now=Date.now(),day=Math.floor(now/864e5),h=new Date(now).getUTCHours(),k=day+':'+h;
+ if(P.hk===k)return;decay(P);P.hr=P.hr||{};P.hr[h]=(P.hr[h]||0)+1;if(P.hday!==day){P.hn=Math.min(999,(P.hn||0)+1);P.hday=day}P.hk=k;LS.set(K_PROF,P)}catch(e){}}
 
 // cliques nos cards de produto (qualquer página que carregou o módulo)
 let obsOn=false;function observe(){if(obsOn)return;obsOn=true;
@@ -280,5 +285,7 @@ export function interestSummary(S){try{if(optedOut())return null;const c=cfg(S),
   for(const [cid,o] of Object.entries(by)){let w=0;for(const [k,v] of Object.entries(seg))if(k!=='economico'&&k!=='achadinhos')w+=v*(o.s[k]||0)/o.n;if(w>0)cat[cid]=(cat[cid]||0)+w*.6}}
  const r3=v=>Math.round(v*1000)/1000,top=(m,n)=>Object.fromEntries(Object.entries(m).filter(x=>x[1]>=.02).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([k,v])=>[k,r3(v)]));
  const out={v:1,cat:top(cat,10),seg:top(seg,4)};if(!Object.keys(out.cat).length)return null;
+ // hora (UTC) em que a pessoa mais abre o site e em quantos dias isso foi visto (o servidor só usa com 3 dias ou mais)
+ const hrs=Object.entries(P.hr||{}).sort((a,b)=>b[1]-a[1]);if(hrs.length&&(P.hn||0)>=1){out.h=+hrs[0][0];out.hn=Math.round(P.hn)}
  if(P.pr&&P.pr.n>.5){const m=P.pr.s/P.pr.n,sd=Math.sqrt(Math.max(P.pr.q/P.pr.n-m*m,.04)),f=v=>Math.round(Math.exp(v)*100)/100;out.pr={lo:f(m-1.2*sd),hi:f(m+1.2*sd),med:f(m)}}
  return out}catch(e){return null}}
