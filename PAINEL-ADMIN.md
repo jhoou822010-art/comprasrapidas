@@ -113,3 +113,25 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
   Sem o 09, o Desafio continua como antes (sem recado, mural e avisos).
 - Apagar um resultado no painel troca o campeão sem gerar aviso nem “quem passou quem”.
 - **Desfazer:** bloco DESFAZER no fim do arquivo 09 + publicar a versão anterior da função.
+
+# Conferência Shopee (Operações › Conferência Shopee) e catálogo em português
+
+**Robô de conferência** (função `shopee-sync` + `sql/shopee_sync.sql`):
+- Confere os produtos da loja Shopee que têm código (tirado do link: `…/product/LOJA/ITEM` ou `nome-i.LOJA.ITEM`) na API de afiliados
+  (`productOfferV2`, um item por consulta, 5 por pedido, pausa entre pedidos).
+- Atualiza **preço, preço máximo, preço original (pelo desconto), comissão, link de oferta e foto de capa**.
+  Nunca mexe em nome, descrição, categoria ou destaque. O link só é trocado se o atual não apontar para o mesmo item.
+  A foto só é trocada se a capa atual for foto da Shopee (foto enviada por você fica).
+- Não apareceu: soma 1; na 2ª vez seguida, desativa (`shopee_status = desativado_robo`). **Nunca apaga.**
+- Voltou: zera e reativa **só** o que o robô desativou. Se você mudar o status à mão, vale a sua decisão.
+- Preço mudou mais de 50%: atualiza e marca para conferir.
+- Erro geral da API (assinatura, fora do ar, limite): nada é desativado; o erro fica registrado na rodada.
+- Agendamento: a cada 15 min o banco pergunta se está na hora (robô ligado + intervalo escolhido). Cada chamada confere até 200
+  produtos (os mais antigos primeiro) e a próxima continua de onde parou. Começa **desligado**.
+- Registro: `cr_shopee_sync_runs` (rodadas) e `cr_shopee_sync_log` (mudanças), só administradores leem; apagados após 60 dias.
+- Chaves: Supabase › Edge Functions › Secrets › `SHOPEE_APP_ID` e `SHOPEE_APP_SECRET`
+  (sem elas, usa `SHOPEE_AFFILIATE_APP_ID`/`SHOPEE_AFFILIATE_SECRET`, as da prévia do catálogo).
+
+**Catálogo em português** (aba Teste Shopee): categorias traduzidas por `js/shopee-categorias.js`; as que faltarem aparecem em
+"Categorias sem tradução" e o que você digitar fica em `cr_category_translations`. A busca acha em português e em inglês,
+sem diferenciar acento e maiúsculas (ex.: vestido = dress).
