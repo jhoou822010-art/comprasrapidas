@@ -135,3 +135,12 @@ notificado nos últimos X dias, e envia a notificação com a foto e o link do p
 **Catálogo em português** (aba Teste Shopee): categorias traduzidas por `js/shopee-categorias.js`; as que faltarem aparecem em
 "Categorias sem tradução" e o que você digitar fica em `cr_category_translations`. A busca acha em português e em inglês,
 sem diferenciar acento e maiúsculas (ex.: vestido = dress).
+
+**Como tirar o robô sem afetar a vitrine:** a loja e a vitrine não usam nada do robô. Para remover:
+1. Desligue em Conferência Shopee (opcional, o passo 2 já para tudo).
+2. Rode `sql/shopee_sync_remover.sql` no SQL Editor: para o agendador, tira o gatilho do cadastro, as funções, as tabelas,
+   a configuração `shopee_sync` e as colunas novas, nessa ordem. Não apaga produtos. Pode rodar mais de uma vez.
+   Tem duas linhas OPCIONAIS: recolocar na vitrine o que o robô desativou e voltar nomes traduzidos ao original.
+3. (Opcional) Apague a função `shopee-sync` no Supabase.
+O painel continua funcionando: a aba Conferência Shopee só mostra um aviso, e o catálogo segue em português pelo dicionário.
+O gatilho que preenche os códigos é à prova de falha: um erro nele nunca impede salvar um produto.

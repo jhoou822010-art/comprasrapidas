@@ -71,6 +71,8 @@ begin
   elsif new.shopee_item_id is null then new.shopee_status := 'sem_codigo';
   end if;
   return new;
+exception when others then
+  return new;   -- à prova de falha: qualquer erro aqui NUNCA impede salvar um produto
 end $$;
 drop trigger if exists cr_products_shopee_codigos on public.cr_products;
 create trigger cr_products_shopee_codigos before insert or update of affiliate_url, merchant_id, status on public.cr_products
@@ -195,11 +197,4 @@ update public.cr_site_settings
 --   select shopee_status, count(*) from cr_products where merchant_id = cr_shopee_loja() group by 1;
 --   select name, affiliate_url from cr_products where shopee_status = 'sem_codigo';
 --
--- DESFAZER (não apaga produtos; tira só o que este arquivo criou):
---   select cron.unschedule('cr-shopee-sync'); select cron.unschedule('cr-shopee-limpeza');
---   drop trigger if exists cr_products_shopee_codigos on public.cr_products;
---   drop function if exists public.cr_shopee_codigos_gatilho(); drop function if exists public.cr_shopee_dispatch();
---   drop function if exists public.cr_shopee_limpeza(); drop function if exists public.cr_shopee_config();
---   drop table if exists public.cr_shopee_sync_log; drop table if exists public.cr_shopee_sync_runs; drop table if exists public.cr_category_translations;
---   update cr_site_settings set data = data - 'shopee_sync' where id = 1;
---   (as colunas novas de cr_products podem ficar; para tirar: alter table cr_products drop column if exists shopee_item_id, ... )
+-- DESFAZER: rode o arquivo sql/shopee_sync_remover.sql (tira tudo na ordem certa, sem mexer na vitrine).
