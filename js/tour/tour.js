@@ -410,7 +410,7 @@ async function montar() {
     }
     bon.onclick = null;
     const espera = CONFIG.saidaEspera || 5;
-    const txt = (temAviso ? T.saidaAviso : T.saida).replace('{loja}', escHtml(loja));
+    const txt = (temAviso ? T.saidaAviso : T.saida).replace('{loja}', /^loja parceira$/i.test(loja) ? 'loja parceira' : `loja <b>${escHtml(loja)}</b>`);   // "para a loja Mercado Livre" fica certo para qualquer loja
     const ok = await falar(`${fechaX('fica', T.saidaFicar)}${cabeca()}<p>${txt}</p><div class=crg-bts>${bt('fica', T.saidaFicar, 1)}${bt('vai', T.saidaIr)}</div><div class=crg-tempo aria-hidden=true><i style="animation-duration:${espera}s"></i></div>`,
       { esc: fica, fica, vai });
     clearTimeout(seguranca);

@@ -72,9 +72,9 @@ export const CONFIG = {
     entendi: 'Entendi',
     avisar: 'Quero ser avisado',
     tchau: 'Tchau! Se precisar, me chame no fim da página. 👋',
-    // aviso ao sair para a loja parceira (página do produto); {loja} = nome da loja
-    saida: 'Você está indo para a <b>{loja}</b>! 🛍️ A compra, a entrega e as trocas são feitas lá, pela própria loja. Boas compras!',
-    saidaAviso: 'Você está indo para a <b>{loja}</b>! 🛍️ Dá uma olhadinha nestes avisos aqui em destaque antes de continuar. Boas compras!',
+    // aviso ao sair para a loja parceira (página do produto); {loja} = "loja Shopee", "loja Mercado Livre"… (ou "loja parceira")
+    saida: 'Você está indo para a {loja}! 🛍️ A compra, a entrega e as trocas são feitas lá, pela própria loja. Boas compras!',
+    saidaAviso: 'Você está indo para a {loja}! 🛍️ Dá uma olhadinha nestes avisos aqui em destaque antes de continuar. Boas compras!',
     saidaIr: 'Continuar',
     saidaFicar: 'Ficar aqui',
     saidaFicou: 'Tudo bem! Continue olhando à vontade. 😉',
