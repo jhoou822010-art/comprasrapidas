@@ -10,6 +10,8 @@
 export const ETAPAS = [
   { id: 'boas-vindas', alvo: null, botoes: ['proximo', 'nao-mostrar'],
     texto: 'Oi! Eu sou a <b>Lia</b>, sua guia na <b>Compras Rápidas</b>. Posso te mostrar a loja rapidinho?' },
+  { id: 'pesquisa', alvo: 'header form[role=search]', botoes: ['proximo'],
+    texto: 'Procurando algo? Digite aqui na <b>pesquisa</b> o nome do produto e toque na lupa 🔍.' },
   { id: 'carrossel', alvo: '.car', botoes: ['proximo'],
     texto: 'Aqui no topo passam as <b>ofertas em destaque</b>. Arraste para o lado para ver mais.' },
   { id: 'categorias', alvo: '#categorias', botoes: ['proximo'],
