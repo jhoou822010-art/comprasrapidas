@@ -24,11 +24,11 @@ export const TAMANHO = { altura: 118, alturaCelular: 96 };
 export const MARGEM = { cima: 0, baixo: 0, lados: 0 };
 
 // ---- personagem em SVG (usado enquanto não houver imagens). Olha para a direita.
-// Mesma identidade do avatar: pele morena, cabelo escuro curto e ondulado, olhos castanhos grandes, sorriso aberto,
+// Mesma identidade do avatar: pele morena clara, cabelo bem curtinho (baixo), olhos castanhos grandes, sorriso aberto,
 // contorno azul-marinho, camisa azul royal "comprasrapidas", calça azul-marinho e tênis brancos.
 // Grupos: g-braco-frente (o que aponta; gira pela variável --ang, ombro em 70.5,60), g-braco-tras, g-perna-a, g-perna-b, g-texto.
 const L = '#14285a';                 // contorno
-const PELE = '#a8693f', PELE2 = '#8f5531', AZUL = '#1d5fe3', AZUL2 = '#174bb8', CALCA = '#1b2b52', CABELO = '#24160f';
+const PELE = '#e0ad86', PELE2 = '#c98f66', AZUL = '#1d5fe3', AZUL2 = '#174bb8', CALCA = '#1b2b52', CABELO = '#3b2b21';
 const braco = (cls, x) => `<g class="g-braco ${cls}">
   <rect x="${x + 1}" y="66" width="7" height="25" rx="3.5" fill="${PELE}" stroke="${L}" stroke-width="1.4"/>
   <path d="M${x - 1} 60c0-3 2.5-5 5.5-5s5.5 2 5.5 5v10h-11z" fill="${AZUL}" stroke="${L}" stroke-width="1.4" stroke-linejoin="round"/>
@@ -48,8 +48,7 @@ export const SVG = `<svg viewBox="0 0 100 150" width="100%" height="100%" aria-h
  <rect x="45.5" y="38" width="9" height="10" rx="3" fill="${PELE2}" stroke="${L}" stroke-width="1.4"/>
  <ellipse cx="34.6" cy="25" rx="3.6" ry="4.6" fill="${PELE}" stroke="${L}" stroke-width="1.4"/>
  <path d="M34 22.5c-0.5-12 7-19 17-19 10.5 0 17 7 17 18.5 0 10.5-7.5 18.5-17 18.5-9.5 0-16.7-7.5-17-18z" fill="${PELE}" stroke="${L}" stroke-width="1.6"/>
- <path d="M33.5 22c-2-6 0-12 4-15 1-4 6-6.5 9.5-5 3-3 8-3 11 0 4-1 8.5 1 10 5 3 2.5 3.5 7 1.5 10.5-2-3-4.5-4-7-3.5-1.5-3-4.5-4-7-3-2.5-2-6-2-8.5 0-2.5-1-5.5 0-7 2.5-1.5-.5-3.5 1-4 3.5-1.5 1.5-2 3.5-2.5 5z" fill="${CABELO}" stroke="${L}" stroke-width="1.2" stroke-linejoin="round"/>
- <path d="M40 9c2-1.5 4.5-1.5 6 0M51 6.5c2.5-1 5-.5 6.5 1M60 9.5c2 0 3.5 1 4.5 2.5" fill="none" stroke="#4a3122" stroke-width="1.1" stroke-linecap="round"/>
+ <path d="M35 20.5c-.3-10.5 6.8-17 16-17 9.6 0 16.6 6.5 16.6 16-2.3-3.6-5.6-5.4-9-5.8-3-.4-6 .2-8.2 1.4-2.2-1.1-5-1.4-7.6-.7-3.3.9-6 3-7.8 6.1z" fill="${CABELO}" stroke="${L}" stroke-width="1.2" stroke-linejoin="round"/>
  <ellipse cx="47" cy="24" rx="4.2" ry="5" fill="#fff" stroke="${L}" stroke-width="1"/><ellipse cx="60" cy="24" rx="4.2" ry="5" fill="#fff" stroke="${L}" stroke-width="1"/>
  <circle cx="48.2" cy="24.8" r="3.1" fill="#6b3b1a"/><circle cx="61.2" cy="24.8" r="3.1" fill="#6b3b1a"/>
  <circle cx="48.5" cy="25.2" r="1.6" fill="#1b0f08"/><circle cx="61.5" cy="25.2" r="1.6" fill="#1b0f08"/>
