@@ -51,7 +51,11 @@ $('#shr').onclick=async()=>{const data={title:name,text:name+(p.price!=null?' po
  try{await navigator.clipboard.writeText(share);$('#shr').textContent='Link copiado ✓';setTimeout(()=>$('#shr').textContent='Compartilhar',2500)}catch(e){open('https://wa.me/?text='+encodeURIComponent(data.text+'\n'+share),'_blank','noopener')}};
 // clique para a loja: conta o clique (sem atrasar a abertura da loja)
 let V=null;try{V=await import('./js/vitrine.js');if(!V.start(S))V=null;else V.track('view',{p})}catch(e){V=null}
-document.querySelectorAll('[data-out]').forEach(a=>a.addEventListener('click',()=>{trackClick(p);try{V?.track('buy',{p})}catch(e){}}));
+document.querySelectorAll('[data-out]').forEach(a=>a.addEventListener('click',e=>{trackClick(p);try{V?.track('buy',{p})}catch(e){}
+ // guia (Karol): avisa que o cliente está indo para a loja parceira e abre a loja em 5 s (ou em "Continuar"). Ctrl/Cmd+clique segue normal.
+ if(e.defaultPrevented||e.button!==0||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;
+ e.preventDefault();const u=a.href;import('./js/tour/tour.js').then(m=>m.saida(u,storeName(p)||'loja parceira')).catch(()=>{location.href=u})}));
+setTimeout(()=>import('./js/tour/tour.js').catch(()=>{}),2500); // deixa o guia pronto antes do clique (não mostra nada)
 // produtos relacionados: os mais parecidos com este; se algo falhar, usa a lista simples da categoria
 let r=null;try{if(V){const ids=V.related(await V.poolWithin(4000),p,12);if(ids.length>=4)r=await byIds(ids)}}catch(e){console.warn('relacionados: usando a lista simples',e)}
 if(!r||r.length<4){const {data:rel}=await list({cat:p.category_id,per:13});r=(rel||[]).filter(x=>x.id!==p.id).slice(0,12)}

@@ -78,6 +78,17 @@ export async function ajudar() {
   } catch (e) { console.warn('guia', e); limpar(); }
 }
 
+// aviso ao sair para a loja parceira (botões "Ver oferta na …" da página do produto).
+// Se o guia estiver desligado (painel ou cliente) ou algo falhar, segue direto para a loja, como antes.
+export async function saida(url, loja) {
+  const ir = () => { try { location.href = url; } catch (e) {} };
+  try {
+    if (!ligadoNoSite() || desligado() || !/^https?:\/\//i.test(url || '')) return ir();
+    const m = await montar(); m.modo = 'saida'; atual = m;
+    await m.saida(url, loja || 'loja parceira', ir);
+  } catch (e) { console.warn('guia', e); limpar(); ir(); }
+}
+
 function limpar() { try { atual?.destruir(); } catch (e) {} atual = null; }
 
 // ---------- monta a personagem, o balão e o destaque
@@ -373,6 +384,25 @@ async function montar() {
     });
   };
 
+  // ---------- SAÍDA PARA A LOJA PARCEIRA: ela entra, avisa para onde o cliente vai e abre a loja sozinha
+  const saidaLoja = async (url, loja, ir) => {
+    escurecer(false);
+    let fim = null, foi = false;
+    const vai = () => { if (foi) return; foi = true; clearTimeout(fim); ir(); };
+    const fica = () => { if (foi) return; foi = true; clearTimeout(fim); despedir(T.saidaFicou); };
+    // ao voltar da loja pelo botão Voltar do celular, a página pode reaparecer da memória: ela não fica parada na tela
+    addEventListener('pagehide', () => { if (foi) sumir(); }, { once: true });
+    fim = setTimeout(vai, (CONFIG.saidaEspera || 5) * 1000);  // conta desde o clique
+    pos(innerWidth + 20);
+    await andar(innerWidth - W() - 10);
+    if (!vivo || foi) return;
+    virar(true); pose('acenando');
+    bon.onclick = null;
+    const resta = Math.max(1, (CONFIG.saidaEspera || 5) - 0.6);
+    await falar(`${fechaX('fica', T.saidaFicar)}${cabeca()}<p>${T.saida.replace('{loja}', escHtml(loja))}</p><div class=crg-bts>${bt('fica', T.saidaFicar, 1)}${bt('vai', T.saidaIr)}</div><div class=crg-tempo aria-hidden=true><i style="animation-duration:${resta}s"></i></div>`,
+      { esc: fica, fica, vai });
+  };
+
   // ---------- VISITA RÁPIDA (visitas seguintes): entra pelo canto, acena e pergunta; some sozinha
   const visita = async () => {
     escurecer(false);
@@ -391,7 +421,7 @@ async function montar() {
     if (ok && m.pararVisita === parar) fim = setTimeout(nao, CONFIG.espera * 1000);
   };
 
-  const m = { raiz, tour: async () => { m.pararVisita?.(); bon.onclick = null; await tour(); }, visita, ajuda, destruir, sumir, modo: null, pararVisita: null };
+  const m = { raiz, saida: saidaLoja, tour: async () => { m.pararVisita?.(); bon.onclick = null; await tour(); }, visita, ajuda, destruir, sumir, modo: null, pararVisita: null };
   return m;
 }
 

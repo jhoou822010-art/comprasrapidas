@@ -37,6 +37,8 @@ export const CONFIG = {
   velocidade: 420,
   // troca das imagens da caminhada (milissegundos) e tempo do "digitando…" antes de cada fala
   passo: 190,
+  // aviso de saída para a loja parceira: segundos até abrir a loja sozinho
+  saidaEspera: 5,
   digitando: 550,
   textos: {
     pergunta: '{saudacao}! Que bom te ver de novo. Quer que eu te mostre a loja ou te ajude a achar alguma coisa?',
@@ -69,6 +71,11 @@ export const CONFIG = {
     entendi: 'Entendi',
     avisar: 'Quero ser avisado',
     tchau: 'Tchau! Se precisar, me chame no fim da página. 👋',
+    // aviso ao sair para a loja parceira (página do produto); {loja} = nome da loja
+    saida: 'Você está indo para a <b>{loja}</b>! 🛍️ A compra, a entrega e as trocas são feitas lá, pela própria loja. Boas compras!',
+    saidaIr: 'Continuar',
+    saidaFicar: 'Ficar aqui',
+    saidaFicou: 'Tudo bem! Continue olhando à vontade. 😉',
     tchauBusca: 'Pode digitar! Se precisar, me chame no fim da página. 👋',
     tchauDesativado: 'Tudo bem, não apareço mais. Para me chamar de volta, use <b>“Ativar guia”</b> no fim da página. 👋',
     avisoAtivo: 'Pronto! Você vai receber as ofertas neste aparelho. ✅',

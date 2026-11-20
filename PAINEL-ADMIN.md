@@ -171,6 +171,13 @@ A **Karol** mostra a loja (imagens em `img/guia/`: parado, andando, apontando e 
 - **"Quero ajuda", tocar nela ou "Chamar a Karol" (rodapé)** abrem um menu: Procurar um produto, Ver as ofertas de hoje, Ver as categorias e Fazer o tour completo. Em outras páginas, o botão leva ao Início já com o menu aberto.
 - **Menos movimento:** quem pediu menos movimento no aparelho não vê "digitando…", digitação animada nem confete.
 
+**Saída para a loja parceira (página do produto):**
+- Ao tocar em "Ver oferta na Shopee / Mercado Livre", a Karol aparece e diz "Você está indo para a Shopee…". A loja abre sozinha em 5 s ou na hora em "Continuar". "Ficar aqui" ou Esc cancelam.
+- O clique continua sendo contado no painel no momento do toque, como antes.
+- Com o guia desligado (no painel ou pelo cliente), ou se o guia falhar, o botão vai direto para a loja, como antes.
+- Ctrl+clique e Cmd+clique seguem normais.
+- Os textos ficam em `etapas.js` (`saida`, `saidaIr`, `saidaFicar`, `saidaFicou`) e o tempo em `CONFIG.saidaEspera`.
+
 **No painel:** Vitrine › Aparência › "Guia (mascote) ligado". Desmarcado e salvo, o guia e os botões dele somem para todos.
 
 **Arquivos (pasta `js/tour/`)**
