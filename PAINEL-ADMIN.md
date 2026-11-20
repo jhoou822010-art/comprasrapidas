@@ -147,7 +147,7 @@ O gatilho que preenche os códigos é à prova de falha: um erro nele nunca impe
 
 ## Guia da loja (mascote)
 
-Um mascote que mostra a loja: pele morena clara, cabelo baixinho, camisa azul royal "comprasrapidas", calça azul-marinho e tênis brancos. Ele só aparece no **Início** e só é carregado depois que a página termina de abrir. Se der qualquer erro no guia, ele some e a loja continua normal.
+A **Lia** mostra a loja (imagens em `img/guia/`: parado, andando, apontando e acenando). Se as imagens forem tiradas de `personagem.js`, volta o boneco desenhado. Ele só aparece no **Início** e só é carregado depois que a página termina de abrir. Se der qualquer erro no guia, ele some e a loja continua normal.
 
 **Como funciona para o cliente**
 - **Primeira visita:** tour completo. Ele anda até cada parte (carrossel, categorias, ofertas, jogos, menu), escurece o resto da tela e aponta. O balão tem "Próximo", o X (pular) e o contador "2 de 7". Depois vêm "Instalar o app" e "Avisar de ofertas":

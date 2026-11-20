@@ -12,10 +12,18 @@
 //   };
 //
 // Se faltar alguma pose, o guia usa a imagem "parado" no lugar.
-export const IMAGENS = {};
+// Personagem atual: a Lia (imagens em img/guia/, 204×360, olhando para a direita).
+const aqui = (f) => new URL('../../img/guia/' + f, import.meta.url).href;   // funciona em qualquer página do site
+export const IMAGENS = {
+  parado: aqui('parado.png'),
+  andando: aqui('andando.png'),
+  apontando: aqui('apontando.png'),
+  acenando: aqui('acenando.png'),
+};
+// Para voltar ao boneco desenhado (SVG abaixo), troque a linha de cima por:  export const IMAGENS = {};
 
 // tamanho do personagem na tela (px). A largura acompanha a proporção da imagem.
-export const TAMANHO = { altura: 118, alturaCelular: 96 };
+export const TAMANHO = { altura: 132, alturaCelular: 112 };
 
 // Sobra transparente em volta do boneco nas SUAS imagens, em % do tamanho da imagem.
 // Ex.: imagem quadrada 2048×2048 com o boneco ocupando do topo 8% até 4% do fim e com 28% de sobra de cada lado:

@@ -77,6 +77,7 @@ async function montar() {
   document.body.appendChild(raiz);
   const bloq = raiz.querySelector('.crg-bloq'), luz = raiz.querySelector('.crg-luz'), bon = raiz.querySelector('.crg-bon'), bal = raiz.querySelector('.crg-bal');
   const img = raiz.querySelector('.crg-corpo img');
+  if (temImg) Object.values(IMAGENS).forEach((u) => { const i = new Image(); i.src = u; });   // já baixa todas as poses (troca sem piscar)
   let x = innerWidth + 20, olhaEsq = false, alvoAtual = null, vivo = true;
   // com imagens: a sobra transparente (MARGEM) fica fora da caixa do boneco, para ele ter a altura de TAMANHO e os pés no chão
   const fv = () => Math.max(0.2, 1 - (MG.cima + MG.baixo) / 100), fh = () => Math.max(0.2, 1 - (2 * MG.lados) / 100);
@@ -153,7 +154,7 @@ async function montar() {
     bal.innerHTML = html; bal.hidden = false; colocarBalao();
     requestAnimationFrame(() => bal.classList.add('on'));
     bal.querySelectorAll('[data-a]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); balaoBotoes?.[b.dataset.a]?.(b); });
-    const f = bal.querySelector('.crg-bt'); if (f && atual?.modo === 'tour') try { f.focus({ preventScroll: true }); } catch (e) {}
+    const f = [...bal.querySelectorAll('.crg-bt')].pop();   // o botão principal (Próximo/Concluir) fica por último if (f && atual?.modo === 'tour') try { f.focus({ preventScroll: true }); } catch (e) {}
   }
   const bt = (a, txt, sec) => `<button type=button class="crg-bt${sec ? ' crg-sec' : ''}" data-a="${a}">${txt}</button>`;
 
