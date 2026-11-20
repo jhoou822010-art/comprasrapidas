@@ -9,7 +9,7 @@
 //   botoes  quais botões aparecem: 'proximo', 'nao-mostrar' (boas-vindas), 'concluir' e 'desativar' (final)
 export const ETAPAS = [
   { id: 'boas-vindas', alvo: null, botoes: ['proximo', 'nao-mostrar'],
-    texto: 'Oi! Eu sou a <b>Lia</b>, sua guia na <b>Compras Rápidas</b>. Posso te mostrar a loja rapidinho?' },
+    texto: 'Oi! Eu sou a <b>Karol</b>, sua guia na <b>Compras Rápidas</b>. Posso te mostrar a loja rapidinho?' },
   { id: 'pesquisa', alvo: 'header form[role=search]', botoes: ['proximo'],
     texto: 'Procurando algo? Digite aqui na <b>pesquisa</b> o nome do produto e toque na lupa 🔍.' },
   { id: 'carrossel', alvo: '.car', botoes: ['proximo'],

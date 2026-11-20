@@ -12,7 +12,7 @@
 //   };
 //
 // Se faltar alguma pose, o guia usa a imagem "parado" no lugar.
-// Personagem atual: a Lia (imagens em img/guia/, 204×360, olhando para a direita).
+// Personagem atual: a Karol (imagens em img/guia/, 192×360, olhando para a direita).
 const aqui = (f) => new URL('../../img/guia/' + f, import.meta.url).href;   // funciona em qualquer página do site
 export const IMAGENS = {
   parado: aqui('parado.png'),
