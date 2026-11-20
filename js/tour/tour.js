@@ -8,6 +8,8 @@
 import { S, pushOk, pushSubscribe, pushSyncProfile, isIOS, isStandalone } from '../app.js';
 import { ETAPAS, CONFIG } from './etapas.js';
 import { IMAGENS, TAMANHO, SVG } from './personagem.js';
+import * as PERS from './personagem.js';
+const MG = { cima: 0, baixo: 0, lados: 0, ...(PERS.MARGEM || {}) };
 
 const K_VISTO = 'cr_guia_visto', K_OFF = 'cr_guia_off', K_SESSAO = 'cr_guia_sessao';
 const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
@@ -76,8 +78,14 @@ async function montar() {
   const bloq = raiz.querySelector('.crg-bloq'), luz = raiz.querySelector('.crg-luz'), bon = raiz.querySelector('.crg-bon'), bal = raiz.querySelector('.crg-bal');
   const img = raiz.querySelector('.crg-corpo img');
   let x = innerWidth + 20, olhaEsq = false, alvoAtual = null, vivo = true;
-  const W = () => Math.round(alt() * (temImg ? (img.naturalWidth / img.naturalHeight || 0.66) : 0.667));
-  const medir = () => { bon.style.height = alt() + 'px'; bon.style.width = W() + 'px'; };
+  // com imagens: a sobra transparente (MARGEM) fica fora da caixa do boneco, para ele ter a altura de TAMANHO e os pés no chão
+  const fv = () => Math.max(0.2, 1 - (MG.cima + MG.baixo) / 100), fh = () => Math.max(0.2, 1 - (2 * MG.lados) / 100);
+  const W = () => Math.round(alt() * (temImg ? ((img.naturalWidth || 66) * fh()) / ((img.naturalHeight || 100) * fv()) : 0.667));
+  const medir = () => {
+    bon.style.height = alt() + 'px'; bon.style.width = W() + 'px';
+    if (temImg) { const H = alt() / fv(), Wi = W() / fh(); img.style.cssText = `position:absolute;height:${H}px;width:${Wi}px;max-width:none;left:${-Wi * MG.lados / 100}px;top:${-H * MG.cima / 100}px`; }
+  };
+  if (temImg) img.addEventListener('load', () => { if (vivo) { medir(); pos(x); } });
   medir();
   const pose = (p) => {
     bon.className = 'crg-bon p-' + p + (olhaEsq ? ' esq' : '');
@@ -122,7 +130,7 @@ async function montar() {
     if (!el) { pose('parado'); return; }
     const r = rectVisivel(el), w = W(), h = alt();
     virar(r.cx < x + w / 2);
-    const ombroX = x + (olhaEsq ? w * (1 - 0.685) : w * 0.685), ombroY = innerHeight - 8 - h + h * (61 / 150);
+    const ombroX = x + (olhaEsq ? w * (1 - 0.705) : w * 0.705), ombroY = innerHeight - 8 - h + h * (60 / 150);
     let dx = r.cx - ombroX; const dy = r.cy - ombroY;
     if (olhaEsq) dx = -dx;
     const ang = Math.max(-175, Math.min(10, (Math.atan2(dy, Math.max(4, dx)) * 180) / Math.PI - 90));

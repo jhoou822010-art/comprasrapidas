@@ -11,13 +11,13 @@
 .crg-bon{position:fixed;left:0;bottom:calc(8px + env(safe-area-inset-bottom,0px));pointer-events:auto;cursor:pointer;
  transition-property:transform;transition-timing-function:linear;will-change:transform;touch-action:manipulation;background:none;border:0;padding:0}
 .crg-bon:focus-visible{outline:3px solid #ffd54a;outline-offset:4px;border-radius:12px}
-.crg-corpo{width:100%;height:100%;transition:transform .2s}
+.crg-corpo{position:relative;width:100%;height:100%;transition:transform .2s}
 .crg-bon.esq .crg-corpo{transform:scaleX(-1)}
 .crg-corpo svg .g-texto{transform-origin:50px 0;transform-box:view-box}.crg-bon.esq .crg-corpo svg .g-texto{transform:scaleX(-1)} /* o nome na camisa continua legível quando ele vira */
 .crg-corpo img{width:100%;height:100%;object-fit:contain;display:block}
 /* poses do homenzinho em SVG */
 .crg-corpo svg .g-perna-a{transform-origin:43px 98px}.crg-corpo svg .g-perna-b{transform-origin:57px 98px}
-.crg-corpo svg .g-braco-frente{transform-origin:68.5px 61px;transition:transform .35s ease}.crg-corpo svg .g-braco-tras{transform-origin:31.5px 61px}
+.crg-corpo svg .g-braco-frente{transform-origin:70.5px 60px;transition:transform .35s ease}.crg-corpo svg .g-braco-tras{transform-origin:29.5px 60px}
 .p-andando svg .g-perna-a{animation:crg-pa .42s ease-in-out infinite alternate}
 .p-andando svg .g-perna-b{animation:crg-pb .42s ease-in-out infinite alternate}
 .p-andando svg .g-braco-frente{animation:crg-pb .42s ease-in-out infinite alternate}

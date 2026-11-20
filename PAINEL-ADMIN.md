@@ -147,7 +147,7 @@ O gatilho que preenche os códigos é à prova de falha: um erro nele nunca impe
 
 ## Guia da loja (mascote)
 
-Um homenzinho de camisa azul ("comprasrapidas") que mostra a loja. Ele só aparece no **Início** e só é carregado depois que a página termina de abrir. Se der qualquer erro no guia, ele some e a loja continua normal.
+Um mascote que mostra a loja: pele morena, cabelo escuro ondulado, camisa azul royal "comprasrapidas", calça azul-marinho e tênis brancos. Ele só aparece no **Início** e só é carregado depois que a página termina de abrir. Se der qualquer erro no guia, ele some e a loja continua normal.
 
 **Como funciona para o cliente**
 - **Primeira visita:** tour completo. Ele anda até cada parte (carrossel, categorias, ofertas, jogos, menu), escurece o resto da tela e aponta. O balão tem "Próximo", o X (pular) e o contador "2 de 7". Depois vêm "Instalar o app" e "Avisar de ofertas":
@@ -164,7 +164,7 @@ Um homenzinho de camisa azul ("comprasrapidas") que mostra a loja. Ele só apare
 
 **Arquivos (pasta `js/tour/`)**
 - `etapas.js`: textos, ordem das etapas e `CONFIG.espera` (segundos que ele espera na visita rápida). Uma etapa cujo elemento não existe é pulada sozinha.
-- `personagem.js`: troca do personagem por imagens (`IMAGENS`, poses parado/andando/apontando/acenando, desenhadas olhando para a direita) e o tamanho.
+- `personagem.js`: troca do personagem por imagens (`IMAGENS`, poses parado/andando/apontando/acenando, desenhadas olhando para a direita), o tamanho e a `MARGEM` (sobra transparente das imagens quadradas, em %, que o guia corta para o boneco ficar no tamanho certo).
 - `tour.js`: o funcionamento.
 - `tour.css`: o visual.
 - No `js/app.js` ficam só a captura do "Instalar app" do Chrome e os botões do rodapé.
