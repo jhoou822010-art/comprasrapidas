@@ -386,21 +386,36 @@ async function montar() {
 
   // ---------- SAÍDA PARA A LOJA PARCEIRA: ela entra, avisa para onde o cliente vai e abre a loja sozinha
   const saidaLoja = async (url, loja, ir) => {
-    escurecer(false);
     let fim = null, foi = false;
     const vai = () => { if (foi) return; foi = true; clearTimeout(fim); ir(); };
     const fica = () => { if (foi) return; foi = true; clearTimeout(fim); despedir(T.saidaFicou); };
     // ao voltar da loja pelo botão Voltar do celular, a página pode reaparecer da memória: ela não fica parada na tela
     addEventListener('pagehide', () => { if (foi) sumir(); }, { once: true });
-    fim = setTimeout(vai, (CONFIG.saidaEspera || 5) * 1000);  // conta desde o clique
+    const seguranca = setTimeout(vai, 15000);         // se algo travar no caminho, a loja abre mesmo assim
+    // o quadro de avisos que já existe na página do produto ("Ao clicar em…, você será direcionado…") fica em destaque
+    const aviso = elemento(CONFIG.saidaAlvo || '#aviso');
+    const temAviso = aviso && visivel(aviso);
     pos(innerWidth + 20);
-    await andar(innerWidth - W() - 10);
-    if (!vivo || foi) return;
-    virar(true); pose('acenando');
+    if (temAviso) {
+      escurecer(true); destacar(null);
+      bloq.onclick = () => {};                           // tocar fora não faz nada; a escolha é nos botões
+      await rolarAte(aviso); if (!vivo || foi) return;
+      destacar(aviso);
+      await andar(ladoDe(aviso)); if (!vivo || foi) return;
+      apontar(aviso);
+    } else {
+      escurecer(false);
+      await andar(innerWidth - W() - 10); if (!vivo || foi) return;
+      virar(true); pose('acenando');
+    }
     bon.onclick = null;
-    const resta = Math.max(1, (CONFIG.saidaEspera || 5) - 0.6);
-    await falar(`${fechaX('fica', T.saidaFicar)}${cabeca()}<p>${T.saida.replace('{loja}', escHtml(loja))}</p><div class=crg-bts>${bt('fica', T.saidaFicar, 1)}${bt('vai', T.saidaIr)}</div><div class=crg-tempo aria-hidden=true><i style="animation-duration:${resta}s"></i></div>`,
+    const espera = CONFIG.saidaEspera || 5;
+    const txt = (temAviso ? T.saidaAviso : T.saida).replace('{loja}', escHtml(loja));
+    const ok = await falar(`${fechaX('fica', T.saidaFicar)}${cabeca()}<p>${txt}</p><div class=crg-bts>${bt('fica', T.saidaFicar, 1)}${bt('vai', T.saidaIr)}</div><div class=crg-tempo aria-hidden=true><i style="animation-duration:${espera}s"></i></div>`,
       { esc: fica, fica, vai });
+    clearTimeout(seguranca);
+    if (!foi && vivo) fim = setTimeout(vai, ok ? espera * 1000 : 0);   // conta depois que a mensagem aparece (dá tempo de ler)
+    else if (!foi) vai();
   };
 
   // ---------- VISITA RÁPIDA (visitas seguintes): entra pelo canto, acena e pergunta; some sozinha

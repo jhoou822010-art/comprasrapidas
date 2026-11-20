@@ -39,6 +39,7 @@ export const CONFIG = {
   passo: 190,
   // aviso de saída para a loja parceira: segundos até abrir a loja sozinho
   saidaEspera: 5,
+  saidaAlvo: '#aviso',   // quadro de avisos da página do produto que ela destaca
   digitando: 550,
   textos: {
     pergunta: '{saudacao}! Que bom te ver de novo. Quer que eu te mostre a loja ou te ajude a achar alguma coisa?',
@@ -73,6 +74,7 @@ export const CONFIG = {
     tchau: 'Tchau! Se precisar, me chame no fim da página. 👋',
     // aviso ao sair para a loja parceira (página do produto); {loja} = nome da loja
     saida: 'Você está indo para a <b>{loja}</b>! 🛍️ A compra, a entrega e as trocas são feitas lá, pela própria loja. Boas compras!',
+    saidaAviso: 'Você está indo para a <b>{loja}</b>! 🛍️ Dá uma olhadinha nestes avisos aqui em destaque antes de continuar. Boas compras!',
     saidaIr: 'Continuar',
     saidaFicar: 'Ficar aqui',
     saidaFicou: 'Tudo bem! Continue olhando à vontade. 😉',

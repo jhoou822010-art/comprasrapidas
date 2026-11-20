@@ -172,7 +172,9 @@ A **Karol** mostra a loja (imagens em `img/guia/`: parado, andando, apontando e 
 - **Menos movimento:** quem pediu menos movimento no aparelho não vê "digitando…", digitação animada nem confete.
 
 **Saída para a loja parceira (página do produto):**
-- Ao tocar em "Ver oferta na Shopee / Mercado Livre", a Karol aparece e diz "Você está indo para a Shopee…". A loja abre sozinha em 5 s ou na hora em "Continuar". "Ficar aqui" ou Esc cancelam.
+- Ao tocar em "Ver oferta na Shopee / Mercado Livre", a tela escurece e a Karol vai até o quadro de avisos que já existe na página ("Ao clicar em…, você será direcionado…"). Ela destaca o quadro, aponta para ele e diz "Você está indo para a Shopee…".
+- A loja abre sozinha 5 s depois da mensagem, ou na hora em "Continuar". "Ficar aqui" ou Esc cancelam.
+- O quadro de avisos continua sempre na página, inclusive para quem desligou a Karol.
 - O clique continua sendo contado no painel no momento do toque, como antes.
 - Com o guia desligado (no painel ou pelo cliente), ou se o guia falhar, o botão vai direto para a loja, como antes.
 - Ctrl+clique e Cmd+clique seguem normais.
