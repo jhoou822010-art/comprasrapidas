@@ -24,6 +24,7 @@ export let S=DEF;
 // ---- GUIA (mascote, js/tour/). Aqui só ficam: a captura do "Instalar app" do Chrome e os botões do rodapé.
 // O guia em si só é carregado no Início, depois que a página termina de carregar.
 const GUIA_OFF='cr_guia_off',GUIA_VISTO='cr_guia_visto';
+const GUIA_NOME='Karol',GUIA_ROSTO=new URL('../img/guia/rosto.png',import.meta.url).href; // mesmo nome de js/tour/personagem.js
 const guiaLs=k=>{try{return localStorage.getItem(k)}catch(_){return null}};
 const guiaNoSite=()=>S?.tour?.on!==false,guiaOff=()=>guiaLs(GUIA_OFF)==='1';
 const noInicio=()=>/(^|\/)(index\.html)?$/.test(location.pathname);
@@ -32,7 +33,7 @@ try{if(!guiaOff()){addEventListener('beforeinstallprompt',e=>{if(!guiaNoSite()||
 function guiaBtns(){try{const c=$('#guiac'),t=$('#guiat');if(!c||!t)return;
  if(!guiaNoSite()){c.hidden=t.hidden=true;return}
  const pinta=()=>{const off=guiaOff();t.textContent=off?'🧭 Ativar guia':'🧭 Desativar guia';c.hidden=off;t.hidden=false};pinta();
- c.onclick=()=>{if(noInicio()&&document.querySelector('.car,#ofertas'))import('./tour/tour.js').then(m=>m.abrir()).catch(e=>console.warn('guia',e));else location.href=new URL('../?guia=1',import.meta.url).href};
+ c.onclick=()=>{if(noInicio()&&document.querySelector('.car,#ofertas'))import('./tour/tour.js').then(m=>m.ajudar()).catch(e=>console.warn('guia',e));else location.href=new URL('../?guia=ajuda',import.meta.url).href};
  t.onclick=()=>{const off=!guiaOff();try{off?localStorage.setItem(GUIA_OFF,'1'):localStorage.removeItem(GUIA_OFF)}catch(_){}
   if(off)dispatchEvent(new CustomEvent('cr-guia-off'));import('./tour/tour.js').then(m=>{try{m.salvarPerfil?.()}catch(_){}}).catch(()=>{});pinta();
   alert(off?'Guia desativado. Para chamar de volta, toque em “Ativar guia” aqui no rodapé.':'Guia ativado! Toque em “Chamar o guia” quando quiser.')};
@@ -159,7 +160,7 @@ function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&
  <div><h2>Institucional</h2><ul><li><a href="sobre.html">Sobre nós</a></li><li><a href="sobre.html#como-funciona">Como funciona</a></li><li><a href="contato.html">Contato</a></li><li><a href="privacidade.html">Política de privacidade</a></li>
  ${wa?`<li><a href="${esc(cHref(wa))}" target=_blank rel=noopener>WhatsApp</a></li>`:''}${MARCA.emailAtivo&&MARCA.email?`<li><a href="mailto:${esc(MARCA.email)}">${esc(MARCA.email)}</a></li>`:''}${soc.map(x=>`<li><a href="${esc(cHref(x))}" target=_blank rel=noopener>${esc(CTYPES[x.type].n)}</a></li>`).join('')}</ul></div></div>
  <p class=fdis>${DISCLAIMER} Preços, estoques, fretes e condições podem mudar a qualquer momento na loja de destino.${S.footer_text?'':''}</p>
- ${assinatura()}<button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button> <button type=button id=guiac class=temabtn hidden>🧭 Chamar o guia</button> <button type=button id=guiat class=temabtn hidden></button></div></footer><div id=lb></div>`}
+ ${assinatura()}<button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button> <button type=button id=guiac class=temabtn hidden><img src="${GUIA_ROSTO}" alt="" width=22 height=22 style="width:22px;height:22px;border-radius:50%;vertical-align:middle;margin:-3px 4px 0 0;object-fit:cover">Chamar a ${GUIA_NOME}</button> <button type=button id=guiat class=temabtn hidden></button></div></footer><div id=lb></div>`}
 function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();notifBtn();guiaBtns();
  const here=(location.pathname.split('/').pop()||'./')+location.search,hn=here==='index.html'?'./':here;
  document.querySelectorAll('header nav a').forEach(a=>{const h=a.getAttribute('href');if(h===hn||(h.includes('?')&&hn.startsWith(h))){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}

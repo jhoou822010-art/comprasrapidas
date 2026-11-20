@@ -160,6 +160,17 @@ A **Karol** mostra a loja (imagens em `img/guia/`: parado, andando, apontando e 
   - o cliente pode tocar em "Não mostrar mais" (boas-vindas) ou em "Desativar guia" (final);
   - no rodapé ficam os botões "🧭 Chamar o guia" e "🧭 Ativar/Desativar guia".
 
+**Experiência da Karol**
+- Ela anda alternando as imagens de passada e de perna junta.
+- Antes de cada fala aparecem três pontinhos de "digitando…".
+- Ela cumprimenta pela hora: "Bom dia", "Boa tarde" ou "Boa noite".
+- O balão tem o rostinho dela, o contador, uma barrinha de progresso e o botão ← Voltar.
+- **Pesquisa:** ela digita um exemplo na barra ("fone bluetooth", que dá para mudar em `exemploBusca`) e depois apaga. Nada é pesquisado. O botão "Quero tentar" leva o cursor para a barra.
+- **Ofertas:** ela aponta um produto de verdade da tela e fala o nome e o preço.
+- **Fim do tour:** "Missão cumprida!" com confete.
+- **"Quero ajuda", tocar nela ou "Chamar a Karol" (rodapé)** abrem um menu: Procurar um produto, Ver as ofertas de hoje, Ver as categorias e Fazer o tour completo. Em outras páginas, o botão leva ao Início já com o menu aberto.
+- **Menos movimento:** quem pediu menos movimento no aparelho não vê "digitando…", digitação animada nem confete.
+
 **No painel:** Vitrine › Aparência › "Guia (mascote) ligado". Desmarcado e salvo, o guia e os botões dele somem para todos.
 
 **Arquivos (pasta `js/tour/`)**
