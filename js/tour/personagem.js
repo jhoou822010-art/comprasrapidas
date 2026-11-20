@@ -21,6 +21,12 @@ export const IMAGENS = {
   acenando: aqui('acenando.png'),
 };
 // Para voltar ao boneco desenhado (SVG abaixo), troque a linha de cima por:  export const IMAGENS = {};
+// Nome dela (aparece no balão e nas falas) e o rostinho redondo do balão e do rodapé.
+// Se mudar o nome aqui, mude também GUIA_NOME no js/app.js (botão do rodapé).
+export const NOME = 'Karol';
+export const ROSTO = IMAGENS.parado ? aqui('rosto.png') : '';
+// Caminhada: as imagens se alternam enquanto ela anda (passada e perna junta), como no vídeo dela.
+export const PASSOS = IMAGENS.parado ? [aqui('andando.png'), aqui('parado.png')] : [];
 
 // tamanho do personagem na tela (px). A largura acompanha a proporção da imagem.
 export const TAMANHO = { altura: 132, alturaCelular: 112 };
