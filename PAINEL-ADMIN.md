@@ -144,3 +144,34 @@ sem diferenciar acento e maiúsculas (ex.: vestido = dress).
 3. (Opcional) Apague a função `shopee-sync` no Supabase.
 O painel continua funcionando: a aba Conferência Shopee só mostra um aviso, e o catálogo segue em português pelo dicionário.
 O gatilho que preenche os códigos é à prova de falha: um erro nele nunca impede salvar um produto.
+
+## Guia da loja (mascote)
+
+Um homenzinho de camisa azul ("comprasrapidas") que mostra a loja. Ele só aparece no **Início** e só é carregado depois que a página termina de abrir. Se der qualquer erro no guia, ele some e a loja continua normal.
+
+**Como funciona para o cliente**
+- **Primeira visita:** tour completo. Ele anda até cada parte (carrossel, categorias, ofertas, jogos, menu), escurece o resto da tela e aponta. O balão tem "Próximo", o X (pular) e o contador "2 de 7". Depois vêm "Instalar o app" e "Avisar de ofertas":
+  - essas duas etapas só aparecem quando fazem sentido;
+  - a permissão de notificação só é pedida depois que o cliente toca em "Quero ser avisado";
+  - no iPhone, as notificações só são oferecidas com o app já instalado.
+- **Visitas seguintes:** ele entra pelo canto, acena e pergunta se pode ajudar, sem escurecer a página, com uma barrinha de tempo. Se ninguém responder em 15 s, ele se despede e vai embora. Aparece no máximo uma vez por visita.
+- **Esc** fecha o tour.
+- **Desligar:**
+  - o cliente pode tocar em "Não mostrar mais" (boas-vindas) ou em "Desativar guia" (final);
+  - no rodapé ficam os botões "🧭 Chamar o guia" e "🧭 Ativar/Desativar guia".
+
+**No painel:** Vitrine › Aparência › "Guia (mascote) ligado". Desmarcado e salvo, o guia e os botões dele somem para todos.
+
+**Arquivos (pasta `js/tour/`)**
+- `etapas.js`: textos, ordem das etapas e `CONFIG.espera` (segundos que ele espera na visita rápida). Uma etapa cujo elemento não existe é pulada sozinha.
+- `personagem.js`: troca do personagem por imagens (`IMAGENS`, poses parado/andando/apontando/acenando, desenhadas olhando para a direita) e o tamanho.
+- `tour.js`: o funcionamento.
+- `tour.css`: o visual.
+- No `js/app.js` ficam só a captura do "Instalar app" do Chrome e os botões do rodapé.
+
+**Guardado no aparelho:** `cr_guia_visto`, `cr_guia_off` (localStorage) e `cr_guia_sessao` (sessionStorage).
+- Para ver a primeira visita de novo, apague esses itens no navegador. Outra forma: abra `…/?guia=1`, que abre o tour na hora.
+- Com login de cliente no futuro, o registro de "já viu" e "desligou" pode ser ligado ao perfil em `CONFIG.perfil` (em `etapas.js`).
+- Para usar outro serviço de push, defina `CONFIG.ativarNotificacoes`. Sem ele, o guia usa as notificações que a loja já tem.
+
+**Remover:** desmarque a chave no painel. Para tirar de vez, apague a pasta `js/tour/` e a linha do guia no fim do `index.html`. O resto da loja não depende dele.

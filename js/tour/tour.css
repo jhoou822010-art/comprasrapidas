@@ -1,0 +1,58 @@
+/* Guia (mascote) da Compras Rápidas — tudo começa com .crg para não misturar com o resto da loja */
+.crg{position:fixed;inset:0;z-index:9000;pointer-events:none;font-family:inherit;color:#12213a}
+.crg *{box-sizing:border-box}
+/* camada que segura os toques na página durante o tour (o mascote e o balão continuam tocáveis) */
+.crg-bloq{position:fixed;inset:0;pointer-events:auto;background:transparent}
+/* destaque: um "buraco" claro em volta do elemento e o resto da tela escurecido */
+.crg-luz{position:fixed;border-radius:14px;box-shadow:0 0 0 200vmax rgba(7,16,36,.62);transition:all .35s ease;pointer-events:none;opacity:0}
+.crg-luz.on{opacity:1}
+.crg-luz.vazia{box-shadow:0 0 0 200vmax rgba(7,16,36,.62);width:0!important;height:0!important}
+/* mascote */
+.crg-bon{position:fixed;left:0;bottom:calc(8px + env(safe-area-inset-bottom,0px));pointer-events:auto;cursor:pointer;
+ transition-property:transform;transition-timing-function:linear;will-change:transform;touch-action:manipulation;background:none;border:0;padding:0}
+.crg-bon:focus-visible{outline:3px solid #ffd54a;outline-offset:4px;border-radius:12px}
+.crg-corpo{width:100%;height:100%;transition:transform .2s}
+.crg-bon.esq .crg-corpo{transform:scaleX(-1)}
+.crg-corpo svg .g-texto{transform-origin:50px 0;transform-box:view-box}.crg-bon.esq .crg-corpo svg .g-texto{transform:scaleX(-1)} /* o nome na camisa continua legível quando ele vira */
+.crg-corpo img{width:100%;height:100%;object-fit:contain;display:block}
+/* poses do homenzinho em SVG */
+.crg-corpo svg .g-perna-a{transform-origin:43px 98px}.crg-corpo svg .g-perna-b{transform-origin:57px 98px}
+.crg-corpo svg .g-braco-frente{transform-origin:68.5px 61px;transition:transform .35s ease}.crg-corpo svg .g-braco-tras{transform-origin:31.5px 61px}
+.p-andando svg .g-perna-a{animation:crg-pa .42s ease-in-out infinite alternate}
+.p-andando svg .g-perna-b{animation:crg-pb .42s ease-in-out infinite alternate}
+.p-andando svg .g-braco-frente{animation:crg-pb .42s ease-in-out infinite alternate}
+.p-andando svg .g-braco-tras{animation:crg-pa .42s ease-in-out infinite alternate}
+.p-andando .crg-corpo{animation:crg-pulo .21s ease-in-out infinite alternate}
+.p-apontando svg .g-braco-frente{transform:rotate(var(--ang,-90deg))}
+.p-acenando svg .g-braco-frente{animation:crg-aceno .45s ease-in-out infinite alternate}
+.p-parado .crg-corpo{animation:crg-resp 2.4s ease-in-out infinite}
+@keyframes crg-pa{from{transform:rotate(18deg)}to{transform:rotate(-18deg)}}
+@keyframes crg-pb{from{transform:rotate(-18deg)}to{transform:rotate(18deg)}}
+@keyframes crg-pulo{from{translate:0 0}to{translate:0 -3px}}
+@keyframes crg-aceno{from{transform:rotate(-150deg)}to{transform:rotate(-115deg)}}
+@keyframes crg-resp{0%,100%{translate:0 0}50%{translate:0 -2px}}
+/* balão */
+.crg-bal{position:fixed;left:8px;bottom:140px;width:min(340px,calc(100vw - 16px));background:#fff;border-radius:16px;padding:14px 14px 12px;
+ box-shadow:0 10px 30px rgba(0,0,0,.28);pointer-events:auto;opacity:0;transform:translateY(6px) scale(.98);transition:opacity .2s,transform .2s;font-size:1rem;line-height:1.4}
+.crg-bal.on{opacity:1;transform:none}
+.crg-bal[hidden]{display:none}
+.crg-bal::after{content:"";position:absolute;bottom:-9px;left:var(--seta,40px);width:18px;height:18px;background:#fff;transform:rotate(45deg);border-radius:3px}
+.crg-bal p{margin:0 32px 10px 0}
+.crg-bal .crg-nota{font-size:.92rem;background:#eef3fb;border-radius:10px;padding:8px 10px;margin:0 0 10px}
+.crg-cont{font-size:.82rem;color:#5b6b85;margin:0 0 8px;font-weight:600}
+.crg-x{position:absolute;top:4px;right:4px;width:44px;height:44px;border:0;background:none;border-radius:50%;font-size:1.5rem;line-height:1;color:#5b6b85;cursor:pointer}
+.crg-x:hover,.crg-x:focus-visible{background:#eef3fb;outline:none;color:#12213a}
+.crg-bts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center}
+.crg-bt{min-height:44px;min-width:44px;padding:10px 16px;border-radius:12px;border:2px solid #1a5fd6;background:#1a5fd6;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.crg-bt.crg-sec{background:#fff;color:#1a5fd6}
+.crg-bt:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}
+.crg-bt:disabled{opacity:.6}
+.crg-tempo{height:5px;border-radius:5px;background:#e4eaf3;margin-top:10px;overflow:hidden}
+.crg-tempo i{display:block;height:100%;width:100%;background:#1a5fd6;transform-origin:left;animation:crg-tempo linear forwards}
+@keyframes crg-tempo{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@media (max-width:420px){.crg-bal{font-size:.95rem;padding:12px 12px 10px}.crg-bt{padding:10px 12px}}
+/* quem pediu menos movimento no celular/computador: sem caminhada animada, sem balanço */
+@media (prefers-reduced-motion:reduce){
+ .crg-bon,.crg-luz,.crg-bal,.crg-corpo,.crg-corpo svg *{transition:none!important;animation:none!important}
+ .crg-tempo i{animation-name:crg-tempo!important}
+}

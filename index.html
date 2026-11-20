@@ -79,4 +79,5 @@ if(slides.length>1){const trk=$id('trk'),dots=[...document.querySelectorAll('.do
  document.querySelector('.nv.pv').onclick=()=>{halt();go(i-1)};document.querySelector('.nv.nx').onclick=()=>{halt();go(i+1)};dots.forEach((d,k)=>d.onclick=()=>{halt();go(k)});
  ['touchstart','pointerdown'].forEach(e=>trk.addEventListener(e,halt,{passive:true}));['mouseenter','focusin'].forEach(e=>$id('bn').addEventListener(e,st,{passive:true}));['mouseleave','focusout'].forEach(e=>$id('bn').addEventListener(e,rs,{passive:true}));
  document.addEventListener('visibilitychange',rs);mark();rs()}
-</script></body></html>
+</script>
+<script type=module>/* guia (mascote): só depois que a página carregou; se falhar, a loja segue normal */const go=()=>setTimeout(()=>import('./js/tour/tour.js').then(m=>m.iniciar()).catch(e=>console.warn('guia',e)),1200);document.readyState==='complete'?go():addEventListener('load',go)</script></body></html>

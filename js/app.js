@@ -21,6 +21,22 @@ const DEF={name:'Compras Rápidas Andrade',slogan:'Praticidade para comprar, eco
  about:'A Compras Rápidas reúne produtos selecionados de lojas parceiras para você encontrar boas escolhas com facilidade.',
  privacy:'Edite este texto no painel (Aparência da loja). Explique quais dados coleta (ex.: cliques anônimos em links de compra), como usa e como o visitante pode falar com você.',contact_text:'Fale com a gente pelos canais abaixo.'};
 export let S=DEF;
+// ---- GUIA (mascote, js/tour/). Aqui só ficam: a captura do "Instalar app" do Chrome e os botões do rodapé.
+// O guia em si só é carregado no Início, depois que a página termina de carregar.
+const GUIA_OFF='cr_guia_off',GUIA_VISTO='cr_guia_visto';
+const guiaLs=k=>{try{return localStorage.getItem(k)}catch(_){return null}};
+const guiaNoSite=()=>S?.tour?.on!==false,guiaOff=()=>guiaLs(GUIA_OFF)==='1';
+const noInicio=()=>/(^|\/)(index\.html)?$/.test(location.pathname);
+const guiaVaiAbrir=()=>guiaNoSite()&&!guiaOff()&&guiaLs(GUIA_VISTO)!=='1'&&noInicio();
+try{if(!guiaOff()){addEventListener('beforeinstallprompt',e=>{if(!guiaNoSite()||guiaOff())return;e.preventDefault();window.__crInstall=e});addEventListener('appinstalled',()=>{window.__crInstall=null})}}catch(_){}
+function guiaBtns(){try{const c=$('#guiac'),t=$('#guiat');if(!c||!t)return;
+ if(!guiaNoSite()){c.hidden=t.hidden=true;return}
+ const pinta=()=>{const off=guiaOff();t.textContent=off?'🧭 Ativar guia':'🧭 Desativar guia';c.hidden=off;t.hidden=false};pinta();
+ c.onclick=()=>{if(noInicio()&&document.querySelector('.car,#ofertas'))import('./tour/tour.js').then(m=>m.abrir()).catch(e=>console.warn('guia',e));else location.href=new URL('../?guia=1',import.meta.url).href};
+ t.onclick=()=>{const off=!guiaOff();try{off?localStorage.setItem(GUIA_OFF,'1'):localStorage.removeItem(GUIA_OFF)}catch(_){}
+  if(off)dispatchEvent(new CustomEvent('cr-guia-off'));import('./tour/tour.js').then(m=>{try{m.salvarPerfil?.()}catch(_){}}).catch(()=>{});pinta();
+  alert(off?'Guia desativado. Para chamar de volta, toque em “Ativar guia” aqui no rodapé.':'Guia ativado! Toque em “Chamar o guia” quando quiser.')};
+ if(!guiaBtns.ouvindo){guiaBtns.ouvindo=1;addEventListener('cr-guia-estado',()=>guiaBtns())}}catch(e){console.warn('guia',e)}}
 export const THEMES={
  natal:{n:'Natal',e:'🎄',c1:'#8b1a1a',c2:'#1f8a4c',btn:'#1f8a4c',t:'Especial de Natal: ofertas para presentear!',fx:['❄️'],deco:'hats'},
  carnaval:{n:'Carnaval',e:'🎭',c1:'#5b2a86',c2:'#e08a00',btn:'#d6246e',t:'Folia de ofertas de Carnaval!',fx:['🎊','✨']},
@@ -143,8 +159,8 @@ function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&
  <div><h2>Institucional</h2><ul><li><a href="sobre.html">Sobre nós</a></li><li><a href="sobre.html#como-funciona">Como funciona</a></li><li><a href="contato.html">Contato</a></li><li><a href="privacidade.html">Política de privacidade</a></li>
  ${wa?`<li><a href="${esc(cHref(wa))}" target=_blank rel=noopener>WhatsApp</a></li>`:''}${MARCA.emailAtivo&&MARCA.email?`<li><a href="mailto:${esc(MARCA.email)}">${esc(MARCA.email)}</a></li>`:''}${soc.map(x=>`<li><a href="${esc(cHref(x))}" target=_blank rel=noopener>${esc(CTYPES[x.type].n)}</a></li>`).join('')}</ul></div></div>
  <p class=fdis>${DISCLAIMER} Preços, estoques, fretes e condições podem mudar a qualquer momento na loja de destino.${S.footer_text?'':''}</p>
- ${assinatura()}<button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button></div></footer><div id=lb></div>`}
-function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();notifBtn();
+ ${assinatura()}<button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button> <button type=button id=guiac class=temabtn hidden>🧭 Chamar o guia</button> <button type=button id=guiat class=temabtn hidden></button></div></footer><div id=lb></div>`}
+function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();notifBtn();guiaBtns();
  const here=(location.pathname.split('/').pop()||'./')+location.search,hn=here==='index.html'?'./':here;
  document.querySelectorAll('header nav a').forEach(a=>{const h=a.getAttribute('href');if(h===hn||(h.includes('?')&&hn.startsWith(h))){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
 export async function boot(){
@@ -310,6 +326,7 @@ function iosHelp(){const d=document.createElement('div');d.id='pnh';
  d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d);d.querySelector('button').focus()}
 const PN_KEY='cr_push_dismiss',PN_OK='cr_push_ok',PN_OFF='cr_push_off',PN_PERS='cr_push_pers',PN_SYNC='cr_push_sync',PN_SIG='cr_push_sig';
 async function pushBar(){
+ if(guiaVaiAbrir())return;                     // primeira visita: o guia (mascote) oferece as notificações no tour
  const ios=isIOS(),inst=isStandalone();
  if(!pushOk()&&!(ios&&!inst))return;          // navegador sem suporte: não mostra nada
  if(pushOk()&&Notification.permission==='denied')return;
