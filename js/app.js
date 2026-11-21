@@ -131,10 +131,10 @@ export function fail(where,err){if(err)console.error(err);const m=document.getEl
 // ---- categorias estratégicas do Início (agrupam as categorias do painel pelo nome; as demais ficam em "Todas as categorias")
 export const GROUPS=[
  {k:'ofertas',n:'Ofertas do dia',d:'Produtos com preço promocional',href:'lista.html?tipo=ofertas',ic:'%'},
- {k:'tecnologia',n:'Tecnologia',d:'Celulares, fones, eletrônicos',kw:['tecnolog','eletronic','informatic','celular','game']},
- {k:'casa',n:'Casa e decoração',d:'Cozinha, organização, móveis',kw:['casa','decora','cozinha','move','utilidade','organiza']},
+ {k:'tecnologia',n:'Tecnologia',d:'Celulares, fones, eletrônicos',kw:['tecnolog','eletronic','informatic','celular','game','audio','fone']},
+ {k:'casa',n:'Casa e decoração',d:'Cozinha, organização, móveis',kw:['casa','decora','cozinha','move','utilidade','organiza','eletrodomest']},
  {k:'moda',n:'Moda',d:'Feminina, masculina, acessórios',kw:['moda','acessorios de moda','calcad','roupa']},
- {k:'beleza',n:'Beleza',d:'Maquiagem e cuidados pessoais',kw:['beleza','maquiag','cuidados pessoais','perfum']},
+ {k:'beleza',n:'Beleza',d:'Maquiagem e cuidados pessoais',kw:['beleza','maquiag','cuidados pessoais','perfum','saude']},
  {k:'destaques',n:'Destaques',d:'Escolhidos pela nossa equipe',href:'lista.html?tipo=destaques',ic:'★'}];
 export const groupCats=(g,cats)=>g.kw?(cats||[]).filter(c=>g.kw.some(k=>norm(c.name).includes(k))):[];
 export const groupHref=g=>g.href||'lista.html?tipo=grupo&g='+g.k;

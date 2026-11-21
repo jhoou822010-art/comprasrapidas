@@ -195,3 +195,11 @@ A **Karol** mostra a loja (imagens em `img/guia/`: parado, andando, apontando e 
 - Para usar outro serviço de push, defina `CONFIG.ativarNotificacoes`. Sem ele, o guia usa as notificações que a loja já tem.
 
 **Remover:** desmarque a chave no painel. Para tirar de vez, apague a pasta `js/tour/` e a linha do guia no fim do `index.html`. O resto da loja não depende dele.
+
+## Categorias (reorganizadas em 21/11/2026)
+
+A loja tem **26 categorias** e mais uma oculta, **"A classificar"**. As 20 antigas foram substituídas.
+- **Lista:** Celulares, Cozinha e Mesa, Calçados, Festas e Natal, Moda Feminina, Beleza e Maquiagem, Áudio e Fones, Móveis, Eletrodomésticos, Ferramentas e Construção, Acessórios de Moda, Papelaria e Escritório, Motos, Saúde e Cuidados Pessoais, Moda Masculina, Pet Shop, Informática, Decoração, Instrumentos Musicais, Casa e Organização, Moda Infantil, Automotivo, Esporte e Fitness, Eletrônicos, Bebês e Brinquedos.
+- **Ordem e foto:** a ordem segue a quantidade de produtos. A foto é a capa do produto mais clicado de cada categoria e pode ser trocada em Painel › Categorias.
+- **Categoria automática:** produto novo que entra sem categoria (cadastro, importação da Shopee etc.) recebe uma pelas regras da tabela `cr_category_rules`, que procuram palavras no nome. Quando nenhuma regra serve, ele vai para "A classificar". Painel › Produtos mostra um aviso com o botão "Ver produtos a classificar". Arquivo: `sql/categorias_automaticas.sql`, que pode ser rodado de novo.
+- **Backups da troca:** tabelas `backup_20261121_*` no Supabase (categorias, produtos, imagens, vídeos, traduções, cliques, configurações e a lista de removidos).

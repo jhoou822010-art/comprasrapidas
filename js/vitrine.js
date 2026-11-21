@@ -23,7 +23,7 @@ export const DEF={
   achadinhos:{cats:null,cat_pat:'',kw:'mini*, portatil, portateis, criativ*, divertid*, retro, magnetic*, inteligente*, led, organizador*',excl:'',min_disc:30},
   feminino:{cats:null,cat_pat:'feminin',kw:'feminin*, mulher*, vestido*, saia*, blusa*, cropped, sutia*, calcinha*, maquiag*, batom*, brinco*, colar*, pulseira*, bolsa*, legging*, pantalona*, macacao*, regata*',excl:'masculin*, menino*'},
   masculino:{cats:null,cat_pat:'masculin',kw:'masculin*, homem, homens, cueca*, barba*, bermuda*, carteira*',excl:'feminin*, menina*'},
-  tecnologia:{cats:null,cat_pat:'eletronic|tecnolog',kw:'bluetooth, usb, wifi, fone*, smartwatch*, carregador*, hub, cabo*, mouse, teclado*, notebook*, celular*, camera*, impressora*, gamer, headset*',excl:''},
+  tecnologia:{cats:null,cat_pat:'eletronic|tecnolog|celular|informatic|audio',kw:'bluetooth, usb, wifi, fone*, smartwatch*, carregador*, hub, cabo*, mouse, teclado*, notebook*, celular*, camera*, impressora*, gamer, headset*',excl:''},
   ferramentas:{cats:null,cat_pat:'ferrament',kw:'ferrament*, furadeira*, parafusadeira*, alicate*, martelo*, trena*, serra*, broca*, chave de, multimetro*, solda*, esmerilhadeira*, macaco hidraulico, compressor*',excl:''},
   casa:{cats:null,cat_pat:'casa|cozinha|eletrodomestic|utilidade',kw:'cozinha, banheiro, organizador*, panela*, pote*, toalha*, lixeira*, prateleira*, cabide*, limpeza',excl:''}},
  // Perfis de composição: porcentagem de cada segmento na vitrine ("livre" = melhores produtos de qualquer segmento). Soma 100.
