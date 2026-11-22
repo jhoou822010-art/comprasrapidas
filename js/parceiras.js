@@ -52,20 +52,22 @@ export function cartao(l) {
 }
 
 // seção completa (banner que abre/fecha a lista de lojas). Sem lojas visíveis, não mostra nada.
-export function secao(S, { aberta = false } = {}) {
+// sufixo: para ter mais de um quadro na mesma página (o primeiro, sem sufixo, é o que a Karol mostra: #lpb)
+export function secao(S, { aberta = false, sufixo = '' } = {}) {
+  const b = 'lpb' + sufixo, l = 'lpl' + sufixo;
   const v = visiveis(S);
   if (!v.length) return '';
-  return `<button type=button class=lpb id=lpb aria-expanded=${aberta} aria-controls=lpl>
+  return `<button type=button class=lpb id=${b} aria-expanded=${aberta} aria-controls=${l}>
  <span class=lpk>Veja também</span><span class=lpt>Mais produtos</span>
  <span class=lpd>Não encontrou o que procura? Explore também nossas lojas parceiras e descubra milhares de outros produtos e ofertas.</span>
  <span class=lpa><span data-lbl>${aberta ? 'Ocultar lojas parceiras' : 'Ver lojas parceiras'}</span> <svg class=lpv aria-hidden=true width=18 height=18 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2.6 stroke-linecap=round stroke-linejoin=round><path d="m6 9 6 6 6-6"/></svg></span></button>
- <div id=lpl class=lpl${aberta ? '' : ' hidden'}><div class=lpw>${v.map(cartao).join('')}</div>
+ <div id=${l} class=lpl${aberta ? '' : ' hidden'}><div class=lpw>${v.map(cartao).join('')}</div>
  <p class=lpo>Os links abrem em uma nova aba e esta página continua aberta. A compra é finalizada na loja parceira.</p></div>`;
 }
 
 // liga o botão do banner (abre/fecha a lista)
 export function ligar(root) {
-  const b = root.querySelector('#lpb'), l = root.querySelector('#lpl');
+  const b = root.querySelector('.lpb'), l = root.querySelector('.lpl');
   if (!b || !l) return;
   b.onclick = () => {
     const o = b.getAttribute('aria-expanded') !== 'true';
