@@ -155,7 +155,7 @@ async function montar() {
     luz.style.cssText = `top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px`; luz.classList.add('on');
   };
   const reposicionar = () => { if (!vivo) return; medir(); if (raiz.dataset.escuro === '1') destacar(alvoAtual); colocarBalao(); };
-  addEventListener('resize', reposicionar); addEventListener('scroll', reposicionar, { passive: true });
+  addEventListener('resize', reposicionar); addEventListener('scroll', reposicionar, { passive: true, capture: true });   // capture: também quando o carrossel rola para o lado
 
   // braço apontando para o elemento (no boneco em SVG o braço gira; com imagens, usa a pose "apontando" virada para o lado certo)
   const apontar = (el) => {
@@ -239,7 +239,7 @@ async function montar() {
     d.parar(); if (demo === d) demo = null;
   };
 
-  const destruir = () => { vivo = false; pararDemo(); pararPassos(); removeEventListener('resize', reposicionar); removeEventListener('scroll', reposicionar); removeEventListener('keydown', tecla); raiz.remove(); };
+  const destruir = () => { vivo = false; pararDemo(); pararPassos(); removeEventListener('resize', reposicionar); removeEventListener('scroll', reposicionar, { capture: true }); removeEventListener('keydown', tecla); raiz.remove(); };
 
   // despede, sai andando pela direita e some
   const despedir = async (texto) => {
@@ -275,8 +275,13 @@ async function montar() {
   };
   // um produto de verdade que está nas ofertas da tela
   const produtoDaVez = (sec) => {
-    const c = [...(sec?.querySelectorAll('article.card') || [])].find(visivel);
+    // as ofertas são um carrossel que corre para o lado: escolhe um cartão que está inteiro dentro dele;
+    // se nenhum estiver, leva o carrossel até o primeiro (sem isso a luz ficaria num cartão fora da tela)
+    const cs = [...(sec?.querySelectorAll('article.card') || [])].filter(visivel);
+    const dentro = (el) => { const tr = el.closest('.pc'); if (!tr) return true; const a = el.getBoundingClientRect(), b = tr.getBoundingClientRect(); return a.left >= b.left - 2 && a.right <= b.right + 2; };
+    const c = cs.find(dentro) || cs[0];
     if (!c) return null;
+    if (!dentro(c)) { const tr = c.closest('.pc'); try { tr.scrollLeft += c.getBoundingClientRect().left - tr.getBoundingClientRect().left; } catch (e) {} }
     let nome = (c.querySelector('h3')?.textContent || '').replace(/\s+/g, ' ').trim();
     const preco = (c.querySelector('.pr b')?.textContent || '').replace(/\s+/g, ' ').trim();
     if (!nome || !preco) return null;

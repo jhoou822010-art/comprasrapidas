@@ -65,7 +65,7 @@ if(vok)try{V.shown([...seen])}catch(e){}
 // ---- carrossel "Ofertas em destaque": passa um produto a cada 4 s; para enquanto o visitante mexe e volta depois
 document.querySelectorAll('.pcw').forEach(w=>{const pc=w.querySelector('.pc');if(!pc)return;
  const step=()=>{const c=pc.querySelector('.card');return c?c.getBoundingClientRect().width+parseFloat(getComputedStyle(pc).columnGap||10):300};
- const nxt=()=>{if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
+ const nxt=()=>{if(document.querySelector('.crg[data-escuro="1"]'))return;/* parado enquanto a Karol mostra a loja (tour) */if(pc.scrollLeft+pc.clientWidth>=pc.scrollWidth-4)pc.scrollTo({left:0,behavior:'smooth'});else pc.scrollBy({left:step(),behavior:'smooth'})};
  const prv=()=>{if(pc.scrollLeft<=4)pc.scrollTo({left:pc.scrollWidth,behavior:'smooth'});else pc.scrollBy({left:-step(),behavior:'smooth'})};
  let t;const red=matchMedia('(prefers-reduced-motion:reduce)').matches,st=()=>clearInterval(t),rs=()=>{st();if(!red&&!document.hidden)t=setInterval(nxt,4000)};
  w.querySelector('.nv.pv').onclick=()=>{prv();rs()};w.querySelector('.nv.nx').onclick=()=>{nxt();rs()};
