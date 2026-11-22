@@ -203,3 +203,31 @@ A loja tem **26 categorias** e mais uma oculta, **"A classificar"**. As 20 antig
 - **Ordem e foto:** a ordem segue a quantidade de produtos. A foto é a capa do produto mais clicado de cada categoria e pode ser trocada em Painel › Categorias.
 - **Categoria automática:** produto novo que entra sem categoria (cadastro, importação da Shopee etc.) recebe uma pelas regras da tabela `cr_category_rules`, que procuram palavras no nome. Quando nenhuma regra serve, ele vai para "A classificar". Painel › Produtos mostra um aviso com o botão "Ver produtos a classificar". Arquivo: `sql/categorias_automaticas.sql`, que pode ser rodado de novo.
 - **Backups da troca:** tabelas `backup_20261121_*` no Supabase (categorias, produtos, imagens, vídeos, traduções, cliques, configurações e a lista de removidos).
+
+# Lojas Parceiras — “VEJA TAMBÉM — MAIS PRODUTOS” (novembro de 2026)
+
+Nova aba **Vitrine › Lojas Parceiras** no painel e nova seção na página inicial (depois de “Mais produtos para explorar”).
+
+- **Painel:** adicionar, editar e excluir lojas (com confirmação); nome, link de afiliado, descrição curta (até 140 caracteres),
+  logotipo (envio de arquivo para o armazenamento `compras-rapidas`, ou endereço https), ativar/desativar, posição na lista
+  (campo “Posição” e botões ↑ ↓). Sem limite de lojas. Prévia de como fica no site.
+- **Validação antes de salvar:** nome obrigatório; link obrigatório, completo e com `https://` (recusa `http://`, `javascript:`,
+  endereço sem domínio, IP, `localhost` e usuário/senha no link). O link é salvo **exatamente** como foi colado (só os espaços das pontas saem).
+- **Site:** banner grande “VEJA TAMBÉM — MAIS PRODUTOS”; ao tocar, abre os cartões das lojas **ativas** na ordem definida.
+  Cada cartão abre o link em nova aba com `target=_blank rel="noopener noreferrer"`; a Compras Rápidas fica aberta na aba original.
+  Sem loja ativa, a seção não aparece. O endereço `…/#mais-produtos` já abre a lista aberta.
+
+| Arquivo | O quê |
+|---|---|
+| `js/parceiras.js` (novo) | Regras (validação, lojas visíveis, ordem) e o visual da seção — usado pelo site e pela prévia do painel |
+| `js/parceiras-admin.js` (novo) | Aba Lojas Parceiras do painel (carregada só ao abrir a aba) |
+| `admin/index.html` | Registra a aba no grupo Vitrine (e o ícone) |
+| `index.html` | Espaço da seção e carregamento do módulo (se falhar, o resto da página segue normal) |
+| `css/style.css` | Estilos da seção (`.lpb`, `.lpc`…) |
+
+**Banco:** nenhuma tabela, coluna, política ou projeto novo. Os dados ficam na chave `lojas_parceiras` de `cr_site_settings.data`
+(`{itens:[{id,nome,url,desc,img,ativo,ordem}]}`); o painel relê as configurações e troca só essa chave. Produtos não são tocados.
+Como `cr_site_settings` é de leitura pública (igual às demais configurações), os dados das lojas inativas também ficam legíveis pela API,
+mas o site só exibe as ativas. O Backup do painel já inclui `cr_site_settings`.
+
+**Desfazer:** reverter o commit. Opcional, apagar os dados: `update cr_site_settings set data = data - 'lojas_parceiras' where id = 1;`
