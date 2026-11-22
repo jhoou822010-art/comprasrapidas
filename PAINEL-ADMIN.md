@@ -206,7 +206,7 @@ A loja tem **26 categorias** e mais uma oculta, **"A classificar"**. As 20 antig
 
 # Lojas Parceiras — “VEJA TAMBÉM — MAIS PRODUTOS” (novembro de 2026)
 
-Nova aba **Vitrine › Lojas Parceiras** no painel e nova seção na página inicial (logo depois de “Ofertas em destaque”).
+Nova aba **Vitrine › Lojas Parceiras** no painel e o quadro “Veja também” em três lugares: na página inicial, logo depois de “Ofertas em destaque” e outro depois de “Destaques” (perto do rodapé); e no fim da página de cada produto, depois de “Produtos relacionados”. Os três mostram as mesmas lojas ativas. A guia Karol mostra o primeiro quadro.
 
 - **Painel:** adicionar, editar e excluir lojas (com confirmação); nome, link de afiliado, descrição curta (até 140 caracteres),
   logotipo (envio de arquivo para o armazenamento `compras-rapidas`, ou endereço https), ativar/desativar, posição na lista
