@@ -267,6 +267,12 @@ async function montar() {
     if (e.tipo === 'notificacoes') return podeNotificar();
     return !e.alvo || visivel(elemento(e.alvo));
   });
+  // lojas parceiras: abre a janela das lojas (o mesmo que tocar no banner "Mais produtos") e devolve a seção inteira
+  const abrirParceiras = () => {
+    const b = elemento('#lpb');
+    if (b && b.getAttribute('aria-expanded') !== 'true') { try { b.click(); } catch (e) {} }
+    return elemento('#mais-produtos');
+  };
   // um produto de verdade que está nas ofertas da tela
   const produtoDaVez = (sec) => {
     const c = [...(sec?.querySelectorAll('article.card') || [])].find(visivel);
@@ -312,7 +318,7 @@ async function montar() {
       if (i >= total) return fechar();
       const et = lista[i], sec = elemento(et.alvo);
       const prod = et.tipo === 'ofertas' ? produtoDaVez(sec) : null;
-      const el = prod ? prod.el : sec;
+      const el = prod ? prod.el : et.tipo === 'parceiras' ? abrirParceiras() || sec : sec;
       mostrarBalao(null); destacar(null);
       if (el) { await rolarAte(el); if (!vivo || minha !== vez) return; destacar(el); }
       await andar(ladoDe(el));
@@ -374,12 +380,14 @@ async function montar() {
     if (x > innerWidth - 20) { await andar(innerWidth - W() - 10); if (!vivo) return; }
     virar(true); pose('acenando');
     bon.onclick = null;
-    await falar(`${fechaX('nao', T.agoraNao)}${cabeca()}<p>${T.menu}</p><div class=crg-menu>${bt('busca', T.menuBusca, 1)}${bt('ofertas', T.menuOfertas, 1)}${bt('categorias', T.menuCategorias, 1)}${bt('tour', T.menuTour)}</div>`, {
+    const temParceiras = visivel(elemento('#lpb'));
+    await falar(`${fechaX('nao', T.agoraNao)}${cabeca()}<p>${T.menu}</p><div class=crg-menu>${bt('busca', T.menuBusca, 1)}${bt('ofertas', T.menuOfertas, 1)}${temParceiras ? bt('parceiras', T.menuParceiras, 1) : ''}${bt('categorias', T.menuCategorias, 1)}${bt('tour', T.menuTour)}</div>`, {
       esc: tchau, nao: tchau,
       // o cursor vai para a pesquisa já no toque (assim o teclado do celular abre)
       busca: () => { const q = elemento('#q'); try { q?.focus({ preventScroll: true }); } catch (e) {} mostrarAqui('header form[role=search]', T.buscaDica, ''); },
       ofertas: () => mostrarAqui('#ofertas', T.ofertasDica, 'lista.html?tipo=ofertas'),
       categorias: () => mostrarAqui('#categorias', T.categoriasDica, 'lista.html?tipo=categorias'),
+      parceiras: () => { abrirParceiras(); mostrarAqui('#mais-produtos', T.parceirasDica, ''); },
       tour: () => abrir(),
     });
   };

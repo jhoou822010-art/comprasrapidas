@@ -18,6 +18,9 @@ export const ETAPAS = [
     texto: 'Nas <b>categorias</b> você acha tudo separado: casa, beleza, tecnologia e muito mais.' },
   { id: 'ofertas', tipo: 'ofertas', alvo: '#ofertas', botoes: ['proximo'],
     texto: 'Estas são as <b>ofertas</b> do momento, com o preço já com desconto.' },
+  // lojas parceiras (painel › Lojas Parceiras): ela abre a janela das lojas; sem loja ativa a etapa é pulada sozinha
+  { id: 'parceiras', tipo: 'parceiras', alvo: '#lpb', botoes: ['proximo'],
+    texto: 'Não achou o que procura? Em <b>Mais produtos</b> estão as nossas <b>lojas parceiras</b>, com milhares de outros produtos e ofertas. Toque em uma loja e ela abre em uma nova aba. 🛍️' },
   { id: 'jogos', alvo: 'nav.mn a[href="jogos.html"]', botoes: ['proximo'],
     texto: 'Na área de <b>jogos</b> tem diversão e o Desafio de quem faz mais pontos.' },
   { id: 'menu', alvo: 'nav.mn', botoes: ['proximo'],
@@ -49,10 +52,12 @@ export const CONFIG = {
     menuBusca: '🔍 Procurar um produto',
     menuOfertas: '🔥 Ver as ofertas de hoje',
     menuCategorias: '🗂️ Ver as categorias',
+    menuParceiras: '🛍️ Ver lojas parceiras',   // só aparece quando a página tem lojas parceiras ativas
     menuTour: '🧭 Fazer o tour completo',
     buscaDica: 'É só digitar aqui o que você procura e tocar na lupa 🔍. Boa busca!',
     ofertasDica: 'Aqui estão as <b>ofertas de hoje</b>! 🔥 Toque em um produto para ver os detalhes.',
     categoriasDica: 'Escolha uma <b>categoria</b> para ver tudo dela.',
+    parceirasDica: 'Aqui estão as nossas <b>lojas parceiras</b>! 🛍️ Toque em uma loja para ver milhares de outros produtos. Ela abre em uma nova aba e a Compras Rápidas continua aberta aqui.',
     verTodas: 'Ver todas',
     valeu: 'Valeu!',
     // tour
