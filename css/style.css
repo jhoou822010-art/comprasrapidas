@@ -234,5 +234,5 @@ footer a{color:#fff;text-decoration:underline;text-underline-offset:2px;display:
 /* faixa do Mercado Livre na página do produto: 2 cartões no celular, 4 a partir do tablet */
 @media(min-width:640px){.cats.mix.mlf{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:639px){.cats.mix.mlf .cat:nth-child(n+3){display:none}}
-/* faixa do Mercado Livre na página inicial: até 6 cartões, todos visíveis (2 por linha no celular, 3 a partir do tablet) */
-@media(min-width:640px){.cats.mix.mlf6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* categorias do Mercado Livre na página inicial: 4 cartões (2 por linha no celular, 4 numa linha a partir do tablet) */
+@media(min-width:640px){.cats.mix.mlf4{grid-template-columns:repeat(4,minmax(0,1fr))}}
