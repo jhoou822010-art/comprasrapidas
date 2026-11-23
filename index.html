@@ -60,8 +60,8 @@ if(xp.data?.length){$id('explorar').hidden=false;grid('explorar',xp.data,10)}
 {const gr=$id('cmix'),shp=(cats||[]).map(c=>`<a class=cat href="lista.html?tipo=categoria&slug=${encodeURIComponent(c.slug)}">${c.image_url?`<img loading=lazy width=52 height=52 src="${esc(c.image_url)}" alt="">`:`<i aria-hidden=true>${esc(c.name.trim()[0])}</i>`}${esc(c.name.trim())}<span class="selo shp">Shopee</span></a>`);
  gr.innerHTML=shp.join('');
  import('./js/mercadolivre.js').then(async ML=>{const [ml,md]=await Promise.all([ML.ativas(sb),ML.modo(sb)]);ML.grade(gr,shp,ml.map(ML.cartao),md)}).catch(e=>console.warn('categorias Mercado Livre:',e)).finally(()=>{if(!gr.children.length)gr.remove()})}
-// ---- faixa do Mercado Livre antes de "Como comprar pela vitrine" (2 no celular, 4 no computador)
-import('./js/mercadolivre.js').then(async ML=>{const h=await ML.faixa(sb),el=$id('mlf');if(!el||!h)return;el.innerHTML=h;el.hidden=false}).catch(e=>console.warn('categorias Mercado Livre:',e));
+// ---- faixa do Mercado Livre antes de "Como comprar pela vitrine": até 6 categorias (2 por linha no celular, 3 a partir do tablet)
+import('./js/mercadolivre.js').then(async ML=>{const h=await ML.faixa(sb,6),el=$id('mlf');if(!el||!h)return;el.innerHTML=h;el.hidden=false}).catch(e=>console.warn('categorias Mercado Livre:',e));
 // ---- VEJA TAMBÉM — MAIS PRODUTOS: lojas parceiras ativas (painel › Lojas Parceiras); se o módulo falhar, o resto da página segue normal
 // dois quadros: logo depois das ofertas e outro depois de Destaques (perto do rodapé)
 import('./js/parceiras.js').then(LP=>[['mais-produtos',''],['mais-produtos-2','2']].forEach(([id,sf])=>{const el=$id(id),h=LP.secao(S,{aberta:!sf&&location.hash==='#mais-produtos',sufixo:sf});if(!el||!h)return;el.innerHTML=h;el.hidden=false;LP.ligar(el)})).catch(e=>console.warn('lojas parceiras:',e));

@@ -60,8 +60,9 @@ export function grade(el, shp, ml, m) {
 }
 
 // faixa da página do produto: 2 a 4 categorias ativas (2 no celular, 4 no computador), pela ordem de exibição
-export async function faixa(sb) {
-  const c = await ativas(sb, 4);
+// limite 6 (página inicial): mostra as 6 em todas as telas (2 por linha no celular, 3 a partir do tablet)
+export async function faixa(sb, limite = 4) {
+  const c = await ativas(sb, limite);
   if (c.length < 2) return '';
-  return `<div class=sh><h2 id=mlf-t>Mais categorias para explorar</h2></div><div class="cats mix mlf">${c.map(cartao).join('')}</div>`;
+  return `<div class=sh><h2 id=mlf-t>Mais categorias para explorar</h2></div><div class="cats mix ${limite === 4 ? 'mlf' : 'mlf6'}">${c.map(cartao).join('')}</div>`;
 }
