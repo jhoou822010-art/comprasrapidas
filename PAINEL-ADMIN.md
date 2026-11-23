@@ -231,3 +231,24 @@ Como `cr_site_settings` é de leitura pública (igual às demais configurações
 mas o site só exibe as ativas. O Backup do painel já inclui `cr_site_settings`.
 
 **Desfazer:** reverter o commit. Opcional, apagar os dados: `update cr_site_settings set data = data - 'lojas_parceiras' where id = 1;`
+
+# Cliques nas redes sociais (Visão geral › Estatísticas) — novembro de 2026
+
+Conta os toques nos links do **Instagram** e do **Facebook** do rodapé (todas as páginas) e da seção “Acompanhe nas redes sociais” do Início.
+Nada muda no visual nem nos links; os cliques em produtos (`cr_click_events`) e os visitantes continuam como antes.
+
+- **Painel:** quadro “Cliques nas redes sociais” na aba Estatísticas, com Instagram e Facebook separados (no período e desde o início)
+  e o histórico por dia. Usa o mesmo seletor **Período** (7, 30 ou 90 dias) dos cliques em produtos.
+- **Antes de abrir a rede:** o registro sai no momento do toque (`fetch` com `keepalive`, como o clique em produto), antes de o navegador abrir a rede social.
+- **Sem duplicados:** toques repetidos em 1,5 s são ignorados no aparelho; no servidor, cada clique tem um código único e a mesma sessão
+  na mesma rede em menos de 3 s conta uma vez só.
+- **Privacidade:** guarda só rede, local (rodapé ou seção do Início), página, horário e o código anônimo da sessão de visitante.
+
+| Arquivo | O quê |
+|---|---|
+| `supabase/10-redes-sociais.sql` (novo) | Tabela `cr_social_clicks` e funções `cr_social_track` (site) e `cr_social_stats` (só administradores) |
+| `js/app.js` | Registro dos cliques (função `socialTrack`) |
+| `admin/index.html` | Quadro na aba Estatísticas |
+
+**Banco:** já aplicado no projeto do `config.js`. Em outro projeto, rode o arquivo 10 uma vez no SQL Editor (pode rodar de novo).
+**Desfazer:** reverter o commit e, se quiser apagar do banco, o bloco DESFAZER no fim do arquivo 10.
