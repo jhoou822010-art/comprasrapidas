@@ -7,13 +7,17 @@ const $=id=>document.getElementById(id),L=$('lst');
 const head=(t,sub,canon,{noindex=false,desc}={})=>{$('t').textContent=t;$('bc').textContent=t;$('sub').textContent=sub||'';
  setMeta({title:t+(page>1?` – página ${page}`:'')+' | '+S.name,desc:desc||(sub?sub+'. ':'')+'Vitrine da '+S.name+': compare e finalize a compra na loja parceira.',canonical:canon?SITE+canon+(page>1?'&page='+page:''):undefined});
  if(noindex)document.head.insertAdjacentHTML('beforeend','<meta name=robots content="noindex,follow">')};
-const catTile=c=>`<a class=cat href="lista.html?tipo=categoria&slug=${encodeURIComponent(c.slug)}">${c.image_url?`<img loading=lazy width=52 height=52 src="${esc(c.image_url)}" alt="">`:`<i aria-hidden=true>${esc(c.name.trim()[0])}</i>`}${esc(c.name.trim())}</a>`;
+const catTile=c=>`<a class=cat href="lista.html?tipo=categoria&slug=${encodeURIComponent(c.slug)}">${c.image_url?`<img loading=lazy width=52 height=52 src="${esc(c.image_url)}" alt="">`:`<i aria-hidden=true>${esc(c.name.trim()[0])}</i>`}${esc(c.name.trim())}<span class="selo shp">Shopee</span></a>`;
 if(tipo==='categorias'){
  head('Todas as categorias','Escolha uma categoria para ver os produtos da vitrine','lista.html?tipo=categorias');
  const {data,error}=await sb.from('cr_categories').select('id,name,slug,image_url').eq('active',true).order('sort');
  if(error&&!data){fail('as categorias',error)}else{
   const main=GROUPS.map(g=>{const cs=groupCats(g,data);if(g.kw&&!cs.length)return '';return `<a class=cat href="${groupHref(g)}"><i aria-hidden=true>${esc(g.ic||g.n[0])}</i><span>${esc(g.n)}<small>${esc(g.d)}</small></span></a>`}).join('');
-  L.innerHTML=`<h2 class=sr>Categorias principais</h2><div class="cats main">${main}</div><h2 style="margin-top:28px">Todas as categorias</h2>${data?.length?`<div class=cats>${data.map(catTile).join('')}</div>`:'<p>Nenhuma categoria cadastrada.</p>'}`}}
+  L.innerHTML=`<h2 class=sr>Categorias principais</h2><div class="cats main">${main}</div><h2 style="margin-top:28px">Todas as categorias</h2><div class="cats mix" id=cmix>${(data||[]).map(catTile).join('')}</div>`;
+  // categorias externas do Mercado Livre na mesma grade (painel › Categorias Mercado Livre); se o módulo falhar, ficam só as da Shopee
+  const shp=(data||[]).map(catTile),gr=$('cmix');
+  try{const ML=await import('./js/mercadolivre.js');const [ml,md]=await Promise.all([ML.ativas(sb),ML.modo(sb)]);ML.grade(gr,shp,ml.map(ML.cartao),md)}catch(e){console.warn('categorias Mercado Livre:',e)}
+  if(!gr.children.length)gr.outerHTML='<p>Nenhuma categoria cadastrada.</p>'}}
 else out:{
  let title='Todos os produtos',sub='Os produtos mais recentes da vitrine',canon='lista.html?tipo=busca',opt={},meta={};
  if(tipo==='ofertas'){title='Ofertas';sub='Produtos com preço promocional informado pela loja parceira';canon='lista.html?tipo=ofertas';opt.offer=true}

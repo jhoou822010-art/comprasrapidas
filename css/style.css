@@ -221,3 +221,16 @@ footer a{color:#fff;text-decoration:underline;text-underline-offset:2px;display:
 @media(max-width:380px){.lpc{flex-wrap:wrap}.lpg{width:100%;justify-content:flex-end}}
 .lpo{margin:10px 0 0;color:var(--mu);font-size:.85rem}
 @media(prefers-reduced-motion:reduce){.lpv,.lpc{transition:none}.lpc:hover{transform:none}}
+
+/* Categorias: grade mesclada Shopee + Mercado Livre ("Todas as categorias"; js/mercadolivre.js). Celular 2, tablet 3, computador 4 colunas */
+.cats.mix{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:640px){.cats.mix{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1000px){.cats.mix{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cats.mix .cat.nl{grid-column-start:1}
+/* selo da loja no cartão de categoria (única diferença visual entre Shopee e Mercado Livre) */
+.selo{display:block;width:fit-content;margin:6px auto 0;padding:1px 8px;border-radius:99px;font-size:.68rem;font-weight:700;line-height:1.5;white-space:nowrap}
+.selo.shp{background:#c2410c;color:#fff}
+.selo.ml{background:#ffe600;color:#2d3277}
+/* faixa do Mercado Livre na página do produto: 2 cartões no celular, 4 a partir do tablet */
+@media(min-width:640px){.cats.mix.mlf{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:639px){.cats.mix.mlf .cat:nth-child(n+3){display:none}}
