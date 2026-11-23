@@ -180,8 +180,23 @@ export async function boot(){
  shell();
  if(th&&th.cfg.key==='natal'&&th.cfg.snd)initSound();
  fitFx();addEventListener('load',fitFx);addEventListener('resize',fitFx);
- if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e)).finally(()=>setTimeout(()=>pushSyncProfile(),3000));visitTrack()}
+ if(CONFIGURED){swReg();pushBar().catch(e=>console.warn(e)).finally(()=>setTimeout(()=>pushSyncProfile(),3000));visitTrack();socialTrack()}
  return S}
+// ---- cliques nas redes sociais (Instagram e Facebook) do rodapé e da seção "Acompanhe nas redes sociais" do Início.
+// Estatísticas do painel; dados em cr_social_clicks via supabase/10-redes-sociais.sql. Não muda nada no visual nem nos links:
+// o registro sai no momento do toque (antes de o navegador abrir a rede social) com keepalive, que termina de enviar mesmo
+// se a página for trocada. Duplicados: toques repetidos em 1,5 s são ignorados aqui e o servidor confere de novo (mesmo código/3 s).
+const SNET=h=>/(^|\.)(instagram\.com|instagr\.am)$/i.test(h)?'instagram':/(^|\.)(facebook\.com|fb\.com|fb\.me)$/i.test(h)?'facebook':'';
+let sOn=false;const sLast={};
+function socialTrack(){if(sOn)return;sOn=true;
+ const hit=e=>{try{if(e.type==='auxclick'&&e.button!==1)return;const a=e.target.closest?.('a[href]');if(!a)return;const box=a.closest('footer,#redes');if(!box)return;
+  let net='';try{net=SNET(new URL(a.href,location.href).hostname)}catch(x){}if(!net)return;
+  const now=Date.now();if(now-(sLast[net]||0)<1500)return;sLast[net]=now;
+  let sid=null;try{sid=JSON.parse(localStorage.getItem(VK))?.id||null}catch(x){}
+  const id=crypto.randomUUID?.();if(!id)return;
+  fetch(U+'/rest/v1/rpc/cr_social_track',{method:'POST',keepalive:true,headers:{apikey:K,'Content-Type':'application/json'},
+   body:JSON.stringify({p_id:id,p_network:net,p_origin:box.id==='redes'?'redes':'rodape',p_sid:sid,p_page:(location.pathname.split('/').pop()||'index.html')})}).catch(()=>{})}catch(x){}};
+ document.addEventListener('click',hit,{capture:true,passive:true});document.addEventListener('auxclick',hit,{capture:true,passive:true})}
 // ---- monitoramento de visitantes (Estatísticas do painel): só um código anônimo de sessão, sem dados pessoais.
 // Entrada ao abrir o site; sinal de atividade a cada 30 s com a aba visível; saída ao fechar/sair.
 // A mesma sessão é reaproveitada por 30 min (recarregar ou trocar de página não conta nova entrada).
