@@ -151,7 +151,7 @@ function marcaHora(){try{if(optedOut())return;const P=loadProf(),now=Date.now(),
 
 // cliques nos cards de produto (qualquer página que carregou o módulo)
 let obsOn=false;function observe(){if(obsOn)return;obsOn=true;
- document.addEventListener('click',e=>{const a=e.target.closest?.('.card a[href*="produto.html?id="],a.card[href*="produto.html?id="]');if(!a)return;const id=new URL(a.href,location.href).searchParams.get('id');if(id)track('click',{id})},{capture:true,passive:true})}
+ document.addEventListener('click',e=>{const a=e.target.closest?.('.card a[data-pid],.card a[href*="produto.html?id="],a.card[href*="produto.html?id="]');if(!a)return;const id=a.dataset.pid||new URL(a.href,location.href).searchParams.get('id');if(id)track('click',{id})},{capture:true,passive:true})}
 
 // ---- números aleatórios reproduzíveis (mesma semente = mesma vitrine dentro do intervalo de renovação)
 const h32=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
