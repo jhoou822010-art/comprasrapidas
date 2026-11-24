@@ -5,7 +5,11 @@
 export const OD_CRIT = { cheap: 'Mais barato', discount: 'Maior desconto (%)', category: 'Melhor oferta por categoria' };
 export const OD_MAX = 2; // no máximo 2 envios da Oferta do dia por dia
 export const OD_MODOS = { geral: 'Igual para todos', personalizado: 'Personalizado por interesse' };
-export const OD_INTERVALO_H = 20; // modo personalizado: no máximo 1 por cliente por dia, com pelo menos 20 h de intervalo
+export const OD_INTERVALO_H = 4; // modo personalizado: no máximo 1 de manhã e 1 à noite por cliente, com pelo menos 4 h de intervalo
+// turno pelo horário de Brasília: 0 = manhã (antes das 14h), 1 = noite (das 14h em diante)
+export const OD_VIRADA = 14;
+export const odTurnoSP = (hSP) => (hSP < OD_VIRADA ? 0 : 1);
+export const OD_TURNOS = ['manhã', 'noite'];
 export const OD_PADRAO = { on: false, modo: 'geral', sem_perfil: 'geral', hora_pessoal: true, times: ['10:00', '19:00'], min: 10, norep: 7, crit: 'cheap', cats: [], title: '🔥 Oferta do dia', body: '{nome} por {preco}' };
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -78,7 +82,7 @@ export const odRow = (p, c, slot, ns, site) => ({
   image_url: null, url: odLink(p, ns, site), product_id: p.id, source: 'auto_offer', status: 'scheduled', scheduled_at: slot.at, error: null,
 });
 
-// ===================== Modo personalizado (1 por cliente por dia) =====================
+// ===================== Modo personalizado (1 de manhã e 1 à noite por cliente) =====================
 // Horário de cada cliente: o aparelho manda, junto do resumo, a hora (UTC) em que a pessoa mais costuma abrir o site (h)
 // e em quantos dias diferentes isso foi observado (hn). Só vale com pelo menos 3 dias; antes disso, segue os horários do painel.
 export const odHora = (sub) => { const I = sub && sub.interesses; const h = I && Number(I.h), n = I && Number(I.hn);
