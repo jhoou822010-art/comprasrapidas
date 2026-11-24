@@ -4,7 +4,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
-import { odCfg, odDue, odEscolher, odHora, odLink, odConfiavel, odMsg, odPesos, odPick, odRow, odText, OD_INTERVALO_H, spDay, spDayStart } from "./oferta-dia.js";
+import { odCfg, odDue, odEscolher, odHora, odLink, odConfiavel, odMsg, odPesos, odPick, odRow, odText, OD_INTERVALO_H, OD_TURNOS, odTurnoSP, spDay, spDayStart } from "./oferta-dia.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -221,8 +221,17 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
   const hNow = new Date(now).getUTCHours();
   // hora preferida do cliente (UTC) que cai no horário de silêncio não vale: ele recebe nos horários do painel
   const silencioUTC = (h: number) => settings ? inQuiet((h + 21) % 24, settings.quiet_start, settings.quiet_end) : false;
-  const naVez = (s: any) => { const hp = c.hora_pessoal ? odHora(s) : null; return hp != null && !silencioUTC(hp) ? hp === hNow : !!slot; };
-  const rotulo = slot ? slot.t : `${String((hNow + 21) % 24).padStart(2, "0")}h (horário de cada cliente)`;
+  // dois turnos por dia (manhã e noite): cada cliente recebe no máximo 1 em cada
+  const turno = odTurnoSP((hNow + 21) % 24);
+  const turnoUTC = (h: number) => odTurnoSP((h + 21) % 24);
+  const turnoDe = (e: any) => odTurnoSP(new Date(Date.parse(e.enviada_em) - 3 * 3600e3).getUTCHours());
+  // hora do próprio cliente vale só no turno em que ela cai; no outro turno ele recebe no horário do painel
+  const naVez = (s: any) => {
+    const hp = c.hora_pessoal ? odHora(s) : null;
+    if (hp != null && !silencioUTC(hp) && turnoUTC(hp) === turno) return hp === hNow;
+    return !!slot && odTurnoSP(Number(slot.t.slice(0, 2))) === turno;
+  };
+  const rotulo = (slot ? slot.t : `${String((hNow + 21) % 24).padStart(2, "0")}h (horário de cada cliente)`) + ` · ${OD_TURNOS[turno]}`;
   const origin = siteOrigin(settings);
   const { data: subsAll, error: se } = await todas(() => {
     let qs = db.from("cr_push_subscriptions").select("id,endpoint,p256dh,auth,interesses,personalizar").order("created_at").order("id");
@@ -242,8 +251,8 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
   const porSub = new Map<string, any[]>();
   for (const e of ents ?? []) { const l = porSub.get(e.subscription_id); if (l) l.push(e); else porSub.set(e.subscription_id, [e]); }
   const limite = now - OD_INTERVALO_H * 3600e3;
-  const pend = subs.filter((s) => naVez(s) && !(porSub.get(s.id) ?? []).some((e) => e.dia === dia || Date.parse(e.enviada_em) > limite));
-  if (!pend.length) return { slot: rotulo, personalizado: "ninguém na vez agora (ou todos já receberam hoje)" };
+  const pend = subs.filter((s) => naVez(s) && !(porSub.get(s.id) ?? []).some((e) => (e.dia === dia && turnoDe(e) === turno) || Date.parse(e.enviada_em) > limite));
+  if (!pend.length) return { slot: rotulo, personalizado: `ninguém na vez agora (ou todos já receberam nesta ${OD_TURNOS[turno]})` };
   const { data: prods, error: pe } = await todas(() => db.from("cr_products")
     .select("id,name,slug,price,old_price,offer,offer_start,offer_end,status,category_id,affiliate_url,created_at,product_images:cr_product_images(url,sort,is_cover)")
     .eq("status", "active").gte("price", c.min).order("id"));
@@ -270,11 +279,18 @@ async function personalizadas(settings: any, c: any, slot: { i: number; t: strin
     source: "auto_offer", status: "sending", scheduled_at: slot ? slot.at : null, error: null,
   }).select("id").single();
   if (ce) throw ce;
-  let ok = 0, fail = 0;
+  let ok = 0, fail = 0, semTurno = false;
   for (const it of plano) {
-    // a chave única (cliente, dia) faz a segunda tentativa simplesmente não inserir
-    const { data: ent } = await db.from("cr_push_entregas").insert({ subscription_id: it.s.id, notification_id: camp.id, product_id: it.p.id, dia, motivo: it.motivo })
-      .select("id").maybeSingle();
+    // a chave única (cliente, dia, turno) faz a segunda tentativa simplesmente não inserir.
+    // Sem a coluna turno (supabase/12-notificacao-manha-e-noite.sql não executado), grava como antes: 1 por cliente por dia.
+    const linha = { subscription_id: it.s.id, notification_id: camp.id, product_id: it.p.id, dia, motivo: it.motivo };
+    let ent: { id: number } | null = null;
+    if (!semTurno) {
+      const r = await db.from("cr_push_entregas").insert({ ...linha, turno }).select("id").maybeSingle();
+      if (r.error && (r.error.code === "42703" || r.error.code === "PGRST204")) semTurno = true;
+      else ent = r.data;
+    }
+    if (semTurno) ent = (await db.from("cr_push_entregas").insert(linha).select("id").maybeSingle()).data;
     if (!ent) continue;
     const img = [...(it.p.product_images ?? [])].sort((a: any, b: any) => (b.is_cover - a.is_cover) || (a.sort - b.sort))[0]?.url ?? null;
     const payload = JSON.stringify({ id: camp.id, e: ent.id, title: it.msg.titulo, body: it.msg.corpo, image: img, icon: img ?? settings?.icon_url ?? null, url: odLink(it.p, settings) });
