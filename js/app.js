@@ -27,7 +27,7 @@ const GUIA_OFF='cr_guia_off',GUIA_VISTO='cr_guia_visto';
 const GUIA_NOME='Karol',GUIA_ROSTO=new URL('../img/guia/rosto.png',import.meta.url).href; // mesmo nome de js/tour/personagem.js
 const guiaLs=k=>{try{return localStorage.getItem(k)}catch(_){return null}};
 const guiaNoSite=()=>S?.tour?.on!==false,guiaOff=()=>guiaLs(GUIA_OFF)==='1';
-const noInicio=()=>/(^|\/)(index\.html)?$/.test(location.pathname);
+const noInicio=()=>/(^|\/)(index\.html)?$/.test(location.pathname)&&!/\/[pc]\/[\w-]+\/?$/.test(location.pathname); // /p/<slug>/ e /c/<slug>/ também terminam em "/", mas não são o Início
 const guiaVaiAbrir=()=>guiaNoSite()&&!guiaOff()&&guiaLs(GUIA_VISTO)!=='1'&&noInicio();
 try{if(!guiaOff()){addEventListener('beforeinstallprompt',e=>{if(!guiaNoSite()||guiaOff())return;e.preventDefault();window.__crInstall=e});addEventListener('appinstalled',()=>{window.__crInstall=null})}}catch(_){}
 function guiaBtns(){try{const c=$('#guiac'),t=$('#guiat');if(!c||!t)return;
@@ -146,7 +146,7 @@ const NAV=[['./','Início'],['lista.html?tipo=ofertas','Ofertas'],['lista.html?t
 // jogos (raspadinha/roleta/cobrinha): o botão do menu só aparece com pelo menos um jogo ligado em painel › Jogos
 export const jogosOn=()=>{const j=S.jogos||{},velhos=j.raspadinha===true||j.roleta===true||j.cobrinha===true;return velhos||j.brickgame===true}; // brickgame sem escolha salva acompanha os outros
 function header(){const logo=S.logo&&/^https:\/\//.test(S.logo)?`<img src="${esc(S.logo)}" alt="" width=40 height=40>`:'';
- return `<a class=skip href="#m">Pular para o conteúdo</a>${themeUi(TH)}<header><div class=w><div class=top><a class=logo href="./" aria-label="${esc(S.name)} — página inicial">${logoDeco()}${logo}<span>${esc(S.name)}<small>Vitrine de ofertas de lojas parceiras</small></span></a>
+ return `<a class=skip href="${esc(location.pathname+location.search)}#m">Pular para o conteúdo</a>${themeUi(TH)}<header><div class=w><div class=top><a class=logo href="./" aria-label="${esc(S.name)} — página inicial">${logoDeco()}${logo}<span>${esc(S.name)}<small>Vitrine de ofertas de lojas parceiras</small></span></a>
  <form action=lista.html role=search><input type=hidden name=tipo value=busca><label class=sr for=q>Pesquisar produtos</label><input id=q name=q type=search enterkeyhint=search placeholder="O que você está procurando?" value="${esc(qs('tipo')==='busca'?qs('q')||'':'')}"><button type=submit aria-label="Buscar">${ICO.search}</button></form></div>
  <nav class=mn aria-label="Menu principal">${[...NAV,...(jogosOn()?[['jogos.html','Jogos 🎮']]:[])].map(([h,t])=>`<a href="${h}">${t}</a>`).join('')}</nav></div></header>
  <div class=aff><div class=w><span>Vitrine com links de afiliado: a compra é finalizada na loja parceira.</span> <a href="sobre.html#como-funciona">Saiba mais</a></div></div>${stripHtml()}`}
@@ -162,7 +162,7 @@ function footer(){const C=contactCfg(S),it=(C.items||[]).filter(x=>x.on!==false&
  <p class=fdis>${DISCLAIMER} Preços, estoques, fretes e condições podem mudar a qualquer momento na loja de destino.${S.footer_text?'':''}</p>
  ${assinatura()}<button type=button id=tema class=temabtn></button> <button type=button id=notifp class=temabtn hidden>🔔 Notificações</button> <button type=button id=guiac class=temabtn hidden><img src="${GUIA_ROSTO}" alt="" width=22 height=22 style="width:22px;height:22px;border-radius:50%;vertical-align:middle;margin:-3px 4px 0 0;object-fit:cover">Chamar a ${GUIA_NOME}</button> <button type=button id=guiat class=temabtn hidden></button></div></footer><div id=lb></div>`}
 function shell(){$('#hdr').innerHTML=header();$('#ftr').innerHTML=footer();temaBtn();notifBtn();guiaBtns();
- const here=(location.pathname.split('/').pop()||'./')+location.search,hn=here==='index.html'?'./':here;
+ const pc=location.pathname.match(/\/([pc])\/[\w-]+\/?$/),here=pc?(pc[1]==='c'?'lista.html?tipo=categorias':'produto.html'):(location.pathname.split('/').pop()||'./')+location.search,hn=here==='index.html'?'./':here; // em /c/<slug>/ marca "Categorias"; em /p/<slug>/ nenhum item
  document.querySelectorAll('header nav a').forEach(a=>{const h=a.getAttribute('href');if(h===hn||(h.includes('?')&&hn.startsWith(h))){a.setAttribute('aria-current','page');const n=a.parentNode;if(a.offsetLeft+a.offsetWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-12}})}
 export async function boot(){
  if(!CONFIGURED){document.body.insertAdjacentHTML('afterbegin','<p style="background:#fde2e2;color:#7a1010;padding:12px;margin:0;text-align:center">Site ainda não configurado: preencha o arquivo config.js.</p>')}
@@ -222,7 +222,7 @@ function visitTrack(){if(vOn||navigator.webdriver||!crypto.randomUUID)return;vOn
  addEventListener('pagehide',()=>{stop();if(ended||Date.now()-inNav<5e3)return;send('end',true)});
  addEventListener('pageshow',e=>{if(e.persisted){ended=false;wake()}});
  sid();send('start');timer=setInterval(beat,VBEAT)}
-const SEL='id,name,price,price_max,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
+const SEL='id,slug,name,price,price_max,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
 export const isOffer=p=>p.offer&&(!p.offer_end||new Date(p.offer_end)>new Date())&&(!p.offer_start||new Date(p.offer_start)<=new Date());
 // preço em faixa (ex.: Shopee): "R$ 14,50 – R$ 25,90" quando price_max for maior que o preço
 export const isRange=p=>p.price!=null&&p.price_max!=null&&+p.price_max>+p.price;
@@ -274,7 +274,7 @@ async function list1({offer,featured,q,cat,cats,maxPrice,page=1,per=12}={}){
 export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
 export function card(p){const o=isOffer(p),n=storeName(p),t=cleanTitle(p.name);
  return `<article class=card><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async width=320 height=320 src="${esc(thumb(p))}" data-full="${esc(cover(p))}" onerror="this.onerror=null;this.src=this.dataset.full" alt="${esc(t)}">${cornerDeco()}</div>
- <div class=cb><h3><a class=lk href="produto.html?id=${esc(p.id)}">${esc(t)}</a></h3><div class=pr>${p.price!=null?`<b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b>`:''}${showOld(p)?`<s><span class=sr>Preço anterior: </span>${money(p.old_price)}</s>`:''}</div>${n?`<span class=st><i class="${storeCls(n)}" aria-hidden=true></i>Vendido na ${esc(n)}</span>`:''}<span class="btn alt" aria-hidden=true>Ver detalhes</span></div></article>`}
+ <div class=cb><h3><a class=lk data-pid="${esc(p.id)}" href="${/^[\w-]+$/.test(p.slug||'')?'p/'+p.slug+'/':'produto.html?id='+esc(p.id)}">${esc(t)}</a></h3><div class=pr>${p.price!=null?`<b${isRange(p)?' class=rg':''}>${priceTxt(p)}</b>`:''}${showOld(p)?`<s><span class=sr>Preço anterior: </span>${money(p.old_price)}</s>`:''}</div>${n?`<span class=st><i class="${storeCls(n)}" aria-hidden=true></i>Vendido na ${esc(n)}</span>`:''}<span class="btn alt" aria-hidden=true>Ver detalhes</span></div></article>`}
 
 // ---- página de contato: ícones, links e configuração (guardada em cr_site_settings.data.contact)
 const _sk=(d,w=2)=>`<g fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</g>`;

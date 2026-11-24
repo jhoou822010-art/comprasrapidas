@@ -1,4 +1,4 @@
-# Atualiza as prévias de link (WhatsApp/Facebook), o sitemap.xml e o robots.txt a partir dos produtos do Supabase.
+# Atualiza as páginas estáticas de produto (p/) e de categoria (c/), as prévias de link (WhatsApp/Facebook), o sitemap.xml e o robots.txt a partir do Supabase.
 # Roda sozinho de hora em hora; para atualizar na hora: aba Actions > "Atualizar prévias dos produtos" > Run workflow.
 name: Atualizar prévias dos produtos
 
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['scripts/gerar-previas.mjs', '.github/workflows/previas.yml', 'js/titulo.js', 'js/texto.js']
+    paths: ['scripts/gerar-previas.mjs', '.github/workflows/previas.yml', 'js/titulo.js', 'js/texto.js', 'produto.html', 'lista.html']
 
 permissions:
   contents: write
@@ -30,7 +30,7 @@ jobs:
       - run: node scripts/gerar-previas.mjs
       - name: Salvar mudanças (se houver)
         run: |
-          git add -A p og sitemap.xml robots.txt index.html sobre.html privacidade.html
+          git add -A p c og sitemap.xml robots.txt index.html sobre.html privacidade.html
           if git diff --cached --quiet; then echo "Nada mudou."; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
