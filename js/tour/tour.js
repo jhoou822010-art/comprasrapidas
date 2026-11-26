@@ -450,7 +450,8 @@ async function montar() {
     // só um balãozinho ao lado dela (não cobre botões nem fotos da página); tocar nele ou nela abre a ajuda completa
     const mini = true;
     let ok = true;
-    if (mini) mostrarBalao(`<button type=button class=crg-chip data-a=ajuda>${T.chip}</button><div class=crg-tempo aria-hidden=true><i style="animation-duration:${CONFIG.espera}s"></i></div>`, { esc: nao, nao, ajuda: querAjuda });
+    if (innerWidth < 768) mostrarBalao(null);   // celular: só ela acenando (sem balão por cima das fotos); tocar nela abre a ajuda
+    else if (mini) mostrarBalao(`<button type=button class=crg-chip data-a=ajuda>${T.chip}</button><div class=crg-tempo aria-hidden=true><i style="animation-duration:${CONFIG.espera}s"></i></div>`, { esc: nao, nao, ajuda: querAjuda });
     else ok = await falar(`${fechaX('nao', T.agoraNao)}${cabeca()}<p>${ls.get(K_VISTO) === '1' ? T.pergunta : T.primeiraVez}</p><div class=crg-bts>${bt('nao', T.agoraNao, 1)}${bt('ajuda', T.querAjuda)}</div><div class=crg-tempo aria-hidden=true><i style="animation-duration:${CONFIG.espera}s"></i></div>`,
       { esc: nao, nao, ajuda: querAjuda });
     if (ok && m.pararVisita === parar) fim = setTimeout(nao, CONFIG.espera * 1000);
