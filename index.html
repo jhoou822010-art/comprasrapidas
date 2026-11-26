@@ -143,11 +143,12 @@ const SECS=(B2?.cfg?.secs||6)*1000;
 // ---- Achado do Dia (no lugar do carrossel do topo): o produto ativo de maior desconto real
 const HOJE=(async()=>{const {data:lp}=await sb.from('cr_products').select('id,price,price_max,old_price,offer,offer_start,offer_end').eq('status','active').or('old_price.gt.0').limit(2000);
  const best=(lp||[]).map(p=>[p,disc(p)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);return best})().catch(e=>{console.warn('maior desconto',e);return []});
-// troca a cada 12 h (meia-noite e meio-dia, horário de Brasília) entre os 10 de maior desconto real; todos veem o mesmo no mesmo período
-const ACH_TOP=10,ACH_HORAS=12;
-const ACHADO=(async()=>{const best=(await HOJE).slice(0,ACH_TOP);if(!best.length)return null;
- const per=Math.floor((Date.now()-3*36e5)/(ACH_HORAS*36e5)),ini=per%best.length;
- const ordem=[...best.slice(ini),...best.slice(0,ini)];   // se o da vez estiver sem foto, passa para o próximo
+// troca a cada 12 h (meia-noite e meio-dia, horário de Brasília) e não repete: passa por TODOS os produtos com desconto real,
+// do maior para o menor, um por período; só volta ao começo depois de mostrar todos. Todos veem o mesmo no mesmo período.
+const ACH_HORAS=12,ACH_INICIO=new Date('2026-11-26T12:00:00-03:00');   // a partir daqui conta 1 produto por período
+const ACHADO=(async()=>{const best=await HOJE;if(!best.length)return null;
+ const per=Math.max(0,Math.floor((Date.now()-ACH_INICIO)/(ACH_HORAS*36e5))),ini=per%best.length;
+ const ordem=[...best.slice(ini),...best.slice(0,ini)].slice(0,8);   // se o da vez estiver sem foto, passa para o próximo
  for(const [b] of ordem){const [p]=await byIds([b.id]);if(p&&p.product_images?.length){await affLoad([p.id]);return p}}return null})().catch(()=>null);
 if(slides.length){const el=$id('bn');el.hidden=false;
  el.innerHTML=`<div class=car aria-roledescription=carrossel aria-label="Banners em destaque"><div class=trk id=trk>${slides.join('')}</div>${slides.length>1?`<button class="nv pv" type=button aria-label="Banner anterior">‹</button><button class="nv nx" type=button aria-label="Próximo banner">›</button><div class=dots>${slides.map((_,i)=>`<button type=button aria-label="Ir para o banner ${i+1}"></button>`).join('')}</div>`:''}</div>`;
