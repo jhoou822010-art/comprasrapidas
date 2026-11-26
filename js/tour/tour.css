@@ -8,7 +8,7 @@
 .crg-luz.on{opacity:1}
 .crg-luz.vazia{box-shadow:0 0 0 200vmax rgba(7,16,36,.62);width:0!important;height:0!important}
 /* mascote */
-.crg-bon{position:fixed;left:0;bottom:calc(8px + env(safe-area-inset-bottom,0px));pointer-events:auto;cursor:pointer;
+.crg-bon{position:fixed;left:0;bottom:calc(8px + var(--crg-base,0px) + env(safe-area-inset-bottom,0px));pointer-events:auto;cursor:pointer;
  transition-property:transform;transition-timing-function:linear;will-change:transform;touch-action:manipulation;background:none;border:0;padding:0}
 .crg-bon:focus-visible{outline:3px solid #ffd54a;outline-offset:4px;border-radius:12px}
 .crg-corpo{position:relative;width:100%;height:100%;transition:transform .2s}
@@ -74,6 +74,9 @@ a.crg-bt{display:inline-flex;align-items:center;justify-content:center;text-deco
 .crg-conf{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:2}
 .crg-conf i{position:absolute;top:-14px;width:8px;height:13px;border-radius:2px;animation:crg-conf linear forwards}
 @keyframes crg-conf{to{transform:translateY(105vh) rotate(var(--gira,360deg))}}
+.crg-bal.mini{width:auto;max-width:220px;padding:6px 8px 8px}
+.crg-bal.mini .crg-tempo{margin-top:6px}
+.crg-chip{border:0;background:none;font:inherit;font-weight:700;color:#12213a;min-height:44px;padding:6px 8px;cursor:pointer;text-align:left}
 @media (max-width:420px){.crg-bal{font-size:.95rem;padding:12px 12px 10px}.crg-bt{padding:10px 12px}}
 /* quem pediu menos movimento no celular/computador: sem caminhada animada, sem balanço */
 @media (prefers-reduced-motion:reduce){

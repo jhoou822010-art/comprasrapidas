@@ -51,7 +51,7 @@ export async function iniciar() {
     const g = new URLSearchParams(location.search).get('guia');
     if (g === '1') return abrir();
     if (g === 'ajuda') return ajudar();
-    if (ls.get(K_VISTO) !== '1') return abrir();                    // primeira visita: tour completo
+    // a página sempre abre clara: na primeira visita ela só cumprimenta e pergunta (o tour completo abre se o cliente pedir)
     if (ss.get(K_SESSAO)) return;                                     // já cumprimentou nesta visita
     ss.set(K_SESSAO, '1');
     return visitaRapida();
@@ -97,6 +97,8 @@ async function montar() {
   limpar();
   const raiz = document.createElement('div'); raiz.className = 'crg'; raiz.setAttribute('aria-live', 'polite');
   const alt = () => (innerWidth < 420 ? TAMANHO.alturaCelular : TAMANHO.altura);
+  // espaço livre embaixo (ex.: barra fixa do celular na página inicial), definido no CSS da página em --crg-base
+  const base = () => { try { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--crg-base')) || 0; } catch (e) { return 0; } };
   const temImg = !!IMAGENS.parado;
   raiz.innerHTML = `<div class=crg-bloq hidden></div><div class="crg-luz vazia"></div>
    <button type=button class="crg-bon p-parado" aria-label="${escHtml(NOME)}, ${T.guiaDe}: tocar para ajuda"><div class=crg-corpo>${temImg ? `<img alt="" src="${IMAGENS.parado}">` : SVG}</div></button>
@@ -162,7 +164,7 @@ async function montar() {
     if (!el) { pose('parado'); return; }
     const r = rectVisivel(el), w = W(), h = alt();
     virar(r.cx < x + w / 2);
-    const ombroX = x + (olhaEsq ? w * (1 - 0.705) : w * 0.705), ombroY = innerHeight - 8 - h + h * (60 / 150);
+    const ombroX = x + (olhaEsq ? w * (1 - 0.705) : w * 0.705), ombroY = innerHeight - 8 - base() - h + h * (60 / 150);
     let dx = r.cx - ombroX; const dy = r.cy - ombroY;
     if (olhaEsq) dx = -dx;
     const ang = Math.max(-175, Math.min(10, (Math.atan2(dy, Math.max(4, dx)) * 180) / Math.PI - 90));
@@ -176,14 +178,14 @@ async function montar() {
     if (bal.hidden) return;
     const w = W(), bw = bal.offsetWidth, cx = x + w / 2;
     const left = Math.max(8, Math.min(innerWidth - bw - 8, cx - bw / 2));
-    bal.style.left = left + 'px'; bal.style.bottom = (alt() + 18) + 'px';
+    bal.style.left = left + 'px'; bal.style.bottom = (alt() + 18 + base()) + 'px';
     bal.style.setProperty('--seta', Math.max(14, Math.min(bw - 32, cx - left - 9)) + 'px');
   };
   function mostrarBalao(html, botoes) {
     falaId++;
     balaoBotoes = botoes || null;
     if (!html) { bal.classList.remove('on'); bal.hidden = true; return; }
-    bal.innerHTML = html; bal.hidden = false; colocarBalao();
+    bal.innerHTML = html; bal.hidden = false; bal.classList.toggle('mini', html.includes('crg-chip')); colocarBalao();
     requestAnimationFrame(() => bal.classList.add('on'));
     bal.querySelectorAll('[data-a]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); balaoBotoes?.[b.dataset.a]?.(b); });
     // o botão principal (Próximo/Concluir) fica por último e recebe o foco do teclado
@@ -245,7 +247,8 @@ async function montar() {
   const despedir = async (texto) => {
     if (!vivo) return;
     pararDemo(); escurecer(false); m.pararVisita?.();
-    pose('acenando'); mostrarBalao(`${cabeca()}<p style="margin-right:0">${texto}</p>`, { esc: () => sumir() });
+    const curto = bal.classList.contains('mini');   // no celular, a despedida da visita rápida também é curtinha
+    pose('acenando'); mostrarBalao(curto ? `<span class=crg-chip>Tchau! 👋</span>` : `${cabeca()}<p style="margin-right:0">${texto}</p>`, { esc: () => sumir() });
     await dormir(calmo() ? 1800 : 2400);
     if (!vivo) return;
     await andar(innerWidth + 40);
@@ -444,7 +447,11 @@ async function montar() {
     const querAjuda = () => { parar(); ajuda(); };
     m.pararVisita = parar;
     bon.onclick = querAjuda;
-    const ok = await falar(`${fechaX('nao', T.agoraNao)}${cabeca()}<p>${T.pergunta}</p><div class=crg-bts>${bt('nao', T.agoraNao, 1)}${bt('ajuda', T.querAjuda)}</div><div class=crg-tempo aria-hidden=true><i style="animation-duration:${CONFIG.espera}s"></i></div>`,
+    // só um balãozinho ao lado dela (não cobre botões nem fotos da página); tocar nele ou nela abre a ajuda completa
+    const mini = true;
+    let ok = true;
+    if (mini) mostrarBalao(`<button type=button class=crg-chip data-a=ajuda>${T.chip}</button><div class=crg-tempo aria-hidden=true><i style="animation-duration:${CONFIG.espera}s"></i></div>`, { esc: nao, nao, ajuda: querAjuda });
+    else ok = await falar(`${fechaX('nao', T.agoraNao)}${cabeca()}<p>${ls.get(K_VISTO) === '1' ? T.pergunta : T.primeiraVez}</p><div class=crg-bts>${bt('nao', T.agoraNao, 1)}${bt('ajuda', T.querAjuda)}</div><div class=crg-tempo aria-hidden=true><i style="animation-duration:${CONFIG.espera}s"></i></div>`,
       { esc: nao, nao, ajuda: querAjuda });
     if (ok && m.pararVisita === parar) fim = setTimeout(nao, CONFIG.espera * 1000);
   };

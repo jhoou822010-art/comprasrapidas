@@ -45,6 +45,8 @@ export const CONFIG = {
   saidaAlvo: '#aviso',   // quadro de avisos da página do produto que ela destaca
   digitando: 550,
   textos: {
+    chip: 'Oi! Posso ajudar? 👋',   // balãozinho no celular (tocar abre a ajuda)
+    primeiraVez: '{saudacao}! Eu sou a {nome}, sua guia na loja. Quer que eu te mostre a loja ou te ajude a achar alguma coisa?',
     pergunta: '{saudacao}! Que bom te ver de novo. Quer que eu te mostre a loja ou te ajude a achar alguma coisa?',
     guiaDe: 'guia da loja',
     // menu de atalhos ("Quero ajuda", tocar nela ou "Chamar a {nome}" no rodapé)

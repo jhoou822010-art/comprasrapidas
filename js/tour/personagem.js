@@ -29,7 +29,7 @@ export const ROSTO = IMAGENS.parado ? aqui('rosto.png') : '';
 export const PASSOS = IMAGENS.parado ? [aqui('andando.png'), aqui('parado.png')] : [];
 
 // tamanho do personagem na tela (px). A largura acompanha a proporção da imagem.
-export const TAMANHO = { altura: 132, alturaCelular: 112 };
+export const TAMANHO = { altura: 104, alturaCelular: 84 };
 
 // Sobra transparente em volta do boneco nas SUAS imagens, em % do tamanho da imagem.
 // Ex.: imagem quadrada 2048×2048 com o boneco ocupando do topo 8% até 4% do fim e com 28% de sobra de cada lado:
