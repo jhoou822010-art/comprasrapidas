@@ -305,6 +305,12 @@ async function list1({offer,featured,destaques,q,cat,cats,maxPrice,page=1,per=12
  if(maxPrice!=null)r=r.lte('price',maxPrice).order('price',{ascending:true});
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
+// produtos sorteados de toda a loja numa única consulta: começa num ponto aleatório (os códigos dos produtos são aleatórios)
+// e pega os próximos ativos; se chegar ao fim da lista, completa pelo começo. Nada é guardado no aparelho.
+export async function sortidos(per=24){const go=(r0,n)=>{let q=sb.from('cr_products').select(sel()).eq('status','active');if(r0)q=q.or('id.gt.'+r0);return q.order('id',{ascending:true}).limit(n)};
+ let {data,error}=await go(crypto.randomUUID(),per);if(miss(error)){NOMAX=true;({data,error}=await go(crypto.randomUUID(),per))}
+ data=data||[];if(!error&&data.length<per){const r=await go(null,per-data.length);const tem=new Set(data.map(p=>p.id));data=[...data,...(r.data||[]).filter(p=>!tem.has(p.id))]}
+ return {data,error}}
 export async function byIds(ids){if(!ids?.length)return [];const go=()=>sb.from('cr_products').select(sel()).eq('status','active').in('id',ids);let {data,error}=await go();if(miss(error)){NOMAX=true;({data}=await go())}const m=Object.fromEntries((data||[]).map(p=>[p.id,p]));return ids.map(i=>m[i]).filter(Boolean)}
 export function card(p){const o=isOffer(p),n=storeName(p),t=cleanTitle(p.name);
  return `<article class=card><div class=im>${o?'<span class=tag>Oferta</span>':''}<img loading=lazy decoding=async width=320 height=320 src="${esc(thumb(p))}" data-full="${esc(cover(p))}" onerror="this.onerror=null;this.src=this.dataset.full" alt="${esc(t)}">${cornerDeco()}</div>
