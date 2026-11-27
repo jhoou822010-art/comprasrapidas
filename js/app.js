@@ -202,9 +202,43 @@ function socialTrack(){if(sOn)return;sOn=true;
 // A mesma sessão é reaproveitada por 30 min (recarregar ou trocar de página não conta nova entrada).
 // Se o navegador fechar sem aviso, o servidor encerra a sessão após 3 min sem sinal.
 const VK='cr_visit',VIDLE=30*60e3,VBEAT=30e3;let vOn=false;
-function visitTrack(){if(vOn||navigator.webdriver||!crypto.randomUUID)return;vOn=true;
+// ---- de onde veio a visita (painel › Estatísticas › "De onde vêm as visitas"). Só a origem e, de outros sites, só o domínio.
+// Prioridade: parâmetro no link (?origem=) › código de clique dos anúncios › navegador interno do app › página anterior › direto.
+const SRC_PAR={yt:'youtube',youtube:'youtube',ig:'instagram',instagram:'instagram',insta:'instagram',tt:'tiktok',tiktok:'tiktok',
+ fb:'facebook',facebook:'facebook',meta:'facebook',wa:'whatsapp',whatsapp:'whatsapp',zap:'whatsapp',google:'internet',bing:'internet',internet:'internet',direto:'direto'};
+const hostOf=u=>{try{return new URL(u).hostname.toLowerCase().replace(/^www\.|^m\./,'')}catch(e){return ''}};
+export function detectSource(o={}){const href=o.href??location.href,ua=o.ua??navigator.userAgent??'',ref=o.ref??document.referrer??'',own=(o.host??location.hostname).toLowerCase().replace(/^www\./,'');
+ let q;try{q=new URL(href).searchParams}catch(e){q=new URLSearchParams()}
+ const igApp=/Instagram/i.test(ua),fbApp=/FBAN|FBAV|FB_IAB|FBIOS/.test(ua),ttApp=/musical_ly|BytedanceWebview|TikTok/i.test(ua);
+ const p=(q.get('origem')||q.get('utm_source')||q.get('ref')||'').trim().toLowerCase();
+ if(p){const k=p.replace(/[^a-z0-9.-]/g,'');if(SRC_PAR[k])return {source:SRC_PAR[k],ref:''};
+  if(/(^|\.)(google|bing|yahoo|duckduckgo|ecosia|yandex|brave)(\.|$)/.test(k))return {source:'internet',ref:k};return {source:'outros',ref:k.slice(0,100)}}
+ if(q.has('fbclid'))return {source:igApp?'instagram':'facebook',ref:''};
+ if(q.has('ttclid'))return {source:'tiktok',ref:''};
+ if(q.has('gclid'))return {source:'internet',ref:''};
+ if(igApp)return {source:'instagram',ref:''};if(fbApp)return {source:'facebook',ref:''};if(ttApp)return {source:'tiktok',ref:''};
+ if(ref){if(/^android-app:\/\//i.test(ref)){const a=ref.slice(14).split(/[/?#]/)[0].toLowerCase();
+   return /whatsapp/.test(a)?{source:'whatsapp',ref:''}:/instagram/.test(a)?{source:'instagram',ref:''}:/facebook|katana|orca/.test(a)?{source:'facebook',ref:''}:/zhiliaoapp|musically|tiktok/.test(a)?{source:'tiktok',ref:''}:/youtube/.test(a)?{source:'youtube',ref:''}:/googlequicksearchbox|google/.test(a)?{source:'internet',ref:'google.com'}:{source:'outros',ref:a.slice(0,100)}}
+  const h=hostOf(ref);if(!h)return {source:'direto',ref:''};
+  if(h===own||h.endsWith('.'+own))return {source:'direto',ref:''};
+  if(/(^|\.)(youtube\.com|youtu\.be)$/.test(h))return {source:'youtube',ref:''};
+  if(/(^|\.)instagram\.com$/.test(h))return {source:'instagram',ref:''};
+  if(/(^|\.)tiktok\.com$/.test(h))return {source:'tiktok',ref:''};
+  if(/(^|\.)(facebook\.com|fb\.me|fb\.com)$/.test(h))return {source:'facebook',ref:''};
+  if(/(^|\.)(whatsapp\.com|wa\.me)$/.test(h))return {source:'whatsapp',ref:''};
+  if(/(^|\.)(google|bing|yahoo|duckduckgo|ecosia|yandex|brave)\./.test(h)||/(^|\.)(search\.brave\.com|duckduckgo\.com)$/.test(h))return {source:'internet',ref:h.slice(0,100)};
+  return {source:'outros',ref:h.slice(0,100)}}
+ return {source:'direto',ref:''}}
+// tira da barra de endereço os parâmetros de origem (quem compartilhar o link não leva a origem de outra pessoa)
+function cleanSourceParams(){try{const u=new URL(location.href);let mud=false;
+ for(const k of [...u.searchParams.keys()])if(k==='origem'||/^utm_/i.test(k)||k==='fbclid'||k==='ttclid'||k==='gclid'){u.searchParams.delete(k);mud=true}
+ if(mud)history.replaceState(history.state,'',u.pathname+(u.search?u.search:'')+u.hash)}catch(e){}}
+function visitTrack(){if(vOn||navigator.webdriver||!crypto.randomUUID){cleanSourceParams();return}vOn=true;
+ let SRC={source:'direto',ref:''};try{SRC=detectSource()}catch(e){}cleanSourceParams();
+ // origem da visita: só quando uma sessão NOVA é criada; se o SQL 13 ainda não foi rodado, o erro é ignorado
+ const sendSource=id=>{try{fetch(U+'/rest/v1/rpc/cr_visit_source',{method:'POST',keepalive:true,headers:{apikey:K,'Content-Type':'application/json'},body:JSON.stringify({p_sid:id,p_source:SRC.source,p_ref:SRC.ref||null})}).catch(()=>{})}catch(e){}};
  let mem=null;const rd=()=>{try{return JSON.parse(localStorage.getItem(VK))||mem}catch(e){return mem}},wr=o=>{mem=o;try{localStorage.setItem(VK,JSON.stringify(o))}catch(e){}};
- const sid=(fresh)=>{let o=rd();if(fresh||!o||!o.id||Date.now()-(o.t||0)>VIDLE)o={id:crypto.randomUUID(),t:Date.now()};wr(o);return o.id};
+ const sid=(fresh)=>{let o=rd(),nova=false;if(fresh||!o||!o.id||Date.now()-(o.t||0)>VIDLE){o={id:crypto.randomUUID(),t:Date.now()};nova=true}wr(o);if(nova)sendSource(o.id);return o.id};
  let act=Date.now(),timer=null,ended=false,inNav=0;
  const send=async(ev,keep)=>{const o=rd()||{};if(ev!=='end'&&o.id)wr({...o,t:Date.now()});
   try{const r=await fetch(U+'/rest/v1/rpc/cr_visit_track',{method:'POST',keepalive:!!keep,headers:{apikey:K,'Content-Type':'application/json'},body:JSON.stringify({p_sid:o.id,p_event:ev})});

@@ -252,3 +252,22 @@ Nada muda no visual nem nos links; os cliques em produtos (`cr_click_events`) e 
 
 **Banco:** já aplicado no projeto do `config.js`. Em outro projeto, rode o arquivo 10 uma vez no SQL Editor (pode rodar de novo).
 **Desfazer:** reverter o commit e, se quiser apagar do banco, o bloco DESFAZER no fim do arquivo 10.
+
+## De onde vêm as visitas
+
+Em **Painel › Estatísticas › Visitantes**, a seção "De onde vêm as visitas" mostra quantas visitas vieram de cada lugar: YouTube, Instagram, TikTok, Facebook, WhatsApp, Internet (Google, Bing e outras buscas), Outros sites e Direto (sem identificação).
+- **Período e atualização:** a contagem segue o período escolhido (7, 30 ou 90 dias), mostra também a de hoje e se atualiza sozinha a cada 15 segundos.
+- **Outros sites e buscas:** lista os principais domínios de onde as visitas vieram.
+- **Como a origem é descoberta:** pelo link (`?origem=`), pelo app em que a pessoa abriu o site (Instagram, Facebook, TikTok) ou pela página anterior.
+- **Privacidade:** guarda só a origem e, quando a visita vem de outro site, só o domínio (ex.: google.com). Não guarda IP, navegador nem qualquer dado pessoal.
+
+**Links para divulgar:** coloque na bio, na descrição dos vídeos e nas mensagens os links abaixo (também aparecem no painel, com botão Copiar):
+- `https://comprasrapidasandrade.com.br/?origem=instagram`
+- `https://comprasrapidasandrade.com.br/?origem=youtube`
+- `https://comprasrapidasandrade.com.br/?origem=tiktok`
+- `https://comprasrapidasandrade.com.br/?origem=facebook`
+- `https://comprasrapidasandrade.com.br/?origem=whatsapp`
+
+Esses links deixam a contagem bem mais precisa, principalmente a do WhatsApp, que normalmente não informa de onde a pessoa veio. A origem some da barra de endereço sozinha, então quem compartilhar o link não leva a origem de outra pessoa. O botão "Compartilhar" do produto, quando abre o WhatsApp, já manda o link com `?origem=whatsapp`.
+
+**Para ligar:** rode uma vez o arquivo `supabase/13-origem-das-visitas.sql` no SQL Editor do Supabase. Enquanto ele não for rodado, o painel mostra um aviso e o resto das estatísticas continua funcionando normalmente. Visitas de antes disso contam como "Direto".
