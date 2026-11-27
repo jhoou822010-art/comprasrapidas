@@ -489,18 +489,36 @@ async function social(box,d){const {data:v,error}=await sb.rpc('cr_social_stats'
 let VT=null,VD=7;
 const dur=x=>{x=Math.round(+x||0);if(x<60)return x+' s';const m=Math.floor(x/60),s=x%60;if(m<60)return m+' min'+(s?' '+s+' s':'');const h=Math.floor(m/60);return h+' h'+(m%60?' '+(m%60)+' min':'')};
 const dBR=d=>{const [y,m,dd]=d.split('-');return `${dd}/${m}/${y}`},wd=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+// ---- origem das visitas (painel › Estatísticas › Visitantes)
+const ORIG=[['youtube','▶️','YouTube'],['instagram','📸','Instagram'],['tiktok','🎵','TikTok'],['facebook','📘','Facebook'],['whatsapp','💬','WhatsApp'],['internet','🔎','Internet (Google, Bing e outras buscas)'],['outros','🌐','Outros sites'],['direto','🏠','Direto (sem identificação)']];
+const SITE_DIV='https://comprasrapidasandrade.com.br/';
+function origens(src){
+ const divulgar=`<h4>Links para divulgar</h4><p class=note>Use estes links na bio, nas descrições dos vídeos e nas mensagens: a contagem fica bem mais precisa — principalmente a do <b>WhatsApp</b>, que normalmente não informa de onde a pessoa veio. Quem abre o link vai para o site normal; a origem sai da barra de endereço sozinha.</p>
+  <div class=tw><table class=vt>${['instagram','youtube','tiktok','facebook','whatsapp'].map(k=>{const o=ORIG.find(x=>x[0]===k),u=SITE_DIV+'?origem='+k;return `<tr><td>${o[1]} ${o[2]}</td><td><code style="word-break:break-all">${esc(u)}</code></td><td><button type=button class="btn alt sm" data-cp="${esc(u)}">Copiar</button></td></tr>`}).join('')}</table></div>`;
+ if(!src||src.err)return `<div class=vh><h4>De onde vêm as visitas</h4></div><p class=note>Rode o arquivo <b>supabase/13-origem-das-visitas.sql</b> no SQL Editor do Supabase para ver de onde vêm as visitas.</p>${divulgar}`;
+ const P=src.period||{},H=src.today||{},tot=ORIG.reduce((a,[k])=>a+(+P[k]||0),0),mx=Math.max(1,...ORIG.map(([k])=>+P[k]||0));
+ const rows=ORIG.map(([k,ic,n])=>({k,ic,n,q:+P[k]||0,h:+H[k]||0})).sort((a,b)=>b.q-a.q||b.h-a.h);
+ const refs=src.refs||[];
+ return `<div class=vh><h4>De onde vêm as visitas</h4><span class=note>últimos ${src.days||VD} dias</span></div>
+  <div class=tw><table class=vt><tr><th>Origem<th>Visitas no período<th>Hoje</tr>${rows.map(r=>`<tr><td>${r.ic} ${esc(r.n)}</td><td><b>${r.q}</b> <small>${tot?Math.round(r.q/tot*100):0}%</small><div class=bar style="width:${r.q/mx*100}%"></div></td><td>${r.h}</td></tr>`).join('')}</table></div>
+  <h4>Outros sites e buscas</h4>${refs.length?`<div class=tw><table class=vt><tr><th>Site<th>Tipo<th>Visitas</tr>${refs.map(x=>`<tr><td>${esc(x.host)}</td><td>${x.source==='internet'?'🔎 Busca':'🌐 Outro site'}</td><td><b>${+x.n||0}</b></td></tr>`).join('')}</table></div>`:'<p class=note>Nenhuma visita vinda de outros sites ou buscas no período.</p>'}
+  ${divulgar}`}
 async function visitors(box){clearInterval(VT);
- const load=async()=>{const {data,error}=await sb.rpc('cr_visit_stats',{p_days:VD});if(error)throw error;return data};
+ // origem das visitas (supabase/13): se a função ainda não existir, o quadro segue normal e mostra o aviso
+ const loadSrc=async()=>{try{const {data,error}=await sb.rpc('cr_visit_sources',{p_days:VD});if(error)return {err:error.message||String(error)};return data}catch(e){return {err:String(e.message||e)}}};
+ const load=async()=>{const [{data,error},src]=await Promise.all([sb.rpc('cr_visit_stats',{p_days:VD}),loadSrc()]);if(error)throw error;data._src=src;return data};
  let v;try{v=await load()}catch(e){box.innerHTML=`<div class="box vis"><h3>Visitantes</h3><p class=note>Monitoramento indisponível: ${/cr_visit_stats/.test(e.message||'')?'rode o arquivo <b>supabase/03-visitantes.sql</b> no SQL Editor do Supabase.':esc(e.message||e)}</p></div>`;return}
  const draw=v=>{const D=v.days||[],t=D[0]||{entries:0,exits:0,avg_seconds:0},E=D.reduce((a,x)=>a+x.entries,0),X=D.reduce((a,x)=>a+x.exits,0),
    avg=X?D.reduce((a,x)=>a+x.avg_seconds*x.exits,0)/X:0,mx=Math.max(1,...D.map(x=>Math.max(x.entries,x.exits)));
   box.innerHTML=`<div class="box vis"><div class=vh><h3>Visitantes</h3><span class=note>Atualiza sozinho · ${new Date(v.now).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span></div>
   <div class="kpi vk"><div class=on><span>Online agora</span><b id=von><i class=dot></i>${v.online}</b></div><div><span>Entradas hoje</span><b>${t.entries}</b></div><div><span>Saídas hoje</span><b>${t.exits}</b></div><div><span>Permanência média hoje</span><b>${t.exits?dur(t.avg_seconds):'—'}</b></div></div>
+  ${origens(v._src)}
   <div class=vh><h4>Histórico diário</h4><label class=vp>Período<select id=vd>${[7,30,90].map(n=>`<option value=${n}${n===VD?' selected':''}>${n} dias</option>`).join('')}</select></label></div>
   <p class=note>No período: <b>${E}</b> entradas · <b>${X}</b> saídas · permanência média <b>${X?dur(avg):'—'}</b></p>
   <div class=tw><table class=vt><tr><th>Dia<th>Entradas<th>Saídas<th>Permanência média</tr>${D.map(x=>`<tr><td>${dBR(x.day)} <small>${wd(x.day)}</small><td><b>${x.entries}</b><div class=bar style="width:${x.entries/mx*100}%"></div><td><b>${x.exits}</b><div class="bar vx" style="width:${x.exits/mx*100}%"></div><td>${x.exits?dur(x.avg_seconds):'—'}</tr>`).join('')}</table></div>
   <p class=note>Cada visita é uma sessão anônima (sem dados pessoais). Atualizar a página ou navegar pelo site não conta nova entrada. A saída é registrada ao fechar a página ou após 3 minutos sem atividade; voltar em até 30 minutos continua a mesma visita. “Online” = sinal recebido no último minuto com a página aberta.</p></div>`;
-  box.querySelector('#vd').onchange=e=>{VD=+e.target.value;run(()=>visitors(box))}};
+  box.querySelector('#vd').onchange=e=>{VD=+e.target.value;run(()=>visitors(box))};
+  box.querySelectorAll('[data-cp]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.cp)}catch(e){const t=document.createElement('textarea');t.value=b.dataset.cp;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(_){}t.remove()}b.textContent='Copiado ✓';setTimeout(()=>b.textContent='Copiar',2000)})};
  draw(v);
  VT=setInterval(async()=>{if(!document.contains(box)){clearInterval(VT);return}if(document.hidden)return;try{draw(await load())}catch(e){console.warn(e)}},15e3)}
 // ---------- Importar CSV
