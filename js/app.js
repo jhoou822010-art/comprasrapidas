@@ -135,7 +135,7 @@ export const GROUPS=[
  {k:'casa',n:'Casa e decoração',d:'Cozinha, organização, móveis',kw:['casa','decora','cozinha','move','utilidade','organiza','eletrodomest']},
  {k:'moda',n:'Moda',d:'Feminina, masculina, acessórios',kw:['moda','acessorios de moda','calcad','roupa']},
  {k:'beleza',n:'Beleza',d:'Maquiagem e cuidados pessoais',kw:['beleza','maquiag','cuidados pessoais','perfum','saude']},
- {k:'destaques',n:'Destaques',d:'Escolhidos pela nossa equipe',href:'lista.html?tipo=destaques',ic:'★'}];
+ {k:'destaques',n:'Destaques',d:'Novidades com os melhores descontos',href:'lista.html?tipo=destaques',ic:'★'}];
 export const groupCats=(g,cats)=>g.kw?(cats||[]).filter(c=>g.kw.some(k=>norm(c.name).includes(k))):[];
 export const groupHref=g=>g.href||'lista.html?tipo=grupo&g='+g.k;
 
@@ -256,7 +256,7 @@ function visitTrack(){if(vOn||navigator.webdriver||!crypto.randomUUID){cleanSour
  addEventListener('pagehide',()=>{stop();if(ended||Date.now()-inNav<5e3)return;send('end',true)});
  addEventListener('pageshow',e=>{if(e.persisted){ended=false;wake()}});
  sid();send('start');timer=setInterval(beat,VBEAT)}
-const SEL='id,slug,name,price,price_max,old_price,offer,offer_start,offer_end,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
+const SEL='id,slug,name,price,price_max,old_price,offer,offer_start,offer_end,featured,category_id,created_at,merchants:cr_merchants(name),product_images:cr_product_images(url,sort)';
 export const isOffer=p=>p.offer&&(!p.offer_end||new Date(p.offer_end)>new Date())&&(!p.offer_start||new Date(p.offer_start)<=new Date());
 // preço em faixa (ex.: Shopee): "R$ 14,50 – R$ 25,90" quando price_max for maior que o preço
 export const isRange=p=>p.price!=null&&p.price_max!=null&&+p.price_max>+p.price;
@@ -298,10 +298,10 @@ async function search({q,offer,featured,cat,cats,page=1,per=12}){const toks=sTok
  rows.sort((a,b)=>b.s-a.s||(a.c<b.c?1:-1));const ids=rows.slice((page-1)*per,page*per).map(x=>x.id);
  return {data:await byIds(ids),count:rows.length,error,similar}}
 // maxPrice: só produtos com preço até esse valor, do mais barato para o mais caro (página dos achadinhos)
-async function list1({offer,featured,q,cat,cats,maxPrice,page=1,per=12}={}){
+async function list1({offer,featured,destaques,q,cat,cats,maxPrice,page=1,per=12}={}){
  let r=sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active');const now=new Date().toISOString();
  if(offer)r=r.eq('offer',true).or('offer_end.is.null,offer_end.gt.'+now).or('offer_start.is.null,offer_start.lte.'+now);
- if(featured)r=r.eq('featured',true);if(cat)r=r.eq('category_id',cat);if(cats?.length)r=r.in('category_id',cats);
+ if(featured)r=r.eq('featured',true);if(destaques)r=r.order('featured',{ascending:false});/* destaques automáticos: os marcados no painel vêm primeiro, depois os mais recentes */if(cat)r=r.eq('category_id',cat);if(cats?.length)r=r.in('category_id',cats);
  if(maxPrice!=null)r=r.lte('price',maxPrice).order('price',{ascending:true});
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
