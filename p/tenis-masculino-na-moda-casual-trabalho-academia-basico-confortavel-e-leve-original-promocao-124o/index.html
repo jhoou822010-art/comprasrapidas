@@ -96,7 +96,7 @@ $('#more')?.addEventListener('click',e=>{const d=$('#ds'),op=d.classList.toggle(
 // compartilhar: menu do celular (WhatsApp, Instagram…) ou, no computador, copia o link / abre o WhatsApp
 $('#shr').onclick=async()=>{const data={title:name,text:name+(p.price!=null?' por '+priceTxt(p):''),url:share};
  if(navigator.share){try{await navigator.share(data)}catch(e){}return}
- try{await navigator.clipboard.writeText(share);$('#shr').textContent='Link copiado ✓';setTimeout(()=>$('#shr').textContent='Compartilhar',2500)}catch(e){open('https://wa.me/?text='+encodeURIComponent(data.text+'\n'+share),'_blank','noopener')}};
+ try{await navigator.clipboard.writeText(share);$('#shr').textContent='Link copiado ✓';setTimeout(()=>$('#shr').textContent='Compartilhar',2500)}catch(e){open('https://wa.me/?text='+encodeURIComponent(data.text+'\n'+share+(share.includes('?')?'&':'?')+'origem=whatsapp'),'_blank','noopener')  /* destino WhatsApp: a visita fica marcada como WhatsApp */}};
 // clique para a loja: conta o clique (sem atrasar a abertura da loja)
 let V=null;try{V=await import('./js/vitrine.js');if(!V.start(S))V=null;else V.track('view',{p})}catch(e){V=null}
 document.querySelectorAll('[data-out]').forEach(a=>a.addEventListener('click',e=>{trackClick(p);try{V?.track('buy',{p})}catch(e){}
