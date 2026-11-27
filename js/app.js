@@ -135,7 +135,7 @@ export const GROUPS=[
  {k:'casa',n:'Casa e decoração',d:'Cozinha, organização, móveis',kw:['casa','decora','cozinha','move','utilidade','organiza','eletrodomest']},
  {k:'moda',n:'Moda',d:'Feminina, masculina, acessórios',kw:['moda','acessorios de moda','calcad','roupa']},
  {k:'beleza',n:'Beleza',d:'Maquiagem e cuidados pessoais',kw:['beleza','maquiag','cuidados pessoais','perfum','saude']},
- {k:'destaques',n:'Destaques',d:'Novidades com os melhores descontos',href:'lista.html?tipo=destaques',ic:'★'}];
+ {k:'destaques',n:'Destaques',d:'Uma seleção diferente da loja a cada visita',href:'lista.html?tipo=destaques',ic:'★'}];
 export const groupCats=(g,cats)=>g.kw?(cats||[]).filter(c=>g.kw.some(k=>norm(c.name).includes(k))):[];
 export const groupHref=g=>g.href||'lista.html?tipo=grupo&g='+g.k;
 
@@ -305,6 +305,17 @@ async function list1({offer,featured,destaques,q,cat,cats,maxPrice,page=1,per=12
  if(maxPrice!=null)r=r.lte('price',maxPrice).order('price',{ascending:true});
  const {data,count,error}=await r.order('created_at',{ascending:false}).range((page-1)*per,page*per-1);
  return {data:data||[],count:count||0,error}}
+// página "Ver todos" dos Destaques: TODOS os produtos ativos (os novos entram sozinhos), numa ordem sorteada a cada visita.
+// A semente (seed) é um código aleatório que fica só no endereço da página, para a paginação seguir a mesma ordem; nada é guardado no aparelho.
+// Começa no ponto sorteado e dá a volta pela lista inteira: nenhum produto se repete entre as páginas.
+export async function sortidosPag(seed,page=1,per=24){const o=(page-1)*per;
+ const seg=gt=>sb.from('cr_products').select(sel(),{count:'exact'}).eq('status','active').or((gt?'id.gt.':'id.lte.')+seed).order('id',{ascending:true});
+ const conta=gt=>sb.from('cr_products').select('id',{count:'exact'}).eq('status','active').or((gt?'id.gt.':'id.lte.')+seed).limit(1);
+ const [ca,cb]=await Promise.all([conta(1),conta(0)]);if(ca.error||cb.error)return {data:[],count:0,error:ca.error||cb.error};
+ const A=ca.count||0,B=cb.count||0,tot=A+B,fim=Math.min(o+per,tot),pd=[];
+ if(o<A)pd.push(seg(1).range(o,Math.min(fim,A)-1));if(fim>A)pd.push(seg(0).range(Math.max(0,o-A),fim-A-1));
+ let rs=await Promise.all(pd);if(rs.some(r=>miss(r.error))){NOMAX=true;return sortidosPag(seed,page,per)}
+ const err=rs.find(r=>r.error)?.error,data=rs.flatMap(r=>r.data||[]);return {data,count:tot,error:data.length?null:err||null}}
 // produtos sorteados de toda a loja numa única consulta: começa num ponto aleatório (os códigos dos produtos são aleatórios)
 // e pega os próximos ativos; se chegar ao fim da lista, completa pelo começo. Nada é guardado no aparelho.
 export async function sortidos(per=24){const go=(r0,n)=>{let q=sb.from('cr_products').select(sel()).eq('status','active');if(r0)q=q.or('id.gt.'+r0);return q.order('id',{ascending:true}).limit(n)};

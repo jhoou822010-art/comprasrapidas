@@ -126,9 +126,9 @@ const explorar=async q=>{try{if(V){V.start(S);const ids=V.explore(await V.poolWi
  const {data,error}=await list({per:Math.max(q*3,60)}),b=Math.floor(Date.now()/(XMIN*6e4)),r=id=>{let h=2166136261^b;for(const c of id)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0};
  return {data:[...(data||[])].sort((x,y)=>r(x.id)-r(y.id)).slice(0,q),error}};
 const KEYS=['ofertas','novidades','destaques'];
-// ---- DESTAQUES: 12 produtos sorteados de TODA a loja a cada vez que a página abre (oferta ou não, marcado ou não),
+// ---- DESTAQUES: 24 produtos sorteados de TODA a loja a cada vez que a página abre (oferta ou não, marcado ou não),
 // numa única consulta; não repete o que já apareceu mais acima (Ofertas, Novidades). Nada é guardado no aparelho.
-const DEST_QTD=12,DEST_POOL=40;
+const DEST_QTD=24,DEST_POOL=70;
 const embaralha=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const destaques=(rows,ja)=>embaralha((rows||[]).filter(p=>!ja.has(p.id))).slice(0,DEST_QTD);let extra=useCar?cids.length:0;
 const jobs=KEYS.map(k=>{if(!vis(k))return Promise.resolve({data:[]});const q=qty(k,10),per=q+extra;extra+=q;return k==='destaques'?sortidos(DEST_POOL):list({offer:k==='ofertas',per})});
